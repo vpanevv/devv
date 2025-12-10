@@ -10,6 +10,7 @@ using FootballScore.API.Features.Matches.Shared;
 using FootballScore.API.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using FootballScore.API.Features.Teams.Services;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FootballScore.API.Features.Matches.Commands.CreateMatch
@@ -17,10 +18,12 @@ namespace FootballScore.API.Features.Matches.Commands.CreateMatch
     public class CreateMatchCommandHandler : IRequestHandler<CreateMatchCommand, MatchDto>
     {
         private readonly ApplicationDbContext _dbContext;
+        private readonly ITeamStatisticService _teamStatsService;
 
-        public CreateMatchCommandHandler(ApplicationDbContext dbContext)
+        public CreateMatchCommandHandler(ApplicationDbContext dbContext, ITeamStatisticService teamStatsService)
         {
             _dbContext = dbContext;
+            _teamStatsService = teamStatsService;
         }
 
         public async Task<MatchDto> Handle(CreateMatchCommand request, CancellationToken cancellationToken)
@@ -56,8 +59,8 @@ namespace FootballScore.API.Features.Matches.Commands.CreateMatch
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // recalculate team statistics after match creation
-            await RecalculateTeamStatistic(homeTeam.Id, cancellationToken);
-            await RecalculateTeamStatistic(awayTeam.Id, cancellationToken);
+            await _teamStatsService.RecalculateTeamStatisicAsync(homeTeam.Id, cancellationToken);
+            await _teamStatsService.RecalculateTeamStatisicAsync(awayTeam.Id, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             // return match dto
@@ -72,54 +75,6 @@ namespace FootballScore.API.Features.Matches.Commands.CreateMatch
                 AwayGoals = match.AwayGoals,
                 MatchDate = match.MatchDate
             };
-        }
-
-        // this is the logic for calculating the team statistics after a match is created || Points/Wins/Draws/Losses/Goals For/Goals Against
-        private async Task RecalculateTeamStatistic(int teamId, CancellationToken cancellationToken)
-        {
-            var team = await _dbContext.Teams
-            .FirstAsync(team => team.Id == teamId, cancellationToken);
-
-            var matches = await _dbContext.Matches
-            .Where(match => match.HomeTeamId == teamId || match.AwayTeamId == teamId)
-            .ToListAsync(cancellationToken);
-
-            int played = 0, wins = 0, draws = 0, losses = 0;
-            int goalsFor = 0, goalsAgainst = 0, points = 0;
-
-            foreach (var match in matches)
-            {
-                played++;
-
-                int teamGoalsFor = match.HomeTeamId == teamId ? match.HomeGoals : match.AwayGoals;
-                int teamGoalsAgainst = match.HomeTeamId == teamId ? match.AwayGoals : match.HomeGoals;
-
-                goalsFor += teamGoalsFor;
-                goalsAgainst += teamGoalsAgainst;
-
-                if (teamGoalsFor > teamGoalsAgainst)
-                {
-                    wins++;
-                    points += 3; //win gives 3 points
-                }
-                else if (teamGoalsFor == teamGoalsAgainst)
-                {
-                    draws++;
-                    points += 1; //draw gives 1 point
-                }
-                else
-                {
-                    losses++; //loss gives 0 points
-                }
-            }
-
-            team.Played = played;
-            team.Wins = wins;
-            team.Draws = draws;
-            team.Losses = losses;
-            team.GoalsFor = goalsFor;
-            team.GoalsAgainst = goalsAgainst;
-            team.Points = points;
         }
     }
 }

@@ -7,6 +7,7 @@ using FootballScore.API.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using MediatR;
+using FootballScore.API.Features.Teams.Services;
 
 namespace FootballScore.API
 {
@@ -27,6 +28,8 @@ namespace FootballScore.API
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddMediatR(Assembly.GetExecutingAssembly()); // add MediatR for the Mediator pattern
+
+            services.AddScoped<ITeamStatisticService, TeamStatisticService>(); // register the TeamStatisticService
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
