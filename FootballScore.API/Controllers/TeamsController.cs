@@ -4,6 +4,7 @@ using FootballScore.API.Features.Teams.Commands.CreateTeam;
 using FootballScore.API.Features.Teams.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using FootballScore.API.Features.Teams.Queriеs.GetAllTeams;
 
 namespace FootballScore.API.Controllers
 {
@@ -34,6 +35,13 @@ namespace FootballScore.API.Controllers
         {
             //TODO later GetTeamByIdQuery with MediatR
             return Ok();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _mediator.Send(new GetAllTeamsQuery());
+            return Ok(result);
         }
     }
 }
