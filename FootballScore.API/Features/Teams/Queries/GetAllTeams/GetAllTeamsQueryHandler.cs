@@ -22,9 +22,10 @@ namespace FootballSocre.API.Features.Teams.Queriеs.GetAllTeams
 
         public async Task<IEnumerable<TeamDto>> Handle(GetAllTeamsQuery request, CancellationToken cancellationToken)
         {
+            // return the teams ranked by points and goal difference
             var teams = await _dbContext.Teams
-            .OrderByDescending(t => t.Points)
-            .ThenByDescending(t => t.GoalsFor - t.GoalsAgainst) // 
+            .OrderByDescending(team => team.Points)
+            .ThenByDescending(team => team.GoalsFor - team.GoalsAgainst) // goal difference
             .ToListAsync(cancellationToken);
 
             return teams.Select(team => new TeamDto
