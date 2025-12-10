@@ -11,7 +11,7 @@ namespace FootballScore.API.Models
         public int HomeGoals { get; set; }
         public int AwayGoals { get; set; }
 
-        public DateTime DatePlayed { get; set; }
+        public DateTime MatchDate { get; set; }
 
         public Team? HomeTeam { get; set; }
         public Team? AwayTeam { get; set; }

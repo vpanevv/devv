@@ -2,6 +2,7 @@ using System;
 
 namespace FootballScore.API.Features.Matches.Shared
 {
+    // this is what we return to the client
     public class MatchDto
     {
         public int Id { get; set; }
