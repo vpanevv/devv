@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using FootballScore.API.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+using MediatR;
 
 namespace FootballScore.API
 {
@@ -20,9 +22,11 @@ namespace FootballScore.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSwaggerGen();
+            services.AddSwaggerGen(); // add Swagger UI
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddMediatR(Assembly.GetExecutingAssembly()); // add MediatR for the Mediator pattern
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
