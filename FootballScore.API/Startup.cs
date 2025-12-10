@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using FootballScore.API.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace FootballScore.API
 {
@@ -19,6 +21,8 @@ namespace FootballScore.API
         {
             services.AddControllers();
             services.AddSwaggerGen();
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
