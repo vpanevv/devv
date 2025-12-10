@@ -1,0 +1,8 @@
+{
+  "runtimeOptions": {
+    "additionalProbingPaths": [
+      "/Users/panev/.dotnet/store/|arch|/|tfm|",
+      "/Users/panev/.nuget/packages"
+    ]
+  }
+}
