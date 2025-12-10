@@ -1,9 +1,10 @@
-namespace FootballScore.API.Models
+namespace FootballScore.API.Features.Teams.Shared
 {
-    public class Team
+    public class TeamDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+
         public int Played { get; set; }
         public int Wins { get; set; }
         public int Draws { get; set; }
