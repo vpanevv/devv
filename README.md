@@ -61,3 +61,58 @@ This project was built using **CQRS + Mediator Pattern**, **Entity Framework Cor
 ---
 
 ## 📦 Project Structure
+
+FootballScore.API
+│
+├── Controllers/
+│── Data/
+│   └── ApplicationDbContext.cs
+│
+├── Features/
+│   ├── Teams/
+│   │   ├── Commands/
+│   │   ├── Queries/
+│   │   └── Shared/
+│   ├── Matches/
+│   │   ├── Commands/
+│   │   ├── Queries/
+│   │   └── Shared/
+│   └── Standings/
+│
+├── Infrastructure/
+│   └── Services/
+│       └── TeamStatisticsService.cs
+│
+├── Models/
+├── Startup.cs
+├── Program.cs
+└── appsettings.json
+
+---
+
+## 🐳 Running the Database via Docker
+
+## Database is created automatically on application startup 🎉
+
+### 1️⃣ Start SQL Server container:
+
+```bash
+docker run -e "ACCEPT_EULA=Y" \
+           -e "SA_PASSWORD=YourPassword123!" \
+           -p 1433:1433 \
+           --name sqlserver \
+           -d mcr.microsoft.com/mssql/server:2019-latest
+
+
+
+ 📘 Swagger Documentation
+
+Once running, open:
+
+👉 https://localhost:5188/swagger
+
+Swagger UI allows you to test all endpoints:
+	•	Create teams
+	•	Play matches
+	•	Update standings
+	•	Get team statistics
