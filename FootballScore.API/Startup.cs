@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using MediatR;
 using FootballScore.API.Features.Teams.Services;
+using FootballScore.API.Infrastructure.Exceptions;
 
 namespace FootballScore.API
 {
@@ -36,6 +37,8 @@ namespace FootballScore.API
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
+
+            app.UseGlobalExceptionHandler(); // use global exception handling middleware
 
             app.UseRouting();
             app.UseAuthorization();
