@@ -7,6 +7,10 @@ using FootballScore.API.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using MediatR;
+using FootballScore.API.Features.Teams.Services;
+using FootballScore.API.Infrastructure.Exceptions;
+using System.Linq;
+using FootballScore.API.Models;
 
 namespace FootballScore.API
 {
@@ -27,12 +31,16 @@ namespace FootballScore.API
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
             services.AddMediatR(Assembly.GetExecutingAssembly()); // add MediatR for the Mediator pattern
+
+            services.AddScoped<ITeamStatisticService, TeamStatisticService>(); // register the TeamStatisticService
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
                 app.UseDeveloperExceptionPage();
+
+            app.UseGlobalExceptionHandler(); // use global exception handling middleware
 
             app.UseRouting();
             app.UseAuthorization();
@@ -48,6 +56,27 @@ namespace FootballScore.API
             {
                 endpoints.MapControllers();
             });
+
+            // 👇 Тук създаваме базата и seed-ваме данни
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                // Създава DB и таблици, ако ги няма – без миграции
+                db.Database.EnsureCreated();
+
+                // По избор: seed на няколко отбора, ако таблицата е празна
+                if (!db.Teams!.Any())
+                {
+                    db.Teams.AddRange(
+                        new Team { Name = "Barcelona" },
+                        new Team { Name = "Real Madrid" },
+                        new Team { Name = "Liverpool" },
+                        new Team { Name = "Bayern Munich" }
+                    );
+                    db.SaveChanges();
+                }
+            }
         }
     }
 }
