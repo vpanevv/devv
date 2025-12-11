@@ -57,15 +57,15 @@ namespace FootballScore.API
                 endpoints.MapControllers();
             });
 
-            // 👇 Тук създаваме базата и seed-ваме данни
+            // create the database
             using (var scope = app.ApplicationServices.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                // Създава DB и таблици, ако ги няма – без миграции
+                // database creation
                 db.Database.EnsureCreated();
 
-                // По избор: seed на няколко отбора, ако таблицата е празна
+                // seed with teams
                 if (!db.Teams!.Any())
                 {
                     db.Teams.AddRange(
