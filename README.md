@@ -103,16 +103,16 @@ docker run -e "ACCEPT_EULA=Y" \
            --name sqlserver \
            -d mcr.microsoft.com/mssql/server:2019-latest
 
+```
 
-
- 📘 Swagger Documentation
+ ## 📘 Swagger Documentation
 
 Once running, open:
 
 👉 https://localhost:5188/swagger
 
-Swagger UI allows you to test all endpoints:
-	•	Create teams
-	•	Play matches
-	•	Update standings
-	•	Get team statistics
+## Swagger UI allows you to test all endpoints:
+- Create teams
+- Play matches
+- Update standings
+- Get team statistics
