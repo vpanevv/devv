@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FootballScore.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a324d94c27fe2f3ffd54a631a843736e5f9b9e87")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4ed65f0f316e2a1580af19403598f6292840af2d")]
 [assembly: System.Reflection.AssemblyProductAttribute("FootballScore.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FootballScore.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

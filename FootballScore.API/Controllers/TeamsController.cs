@@ -8,6 +8,8 @@ using FootballScore.API.Features.Teams.Queriеs.GetAllTeams;
 using FootballScore.API.Features.Teams.Commands.UpdateTeam;
 using FootballScore.API.Features.Teams.Commands.DeleteTeam;
 using FootballScore.API.Features.Teams.Queries.GetTeamById;
+using FootballScore.API.Features.Teams.Queries.GetTeamMatches;
+using FootballScore.API.Features.Teams.Queries.GetTeamStats;
 
 namespace FootballScore.API.Controllers
 {
@@ -47,6 +49,22 @@ namespace FootballScore.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _mediator.Send(new GetAllTeamsQuery());
+            return Ok(result);
+        }
+
+        // GET api/teams/{id}/matches
+        [HttpGet("{id:int}/matches")]
+        public async Task<IActionResult> GetTeamMatches(int id)
+        {
+            var result = await _mediator.Send(new GetTeamMatchesQuery(id));
+            return Ok(result);
+        }
+
+        // GET api/teams/{id}/stats
+        [HttpGet("{id:int}/stats")]
+        public async Task<IActionResult> GetStats(int id)
+        {
+            var result = await _mediator.Send(new GetTeamStatsQuery(id));
             return Ok(result);
         }
 
