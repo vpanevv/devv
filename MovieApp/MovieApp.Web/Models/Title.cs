@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace MovieApp.Web.Models
 {
@@ -20,6 +22,6 @@ namespace MovieApp.Web.Models
 
         public decimal AverageRating { get; set; }
         public DateTime CreatedAt { get; set; }
-        // public ICollection<Review> Reviews { get; set; } = New List<Review>();
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }

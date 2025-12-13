@@ -16,10 +16,14 @@ namespace MovieApp.Web.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Titles>()
+            modelBuilder.Entity<Title>()
             .Property(t => t.Name)
             .HasMaxLength(200)
             .IsRequired();
+
+            modelBuilder.Entity<Title>()
+            .Property(t => t.AverageRating)
+         .HasPrecision(4, 2);
 
             modelBuilder.Entity<Review>()
             .Property(r => r.Stars)
