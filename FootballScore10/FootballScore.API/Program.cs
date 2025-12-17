@@ -1,5 +1,6 @@
 using FootballScore.API.Data;
 using MediatR;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using FootballScore.API.Entities;
 
