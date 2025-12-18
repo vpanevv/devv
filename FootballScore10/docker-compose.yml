@@ -1,0 +1,14 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: footballscore_sql
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=StrongPassw0rd!
+    ports:
+      - "1433:1433"
+    volumes:
+      - footballscore_sql_data:/var/opt/mssql
+
+volumes:
+  footballscore_sql_data:
