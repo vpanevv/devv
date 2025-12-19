@@ -37,16 +37,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.MapGet("/api/teams", async (AppDbContext db) =>
-{
-    var teams = await db.Teams
-        .OrderBy(t => t.Name)
-        .ToListAsync();
-
-    return Results.Ok(teams);
-})
-.WithName("GetTeams");
-
 // 🔥 EnsureCreated (БЪРЗ ВАРИАНТ)
 using (var scope = app.Services.CreateScope())
 {
