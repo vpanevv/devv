@@ -3,6 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using FootballScore.API.Features.Teams.GetAllTeams;
 using FootballScore.API.Features.Teams.GetTeamById;
 using FootballScore.API.Features.Teams.CreateTeam;
+using FootballScore.API.Features.Teams.UpdateTeam;
+using FootballScore.API.Features.Teams.DeleteTeam;
+using System.Security.Cryptography.X509Certificates;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Net.Http.Headers;
 
 
 namespace FootballScore.API.Controllers;
@@ -37,5 +43,20 @@ public class TeamsController : ControllerBase
         var created = await _mediator.Send(new CreateTeamCommand(request.Name), cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<TeamDto>> Update(int id, [FromBody] UpdateTeamCommand command, CancellationToken cancellationToken)
+    {
+        if (id != command.Id) return BadRequest("Route id must match body id");
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DeleteTeamCommand(id), cancellationToken);
+        return NoContent();
     }
 }
