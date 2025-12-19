@@ -1,39 +1,53 @@
-using MediatR;
-using FootballScore.API.Data;
 using FootballScore.API.Entities;
-using System.Reflection;
+using FootballScore.API.Features.Teams;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using FootballScore.API.Features.Teams.GetAllTeams;
+using FootballScore.API.Data;
 
 namespace FootballScore.API.Features.Teams.CreateTeam;
 
-public class CreateTeamHandler : IRequestHandler<CreateTeamCommand, int>
+public sealed class CreateTeamCommandHandler : IRequestHandler<CreateTeamCommand, TeamDto>
 {
-    private readonly AppDbContext _context;
+    private readonly AppDbContext _dbContext;
 
-    public CreateTeamHandler(AppDbContext context)
-    {
-        _context = context;
-    }
+    public CreateTeamCommandHandler(AppDbContext dbContext) => _dbContext = dbContext;
 
-    public async Task<int> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
+    public async Task<TeamDto> Handle(CreateTeamCommand request, CancellationToken cancellationToken)
     {
-        var r = request.Request;
+        var name = request.Name?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Team name is required.");
+
+        var exist = await _dbContext.Teams.AnyAsync(t => t.Name == name, cancellationToken);
+
+        if (exist) throw new ArgumentException("Team with this name aldready exist.");
 
         var team = new Team
         {
-            Name = r.Name,
-            Played = r.Played,
-            Wins = r.Wins,
-            Draws = r.Draws,
-            Loses = r.Loses,
-            GoalsFor = r.GoalsFor,
-            GoalsAgainst = r.GoalsAgainst,
-            Points = r.Wins * 3 + r.Draws,
-
+            Name = name,
+            Played = 0,
+            Wins = 0,
+            Draws = 0,
+            Loses = 0,
+            GoalsFor = 0,
+            GoalsAgainst = 0,
+            Points = 0
         };
 
-        _context.Teams.Add(team);
-        await _context.SaveChangesAsync(cancellationToken);
+        _dbContext.Teams.Add(team);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return team.Id;
+        return new TeamDto(
+            team.Id,
+            team.Name,
+            team.Played,
+            team.Wins,
+            team.Draws,
+            team.Loses,
+            team.GoalsFor,
+            team.GoalsAgainst,
+            team.Points
+        );
     }
 }

@@ -2,15 +2,8 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using FootballScore.API.Features.Teams.GetAllTeams;
 using FootballScore.API.Features.Teams.GetTeamById;
-using System.Security.Cryptography.X509Certificates;
-using System.Linq.Expressions;
-using System.Xml;
-using System.Net.Http.Headers;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
-using System.Globalization;
-using Microsoft.VisualBasic;
-using System.IO.Pipelines;
+using FootballScore.API.Features.Teams.CreateTeam;
+
 
 namespace FootballScore.API.Controllers;
 
@@ -36,5 +29,13 @@ public class TeamsController : ControllerBase
         if (result is null) return NotFound();
 
         return Ok(result);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<TeamDto>> Create([FromBody] CreateTeamRequest request, CancellationToken cancellationToken)
+    {
+        var created = await _mediator.Send(new CreateTeamCommand(request.Name), cancellationToken);
+
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 }
