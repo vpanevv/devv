@@ -1,6 +1,7 @@
-using System.Net;
 using MediatR;
+using FootballScore.API.Features.Teams;
+using FootballScore.API.Features.Teams.GetAllTeams;
 
 namespace FootballScore.API.Features.Teams.CreateTeam;
 
-public record CreateTeamCommand(CreateTeamRequest Request) : IRequest<int>;
+public sealed record CreateTeamCommand(string Name) : IRequest<TeamDto>;
