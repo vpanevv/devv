@@ -18,7 +18,7 @@ builder.Services.AddMediatR(cfg =>
 // Controllers
 builder.Services.AddControllers();
 
-builder.Services.AddScoped<TeamStatsService>();
+builder.Services.AddScoped<TeamStatsService>(); // TeamStatsService registration
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
