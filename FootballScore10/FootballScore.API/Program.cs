@@ -3,6 +3,7 @@ using MediatR;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using FootballScore.API.Entities;
+using FootballScore.API.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,8 @@ builder.Services.AddMediatR(cfg =>
 
 // Controllers
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<TeamStatsService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
