@@ -14,14 +14,14 @@ public sealed class TeamStatsService
         var team = await _dbContext.Teams.FirstOrDefaultAsync(t => t.Id == teamId, cancellationToken);
         if (team is null) return;
 
-        var mathes = await _dbContext.Matches
+        var matches = await _dbContext.Matches
             .AsNoTracking()
             .Where(m => m.HomeTeamId == teamId || m.AwayTeamId == teamId)
             .ToListAsync(cancellationToken);
 
-        int played = mathes.Count;
-        int wins = 0, draws = 0, losses = 0;
-        int goalsFor = 0, goalsAgainst = 0, point = 0;
+        int played = matches.Count;
+        int wins = 0, draws = 0, loses = 0;
+        int goalsFor = 0, goalsAgainst = 0, points = 0;
 
         foreach (var match in matches)
         {
@@ -34,13 +34,13 @@ public sealed class TeamStatsService
 
             if (gf > ga) { wins++; points += 3; }
             else if (gf == ga) { draws++; points += 1; }
-            else { losses++; }
+            else { loses++; }
         }
 
-        team.MatchesPlayed = played;
+        team.Played = played;
         team.Wins = wins;
         team.Draws = draws;
-        team.Losses = losses;
+        team.Loses = loses;
         team.GoalsFor = goalsFor;
         team.GoalsAgainst = goalsAgainst;
         team.Points = points;
