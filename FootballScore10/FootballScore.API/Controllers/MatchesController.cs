@@ -2,6 +2,10 @@ using System.Data.Common;
 using FootballScore.API.Features.Matches.CreateMatch;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using FootballScore.API.Features.Matches.UpdateMatch;
+using System.Diagnostics.CodeAnalysis;
+using System.Data;
+using FootballScore.API.Features.Matches.DeleteMatch;
 
 namespace FootballScore.API.Controllers;
 
@@ -24,5 +28,26 @@ public sealed class MatchesController : ControllerBase
             request.DatePlayed), cancellationToken);
 
         return Ok(matchId);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateMatchRequest request, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new UpdateMatchCommand(
+            id,
+            request.HomeTeamId,
+            request.AwayTeamId,
+            request.HomeGoals,
+            request.AwayGoals,
+            request.DatePlayed), cancellationToken);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DeleteMatchCommand(id), cancellationToken);
+        return NoContent();
     }
 }
