@@ -2,13 +2,19 @@ using FootballScore.API.Data;
 using FootballScore.API.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using FootballScore.API.Infrastructure;
 
 namespace FootballScore.API.Features.Matches.CreateMatch;
 
 public sealed class CreateMatchCommandHandler : IRequestHandler<CreateMatchCommand, int>
 {
     private readonly AppDbContext _dbContext;
-    public CreateMatchCommandHandler(AppDbContext dbContext) => _dbContext = dbContext;
+    private readonly TeamStatsService _teamStatsService;
+    public CreateMatchCommandHandler(AppDbContext dbContext, TeamStatsService teamStatsService)
+    {
+        _dbContext = dbContext;
+        _teamStatsService = teamStatsService;
+    }
 
     public async Task<int> Handle(CreateMatchCommand request, CancellationToken cancellationToken)
     {
@@ -37,6 +43,9 @@ public sealed class CreateMatchCommandHandler : IRequestHandler<CreateMatchComma
 
         _dbContext.Matches.Add(match);
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        await _teamStatsService.RecalculateAsync(request.HomeTeamId, cancellationToken);
+        await _teamStatsService.RecalculateAsync(request.AwayTeamId, cancellationToken);
 
         return match.Id;
     }
