@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using FootballScore.API.Features.Matches.UpdateMatch;
 using System.Diagnostics.CodeAnalysis;
 using System.Data;
+using FootballScore.API.Features.Matches.DeleteMatch;
 
 namespace FootballScore.API.Controllers;
 
@@ -40,6 +41,13 @@ public sealed class MatchesController : ControllerBase
             request.AwayGoals,
             request.DatePlayed), cancellationToken);
 
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DeleteMatchCommand(id), cancellationToken);
         return NoContent();
     }
 }
