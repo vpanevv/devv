@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices.Marshalling;
 using FootballScore.API.Data;
 using Microsoft.EntityFrameworkCore;
 

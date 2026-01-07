@@ -1,5 +1,4 @@
 using FootballScore.API.Entities;
-using FootballScore.API.Features.Teams;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using FootballScore.API.Features.Teams.GetAllTeams;

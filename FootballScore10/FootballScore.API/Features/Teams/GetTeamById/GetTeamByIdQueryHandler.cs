@@ -1,6 +1,4 @@
-using System.Runtime.CompilerServices;
 using FootballScore.API.Data;
-using FootballScore.API.Features.Teams;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using FootballScore.API.Features.Teams.GetAllTeams;

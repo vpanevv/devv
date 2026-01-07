@@ -5,10 +5,6 @@ using FootballScore.API.Features.Teams.GetTeamById;
 using FootballScore.API.Features.Teams.CreateTeam;
 using FootballScore.API.Features.Teams.UpdateTeam;
 using FootballScore.API.Features.Teams.DeleteTeam;
-using System.Security.Cryptography.X509Certificates;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Net.Http.Headers;
 
 
 namespace FootballScore.API.Controllers;
