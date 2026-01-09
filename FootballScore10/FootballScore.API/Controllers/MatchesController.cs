@@ -1,10 +1,7 @@
-using System.Data.Common;
 using FootballScore.API.Features.Matches.CreateMatch;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using FootballScore.API.Features.Matches.UpdateMatch;
-using System.Diagnostics.CodeAnalysis;
-using System.Data;
 using FootballScore.API.Features.Matches.DeleteMatch;
 
 namespace FootballScore.API.Controllers;

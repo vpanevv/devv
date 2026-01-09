@@ -1,4 +1,3 @@
-using System.Net;
 using MediatR;
 
 namespace FootballScore.API.Features.Teams.DeleteTeam;

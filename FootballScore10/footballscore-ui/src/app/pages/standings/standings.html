@@ -1,0 +1,41 @@
+<div class="page">
+    <div class="header">
+        <h1>Standings</h1>
+        <p class="sub">League table</p>
+    </div>
+
+    <div *ngIf="isLoading" class="state">Loading…</div>
+    <div *ngIf="error" class="state error">{{ error }}</div>
+
+    <div *ngIf="!isLoading && !error" class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="num">#</th>
+                    <th>Team</th>
+                    <th class="num">P</th>
+                    <th class="num">W</th>
+                    <th class="num">D</th>
+                    <th class="num">L</th>
+                    <th class="num">GD</th>
+                    <th class="num">Pts</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr *ngFor="let x of items">
+                    <td class="num"><b>{{ x.position }}</b></td>
+                    <td class="team">{{ x.name }}</td>
+                    <td class="num">{{ x.played }}</td>
+                    <td class="num">{{ x.wins }}</td>
+                    <td class="num">{{ x.draws }}</td>
+                    <td class="num">{{ x.loses }}</td>
+                    <td class="num" [ngClass]="gdClass(x.goalDifference)">
+                        {{ gdLabel(x.goalDifference) }}
+                    </td>
+                    <td class="num pts"><b>{{ x.points }}</b></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
