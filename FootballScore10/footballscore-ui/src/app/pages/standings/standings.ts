@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StandingsService, StandingDto } from '../../api/standings.service';
 
@@ -14,7 +14,7 @@ export class StandingComponent implements OnInit {
     isLoading = true;
     error: string | null = null;
 
-    constructor(private standingsService: StandingsService) { }
+    constructor(private standingsService: StandingsService, private cdr: ChangeDetectorRef) { }
 
     ngOnInit(): void {
         console.log('ngOnInit fired');
@@ -23,11 +23,13 @@ export class StandingComponent implements OnInit {
                 console.log('API OK', data);
                 this.items = data ?? [];
                 this.isLoading = false;
+                this.cdr.detectChanges();
             },
             error: (err) => {
                 console.error('API Error', err);
                 this.error = 'Failed to load standings';
                 this.isLoading = false;
+                this.cdr.detectChanges();
             }
         })
     }
