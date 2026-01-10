@@ -1,0 +1,55 @@
+.page {
+    padding: 24px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.header h1 {
+    margin: 0;
+}
+
+.sub {
+    margin: 6px 0 0;
+    opacity: 0.7;
+}
+
+.card {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid #e6e6e6;
+    border-radius: 12px;
+}
+
+.field {
+    display: grid;
+    gap: 8px;
+}
+
+input {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+}
+
+.hint {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+button {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+}
+
+.state.error {
+    color: #b00020;
+    margin-top: 12px;
+}

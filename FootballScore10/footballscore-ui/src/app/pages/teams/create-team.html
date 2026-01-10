@@ -1,0 +1,26 @@
+<div class="page">
+    <div class="header">
+        <h1>Create Team</h1>
+        <p class="sub">Add a new team to the league</p>
+    </div>
+
+    <div *ngIf="error" class="state error">{{ error }}</div>
+
+    <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="field">
+            <label>Team name</label>
+            <input type="text" formControlName="name" placeholder="e.g. Arsenal" />
+            <div class="hint" *ngIf="form.controls['name'].touched && form.controls['name'].invalid">
+                <span *ngIf="form.controls['name'].errors?.['required']">Name is required.</span>
+                <span *ngIf="form.controls['name'].errors?.['minlength']">Min 2 characters.</span>
+                <span *ngIf="form.controls['name'].errors?.['maxlength']">Max 50 characters.</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" [disabled]="isSaving">
+                {{ isSaving ? 'Saving…' : 'Create' }}
+            </button>
+        </div>
+    </form>
+</div>

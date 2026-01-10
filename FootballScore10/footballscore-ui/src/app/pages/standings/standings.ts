@@ -1,11 +1,12 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StandingsService, StandingDto } from '../../api/standings.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
     selector: 'app-standings',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, RouterLink],
     templateUrl: './standings.html',
     styleUrls: ['./standings.scss']
 })
