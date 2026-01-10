@@ -1,82 +1,23 @@
-.page {
-    padding: 24px;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.header {
-    margin-bottom: 16px;
-}
-
-.sub {
-    opacity: 0.75;
-    margin-top: 4px;
-}
-
-.state {
-    padding: 16px;
-}
-
-.state.error {
-    color: #b00020;
-}
-
-.card {
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    border-radius: 14px;
-    overflow: hidden;
-}
-
-.table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.table th,
-.table td {
-    padding: 12px 12px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.table thead th {
-    text-align: left;
-    font-weight: 600;
-    background: rgba(0, 0, 0, 0.03);
-}
-
-.num {
-    text-align: right;
-    width: 70px;
+.page-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 10px 0 14px;
 }
 
 .team {
-    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.pts {
-    width: 80px;
-}
-
-.pos {
-    color: #1b5e20;
-    font-weight: 600;
-}
-
-.neg {
-    color: #b71c1c;
-    font-weight: 600;
-}
-
-.zero {
-    opacity: 0.8;
-}
-
-.btn {
-    display: inline-block;
-    padding: 8px 14px;
-    background: #1976d2;
-    color: white;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
+.team .badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    background: rgba(79, 140, 255, .14);
+    border: 1px solid rgba(79, 140, 255, .22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
 }
