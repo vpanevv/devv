@@ -36,9 +36,20 @@ public class TeamsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<TeamDto>> Create([FromBody] CreateTeamRequest request, CancellationToken cancellationToken)
     {
-        var created = await _mediator.Send(new CreateTeamCommand(request.Name), cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var created = await _mediator.Send(new CreateTeamCommand(request.Name), cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
+        // var created = await _mediator.Send(new CreateTeamCommand(request.Name), cancellationToken);
+
+        // return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:int}")]

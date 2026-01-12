@@ -21,3 +21,96 @@
     justify-content: center;
     font-weight: 800;
 }
+
+.page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px;
+}
+
+/* Add Team toolbar */
+.toolbar {
+    margin: 24px 0 18px 0;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 7px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+/* Edit */
+.btn-edit {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.btn-edit:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+/* Delete */
+.btn-delete {
+    background: rgba(255, 70, 70, 0.15);
+    color: #ff5c5c;
+    border: 1px solid rgba(255, 70, 70, 0.4);
+}
+
+.btn-delete:hover {
+    background: rgba(255, 70, 70, 0.25);
+    color: #fff;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    z-index: 50;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    z-index: 60;
+    padding: 24px;
+}
+
+.modal-card {
+    width: min(520px, 100%);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    background: rgba(20, 24, 32, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.modal-text {
+    margin: 0 0 16px;
+    opacity: 0.9;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
