@@ -15,6 +15,8 @@ export class StandingComponent implements OnInit {
     items: StandingDto[] = [];
     isLoading = true;
     error: string | null = null;
+    confirmOpen = false;
+    pendingDelete: { id: number, name: string } | null = null;
 
     constructor(
         private standingsService: StandingsService,
@@ -45,19 +47,32 @@ export class StandingComponent implements OnInit {
         });
     }
 
-    deleteTeam(teamId: number): void {
-        if (!teamId) return;
+    openDelete(teamId: number, teamName: string): void {
+        this.error = null;
+        this.pendingDelete = { id: teamId, name: teamName };
+        this.confirmOpen = true;
+    }
 
-        const ok = confirm('Delete this team? This cannot be undone.');
-        if (!ok) return;
+    closeDelete(): void {
+        this.confirmOpen = false;
+        this.pendingDelete = null;
+    }
 
-        this.teams.deleteTeam(teamId).subscribe({
-            next: () => this.load(),
+    confirmDelete(): void {
+        if (!this.pendingDelete) return;
+
+        const id = this.pendingDelete.id;
+
+        this.teams.deleteTeam(id).subscribe({
+            next: () => {
+                this.closeDelete();
+                this.load(); // reload standings
+            },
             error: (err) => {
                 console.error(err);
                 this.error = 'Failed to delete team';
-                this.cdr.detectChanges();
-            },
+                this.closeDelete();
+            }
         });
     }
 

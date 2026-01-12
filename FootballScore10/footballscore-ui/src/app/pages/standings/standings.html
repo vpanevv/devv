@@ -40,17 +40,28 @@
                             {{ gdLabel(x.goalDifference) }}
                         </td>
                         <td class="num pts"><b>{{ x.points }}</b></td>
-                        <!-- <td class="num">
-                            <a class="btn" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
-                            <button class="btn btn-danger" (click)="deleteTeam(x.teamId)">Delete</button>
-                        </td> -->
                         <td class="actions">
                             <a class="btn btn-edit" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
-                            <button class="btn btn-delete" (click)="deleteTeam(x.teamId)">Delete</button>
+                            <button class="btn btn-delete" (click)="openDelete(x.teamId, x.name)">Delete</button>
                         </td>
                     </tr>
                 </tbody>
             </table>
+            <div class="modal-backdrop" *ngIf="confirmOpen" (click)="closeDelete()"></div>
+
+            <div class="modal" *ngIf="confirmOpen" role="dialog" aria-modal="true">
+                <div class="modal-card" (click)="$event.stopPropagation()">
+                    <h3 class="modal-title">Delete team?</h3>
+                    <p class="modal-text">
+                        Are you sure you want to delete <b>{{ pendingDelete?.name }}</b>? This cannot be undone.
+                    </p>
+
+                    <div class="modal-actions">
+                        <button class="btn" type="button" (click)="closeDelete()">Cancel</button>
+                        <button class="btn btn-delete" type="button" (click)="confirmDelete()">Delete</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

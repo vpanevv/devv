@@ -21,7 +21,8 @@
             </div>
 
             <div class="actions">
-                <a class="btn" routerLink="/standings">Cancel</a>
+                <!-- <a class="btn" routerLink="/standings">Cancel</a> -->
+                <button type="button" class="btn" (click)="cancel()">Cancel</button>
                 <button class="btn btn-primary" type="submit" [disabled]="isSaving">
                     {{ isSaving ? 'Saving…' : 'Create' }}
                 </button>
