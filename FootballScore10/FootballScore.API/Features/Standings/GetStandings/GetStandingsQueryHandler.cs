@@ -21,6 +21,7 @@ public sealed class GetStandingsQueryHandler : IRequestHandler<GetStandingsQuery
             .ThenBy(t => t.Name)
             .Select(t => new
             {
+                TeamId = t.Id,
                 TeamName = t.Name ?? string.Empty,
                 t.Played,
                 t.Wins,
@@ -35,6 +36,7 @@ public sealed class GetStandingsQueryHandler : IRequestHandler<GetStandingsQuery
         return items
             .Select((x, index) => new StandingDto(
                 Position: index + 1,
+                TeamId: x.TeamId,
                 Name: x.TeamName,
                 Played: x.Played,
                 Wins: x.Wins,

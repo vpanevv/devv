@@ -4,6 +4,7 @@ import { Observable } from "rxjs";
 
 export interface StandingDto {
     position: number;
+    teamId: number;
     name: string,
     played: number,
     wins: number,
