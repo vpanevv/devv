@@ -3,7 +3,10 @@
         <div class="header">
             <h1>Standings</h1>
             <p class="sub">League table</p>
-            <a routerLink="/teams/create" class="btn">+ Add Team</a>
+        </div>
+
+        <div class="toolbar">
+            <a routerLink="/teams/create" class="btn btn-primary">+ Add Team</a>
         </div>
 
         <div *ngIf="isLoading" class="state">Loading…</div>
@@ -37,9 +40,13 @@
                             {{ gdLabel(x.goalDifference) }}
                         </td>
                         <td class="num pts"><b>{{ x.points }}</b></td>
-                        <td class="num">
+                        <!-- <td class="num">
                             <a class="btn" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
                             <button class="btn btn-danger" (click)="deleteTeam(x.teamId)">Delete</button>
+                        </td> -->
+                        <td class="actions">
+                            <a class="btn btn-edit" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
+                            <button class="btn btn-delete" (click)="deleteTeam(x.teamId)">Delete</button>
                         </td>
                     </tr>
                 </tbody>
