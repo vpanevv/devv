@@ -55,7 +55,7 @@ public class TeamsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<TeamDto>> Update(int id, [FromBody] UpdateTeamCommand command, CancellationToken cancellationToken)
     {
-        if (id != command.Id) return BadRequest("Route id must match body id");
+        if (id != command.Id) return BadRequest("Team with this name aldready exist.");
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(result);
     }

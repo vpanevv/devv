@@ -1,68 +1,86 @@
-<div class="container">
-    <div class="page">
-        <div class="header">
-            <h1>Standings</h1>
-            <p class="sub">League table</p>
-        </div>
+<div class="page">
+    <!-- HEADER -->
+    <div class="hero">
+        <div class="heroLeft">
+            <h1>League table standing</h1>
 
-        <div class="toolbar">
-            <a routerLink="/teams/create" class="btn btn-primary">+ Add Team</a>
-        </div>
-
-        <div *ngIf="isLoading" class="state">Loading…</div>
-        <div *ngIf="error" class="state error">{{ error }}</div>
-
-        <div *ngIf="!isLoading && !error" class="card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th class="num">#</th>
-                        <th>Team</th>
-                        <th class="num">P</th>
-                        <th class="num">W</th>
-                        <th class="num">D</th>
-                        <th class="num">L</th>
-                        <th class="num">GD</th>
-                        <th class="num">Pts</th>
-                        <th class="num">Actions</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    <tr *ngFor="let x of items">
-                        <td class="num"><b>{{ x.position }}</b></td>
-                        <td class="team">{{ x.name }}</td>
-                        <td class="num">{{ x.played }}</td>
-                        <td class="num">{{ x.wins }}</td>
-                        <td class="num">{{ x.draws }}</td>
-                        <td class="num">{{ x.loses }}</td>
-                        <td class="num" [ngClass]="gdClass(x.goalDifference)">
-                            {{ gdLabel(x.goalDifference) }}
-                        </td>
-                        <td class="num pts"><b>{{ x.points }}</b></td>
-                        <td class="actions">
-                            <a class="btn btn-edit" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
-                            <button class="btn btn-delete" (click)="openDelete(x.teamId, x.name)">Delete</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="modal-backdrop" *ngIf="confirmOpen" (click)="closeDelete()"></div>
-
-            <div class="modal" *ngIf="confirmOpen" role="dialog" aria-modal="true">
-                <div class="modal-card" (click)="$event.stopPropagation()">
-                    <h3 class="modal-title">Delete team?</h3>
-                    <p class="modal-text">
-                        Are you sure you want to delete <b>{{ pendingDelete?.name }}</b>? This cannot be undone.
-                    </p>
-
-                    <div class="modal-actions">
-                        <button class="btn" type="button" (click)="closeDelete()">Cancel</button>
-                        <button class="btn btn-delete" type="button" (click)="confirmDelete()">Delete</button>
-                    </div>
-                </div>
-            </div>
+            <a class="btn btnPrimary" routerLink="/teams/create">+ Add Team</a>
         </div>
     </div>
 
+    <!-- STATES -->
+    <div *ngIf="isLoading" class="state">Loading…</div>
+    <div *ngIf="error" class="state error">{{ error }}</div>
+
+    <!-- TABLE CARD -->
+    <div *ngIf="!isLoading && !error" class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="num">#</th>
+                    <th>Team</th>
+                    <th class="num">P</th>
+                    <th class="num">W</th>
+                    <th class="num">D</th>
+                    <th class="num">L</th>
+                    <th class="num">GD</th>
+                    <th class="num">Pts</th>
+                    <th class="num">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr *ngFor="let x of items">
+                    <td class="num"><b>{{ x.position }}</b></td>
+
+                    <td>
+                        <div class="teamCell">
+                            <span class="badge" aria-hidden="true"></span>
+                            <span class="teamName">{{ x.name }}</span>
+                        </div>
+                    </td>
+
+                    <td class="num">{{ x.played }}</td>
+                    <td class="num">{{ x.wins }}</td>
+                    <td class="num">{{ x.draws }}</td>
+                    <td class="num">{{ x.loses }}</td>
+
+                    <td class="num" [ngClass]="gdClass(x.goalDifference)">
+                        {{ gdLabel(x.goalDifference) }}
+                    </td>
+
+                    <td class="num pts"><b>{{ x.points }}</b></td>
+
+                    <td class="num">
+                        <div class="actions">
+                            <a class="actionBtn" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
+
+                            <button type="button" class="actionBtn danger" (click)="openDelete(x.teamId, x.name)">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- DELETE CONFIRM MODAL (custom, вместо browser confirm) -->
+    <div *ngIf="confirmOpen" class="modalOverlay" (click)="closeDelete()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modalTitle">Delete team</div>
+
+            <div class="modalText">
+                Are you sure you want to delete
+                <b>{{ pendingDelete?.name }}</b>? This cannot be undone.
+            </div>
+
+            <div class="modalActions">
+                <button type="button" class="btn" (click)="closeDelete()">Cancel</button>
+                <button type="button" class="btn btnDanger" (click)="confirmDelete()">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
 </div>

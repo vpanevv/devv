@@ -19,7 +19,6 @@ export interface CreateTeamRequest {
 }
 
 export interface UpdateTeamRequest {
-    id: number;
     name: string;
 }
 
