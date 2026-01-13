@@ -60,9 +60,20 @@ public class TeamsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        await _mediator.Send(new DeleteTeamCommand(id), cancellationToken);
-        return NoContent();
+        try
+        {
+            await _mediator.Send(new DeleteTeamCommand(id), ct);
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message); // <-- вместо 500
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 }

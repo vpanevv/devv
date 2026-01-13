@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { StandingsService, StandingDto } from '../../api/standings.service';
 import { TeamsService } from '../../api/team.service';
+import { finalize } from 'rxjs';
 
 @Component({
     selector: 'app-standings',
@@ -17,6 +18,7 @@ export class StandingComponent implements OnInit {
     error: string | null = null;
     confirmOpen = false;
     pendingDelete: { id: number, name: string } | null = null;
+    isDeleting = false;
 
     constructor(
         private standingsService: StandingsService,
@@ -59,21 +61,32 @@ export class StandingComponent implements OnInit {
     }
 
     confirmDelete(): void {
-        if (!this.pendingDelete) return;
+        if (!this.pendingDelete || this.isDeleting) return;
 
+        this.isDeleting = true;
         const id = this.pendingDelete.id;
 
-        this.teams.deleteTeam(id).subscribe({
-            next: () => {
-                this.closeDelete();
-                this.load(); // reload standings
-            },
-            error: (err) => {
-                console.error(err);
-                this.error = 'Failed to delete team';
-                this.closeDelete();
-            }
-        });
+        this.teams.deleteTeam(id)
+            .pipe(finalize(() => {
+                this.isDeleting = false;
+                this.cdr.detectChanges();
+            }))
+            .subscribe({
+                next: () => {
+                    this.closeDelete();
+                    this.load();
+                },
+                error: (err) => {
+                    console.error(err);
+
+                    // ако бекендът връща string message (както при вас)
+                    this.error = (err?.status === 400 && typeof err.error === 'string')
+                        ? err.error
+                        : 'Failed to delete team';
+
+                    this.closeDelete();
+                }
+            });
     }
 
     gdClass(gd: number): string {
