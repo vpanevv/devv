@@ -70,7 +70,10 @@ export class EditTeamComponent implements OnInit {
                 this.cdr.detectChanges();
             }))
             .subscribe({
-                next: () => this.router.navigateByUrl('/standings'),
+                next: () => {
+                    this.error = null;
+                    this.router.navigateByUrl('/standings')
+                },
                 error: (err) => {
                     console.error('API Error', err);
 
