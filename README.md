@@ -85,5 +85,5 @@ cd FootballScore.API
 dotnet restore
 dotnet run
 
- ▶ API will start on:
+ ## API will start on:
  http://localhost:5119
