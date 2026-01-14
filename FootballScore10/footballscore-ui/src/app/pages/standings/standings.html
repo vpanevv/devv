@@ -124,8 +124,9 @@
         </table>
 
         <!-- Match success modal -->
-        <div *ngIf="matchSuccessOpen && lastMatch" class="modalOverlay" (click)="closeMatchSuccess()">
-            <div class="modal" (click)="$event.stopPropagation()">
+        <div *ngIf="matchSuccessOpen && lastMatch" class="modalOverlay modalOverlay--enter"
+            (click)="closeMatchSuccess()">
+            <div class="modal modal--enter" (click)="$event.stopPropagation()">
                 <div class="modalHeader">
                     <div class="modalTitle">Match played</div>
                     <button type="button" class="iconBtn" (click)="closeMatchSuccess()">✕</button>
@@ -138,7 +139,7 @@
                     </div>
 
                     <div class="scoreBlock">
-                        <div class="score">{{ lastMatch.homeGoals }} : {{ lastMatch.awayGoals }}</div>
+                        <div class="score score--pop">{{ lastMatch.homeGoals }} : {{ lastMatch.awayGoals }}</div>
                         <div class="meta">Date: {{ lastMatch.datePlayed }}</div>
                     </div>
 
