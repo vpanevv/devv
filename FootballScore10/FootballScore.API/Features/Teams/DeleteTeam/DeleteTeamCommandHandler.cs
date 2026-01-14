@@ -15,6 +15,12 @@ public sealed class DeleteTeamCommandHandler : IRequestHandler<DeleteTeamCommand
 
         if (team is null) throw new KeyNotFoundException($"Team with id {request.Id} not found.");
 
+        var hasMatches = await _dbContext.Matches
+        .AnyAsync(m => m.HomeTeamId == request.Id || m.AwayTeamId == request.Id, cancellationToken);
+
+        if (hasMatches)
+            throw new ArgumentException("Cannot delete a team that has played matches. Delete its matches first.");
+
         _dbContext.Teams.Remove(team);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
