@@ -48,20 +48,6 @@ This repository represents my growth as a developer and contains real projects b
 
 ---
 
-## 📂 Repository Structure
-
-This repository contains multiple projects, including:
-
-- **FootballScore** — Football league management system (API + Angular UI)
-- Interview tasks
-- Practice systems
-- Architecture experiments
-- Full-stack demo applications
-
-Each project has its own README with setup instructions and architecture explanation.
-
----
-
 ## 🎯 Purpose of This Repository
 
 - Practice modern .NET & Angular development
@@ -74,7 +60,9 @@ Each project has its own README with setup instructions and architecture explana
 
 ## 📫 Contact
 
-Feel free to connect with me on LinkedIn or GitHub.
+You can find me on LinkedIn: 
+
+🔗 **LinkedIn:** https://www.linkedin.com/in/vpanev
 
 This repository is continuously evolving as I grow as a developer.
 
