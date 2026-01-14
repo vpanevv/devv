@@ -1,19 +1,76 @@
-<div class="page">
-    <!-- HEADER -->
-    <div class="hero">
-        <div class="heroLeft">
-            <h1>League table standing</h1>
+<div class="container">
 
-            <a class="btn btnPrimary" routerLink="/teams/create">+ Add Team</a>
+    <!-- Header -->
+    <div class="hero">
+        <div class="heroTitle">League table standing</div>
+
+        <div class="heroActions">
+            <a class="btn btn-primary" routerLink="/teams/create">+ Add Team</a>
+        </div>
+    </div>
+
+    <!-- CREATE MATCH CARD -->
+    <div class="card matchCard">
+        <div class="cardTitle">Create match</div>
+        <div class="cardSub">Pick teams, enter score, save — standings will update.</div>
+
+        <div *ngIf="matchError" class="alert error">{{ matchError }}</div>
+
+        <!-- FORM -->
+        <form id="matchFormEl" class="matchGrid" [formGroup]="matchForm" (ngSubmit)="createMatch()">
+            <div class="field">
+                <label class="label">Home team</label>
+                <select class="select" formControlName="homeTeamId">
+                    <option [ngValue]="null" disabled>Select team…</option>
+                    <option *ngFor="let t of items" [ngValue]="t.teamId">
+                        {{ t.name }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label class="label">Away team</label>
+                <select class="select" formControlName="awayTeamId">
+                    <option [ngValue]="null" disabled>Select team…</option>
+                    <option *ngFor="let t of items" [ngValue]="t.teamId">
+                        {{ t.name }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label class="label">Home goals</label>
+                <input class="input" type="number" min="0" formControlName="homeGoals" />
+            </div>
+
+            <div class="field">
+                <label class="label">Away goals</label>
+                <input class="input" type="number" min="0" formControlName="awayGoals" />
+            </div>
+
+            <div class="field">
+                <label class="label">Date played</label>
+                <input class="input" type="date" formControlName="datePlayed" />
+            </div>
+        </form>
+
+        <!-- ACTIONS -->
+        <div class="matchActions">
+            <button type="button" class="btn" (click)="swapTeams()">Swap</button>
+
+            <!-- Variant A: submit button извън form -->
+            <button class="btn btn-primary" type="submit" form="matchFormEl" [disabled]="isCreatingMatch">
+                {{ isCreatingMatch ? 'Saving…' : 'Create match' }}
+            </button>
         </div>
     </div>
 
     <!-- STATES -->
     <div *ngIf="isLoading" class="state">Loading…</div>
-    <div *ngIf="error" class="state error">{{ error }}</div>
+    <div *ngIf="error" class="alert error">{{ error }}</div>
 
-    <!-- TABLE CARD -->
-    <div *ngIf="!isLoading && !error" class="card">
+    <!-- TABLE -->
+    <div *ngIf="!isLoading && !error" class="card tableCard">
         <table class="table">
             <thead>
                 <tr>
@@ -33,11 +90,9 @@
                 <tr *ngFor="let x of items">
                     <td class="num"><b>{{ x.position }}</b></td>
 
-                    <td>
-                        <div class="teamCell">
-                            <span class="badge" aria-hidden="true"></span>
-                            <span class="teamName">{{ x.name }}</span>
-                        </div>
+                    <td class="team">
+                        <span class="dot"></span>
+                        {{ x.name }}
                     </td>
 
                     <td class="num">{{ x.played }}</td>
@@ -52,10 +107,9 @@
                     <td class="num pts"><b>{{ x.points }}</b></td>
 
                     <td class="num">
-                        <div class="actions">
-                            <a class="actionBtn" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
-
-                            <button type="button" class="actionBtn danger" (click)="openDelete(x.teamId, x.name)">
+                        <div class="rowActions">
+                            <a class="btn btn-sm" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
+                            <button class="btn btn-sm btn-danger" type="button" (click)="openDelete(x.teamId, x.name)">
                                 Delete
                             </button>
                         </div>
@@ -63,24 +117,25 @@
                 </tr>
             </tbody>
         </table>
-    </div>
 
-    <!-- DELETE CONFIRM MODAL (custom, вместо browser confirm) -->
-    <div *ngIf="confirmOpen" class="modalOverlay" (click)="closeDelete()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <div class="modalTitle">Delete team</div>
-
-            <div class="modalText">
+        <!-- DELETE CONFIRM BAR -->
+        <div *ngIf="confirmOpen && pendingDelete" class="confirmBar">
+            <div class="confirmTitle">Delete team</div>
+            <div class="confirmText">
                 Are you sure you want to delete
-                <b>{{ pendingDelete?.name }}</b>? This cannot be undone.
+                <b>{{ pendingDelete.name }}</b>? This cannot be undone.
             </div>
 
-            <div class="modalActions">
-                <button type="button" class="btn" (click)="closeDelete()">Cancel</button>
-                <button type="button" class="btn btnDanger" (click)="confirmDelete()">
-                    Delete
+            <div class="confirmActions">
+                <button class="btn btn-sm" type="button" (click)="closeDelete()" [disabled]="isDeleting">
+                    Cancel
+                </button>
+
+                <button class="btn btn-sm btn-danger" type="button" (click)="confirmDelete()" [disabled]="isDeleting">
+                    {{ isDeleting ? 'Deleting…' : 'Delete' }}
                 </button>
             </div>
         </div>
     </div>
+
 </div>
