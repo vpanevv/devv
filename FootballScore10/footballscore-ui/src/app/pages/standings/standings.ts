@@ -26,6 +26,25 @@ export class StandingComponent implements OnInit {
     pendingDelete: { id: number; name: string } | null = null;
     isDeleting = false;
 
+    matchSuccessOpen = false;
+
+    lastMatch: {
+        homeTeam: string;
+        awayTeam: string;
+        homeGoals: number;
+        awayGoals: number;
+        datePlayed: string;
+    } | null = null;
+
+    private teamNameById(id: number): string {
+        return this.items.find(x => x.teamId === id)?.name ?? 'Unknown';
+    }
+
+    closeMatchSuccess(): void {
+        this.matchSuccessOpen = false;
+        this.lastMatch = null;
+    }
+
     // match create
     matchForm: FormGroup;
     isCreatingMatch = false;
@@ -185,6 +204,15 @@ export class StandingComponent implements OnInit {
             .subscribe({
                 next: (matchId: number) => {
                     this.matchSuccess = `Match created (#${matchId}). Standings updated.`;
+                    const v = this.matchForm.value as any;
+                    this.lastMatch = {
+                        homeTeam: this.teamNameById(Number(v.homeTeamId)),
+                        awayTeam: this.teamNameById(Number(v.awayTeamId)),
+                        homeGoals: Number(v.homeGoals),
+                        awayGoals: Number(v.awayGoals),
+                        datePlayed: String(v.datePlayed),
+                    }
+                    this.matchSuccessOpen = true;
                     // след мач: рефреш таблицата
                     this.load();
                 },

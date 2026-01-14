@@ -123,6 +123,38 @@
             </tbody>
         </table>
 
+        <!-- Match success modal -->
+        <div *ngIf="matchSuccessOpen && lastMatch" class="modalOverlay modalOverlay--enter"
+            (click)="closeMatchSuccess()">
+            <div class="modal modal--enter" (click)="$event.stopPropagation()">
+                <div class="modalHeader">
+                    <div class="modalTitle">Match played</div>
+                    <button type="button" class="iconBtn" (click)="closeMatchSuccess()">✕</button>
+                </div>
+
+                <div class="matchSummary">
+                    <div class="teamBlock">
+                        <div class="teamDot"></div>
+                        <div class="teamName">{{ lastMatch.homeTeam }}</div>
+                    </div>
+
+                    <div class="scoreBlock">
+                        <div class="score score--pop">{{ lastMatch.homeGoals }} : {{ lastMatch.awayGoals }}</div>
+                        <div class="meta">Date: {{ lastMatch.datePlayed }}</div>
+                    </div>
+
+                    <div class="teamBlock right">
+                        <div class="teamName">{{ lastMatch.awayTeam }}</div>
+                        <div class="teamDot"></div>
+                    </div>
+                </div>
+
+                <div class="modalActions">
+                    <button type="button" class="btn" (click)="closeMatchSuccess()">Close</button>
+                </div>
+            </div>
+        </div>
+
         <!-- DELETE CONFIRM BAR -->
         <div *ngIf="confirmOpen && pendingDelete" class="confirmBar">
             <div class="confirmTitle">Delete team</div>
