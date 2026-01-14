@@ -1,118 +1,117 @@
-# ⚽ FootballScore API  
-A clean, maintainable **.NET 5 Web API** for managing football match results and league standings.
+⚽ FootballScore
 
-This project was built using **CQRS + Mediator Pattern**, **Entity Framework Core**, **SQL Server (Docker)** and includes structured feature-based architecture, automatic standings calculation, and full Swagger documentation.
+Modern football league management platform built with ASP.NET Core Web API and Angular.
 
----
+FootballScore allows you to manage teams, create matches, track standings and automatically update the league table after each game.
 
-## 🚀 Features
+⸻
 
-### 🏆 Teams
-- Create a new team  
-- Update a team  
-- Delete a team  
-- Get all teams  
-- Get team statistics (matches played, wins, draws, losses, goals, points)
+✨ Features
+	•	✅ Create, edit and delete teams
+	•	✅ Live league standings
+	•	✅ Create matches between teams
+	•	✅ Automatic table updates after each match
+	•	✅ Validation and business rules
+	•	✅ Dark / Light theme toggle
+	•	✅ Modern UI inspired by Premier League design
 
-### ⚽ Matches (Played Only)
-- Record a played match  
-- Update an existing match  
-- Delete a match  
-- Automatically updates both teams’:
-  - Points  
-  - Wins / Draws / Losses  
-  - Goals For & Against  
-  - Played matches  
+⸻
 
-### 📊 Standings (League Table)
-- Returns all teams sorted by:
-  1. Points (descending)
-  2. Goal Difference (descending)
+🏗 Tech Stack
 
-### 🛡 Global Error Handling
-- Centralized exception middleware  
-- Converts internal exceptions into clean API error responses  
+Backend
+	•	ASP.NET Core Web API
+	•	Entity Framework Core
+	•	MediatR (CQRS)
+	•	PostgreSQL / SQL Server
+	•	Clean Architecture
 
-### 🗄 Database
-- SQL Server running in **Docker**  
-- Database schema created automatically via `EnsureCreated()`  
-- Works perfectly with **VS Code MSSQL Extension**  
+Frontend
+	•	Angular (Standalone Components)
+	•	Reactive Forms
+	•	Modern UI & custom design system
+	•	Dark / Light Theme
 
-### 🧱 Architecture
-- Feature-based folder structure  
-- CQRS  
-- Mediator Pattern (MediatR)  
-- Domain separated into clean aggregates (Teams, Matches)  
-- Services for shared logic (TeamStatisticsService)
+⸻
 
----
+📊 Domain Model
+	•	Team
+	•	Match
+	•	Standings
 
-## 🏗 Tech Stack
+Each match automatically updates:
+	•	Played matches
+	•	Wins / Draws / Losses
+	•	Goals for / against
+	•	Goal difference
+	•	Points
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | **ASP.NET Core 5.0** |
-| Architecture | **CQRS**, **Mediator Pattern** |
-| ORM | **Entity Framework Core 5** |
-| Database | **SQL Server 2019 (Docker)** |
-| Documentation | **Swagger / OpenAPI** |
-| DI | Built-in .NET Dependency Injection |
+⸻
 
----
+🚀 Getting Started
 
-## 📦 Project Structure
+Backend
 
-FootballScore.API
-│
-├── Controllers/
-│── Data/
-│   └── ApplicationDbContext.cs
-│
-├── Features/
-│   ├── Teams/
-│   │   ├── Commands/
-│   │   ├── Queries/
-│   │   └── Shared/
-│   ├── Matches/
-│   │   ├── Commands/
-│   │   ├── Queries/
-│   │   └── Shared/
-│   └── Standings/
-│
-├── Infrastructure/
-│   └── Services/
-│       └── TeamStatisticsService.cs
-│
-├── Models/
-├── Startup.cs
-├── Program.cs
-└── appsettings.json
+dotnet restore
+dotnet run
 
----
+API will run on:
 
-## 🐳 Running the Database via Docker
+http://localhost:4200/api
 
-## Database is created automatically on application startup 🎉
+Frontend
 
-### 1️⃣ Start SQL Server container:
+npm install
+npm start
 
-```bash
-docker run -e "ACCEPT_EULA=Y" \
-           -e "SA_PASSWORD=StrongPassw0rD!" \
-           -p 1433:1433 \
-           --name sqlserver \
-           -d mcr.microsoft.com/mssql/server:2019-latest
+Angular app runs on:
 
-```
+http://localhost:4200
 
- ## 📘 Swagger Documentation
 
-Once running, open:
+⸻
 
-👉 https://localhost:5188/swagger
+⚙️ Business Rules
+	•	Teams cannot have duplicate names
+	•	Teams that have played matches cannot be deleted
+	•	Matches require two different teams
+	•	Standings are recalculated automatically
 
-## Swagger UI allows you to test all endpoints:
-- Create teams
-- Play matches
-- Update standings
-- Get team statistics
+⸻
+
+🎨 UI Highlights
+	•	Premier League inspired table
+	•	Inline match creation form
+	•	Animated buttons and transitions
+	•	Custom confirmation dialogs
+	•	Responsive layout
+
+⸻
+
+🧠 Architecture
+	•	CQRS with MediatR
+	•	Clean separation of concerns
+	•	Feature-based folder structure
+	•	Reactive state updates
+
+⸻
+
+📌 Roadmap
+	•	Player management
+	•	Match events (goals, cards, assists)
+	•	Statistics dashboard
+	•	AI-powered match analysis
+	•	Club management system
+	•	SaaS deployment
+
+⸻
+
+👨‍💻 Author
+
+Built with ❤️ as a full-stack football analytics platform.
+
+⸻
+
+📄 License
+
+MIT License
