@@ -1,117 +1,89 @@
-⚽ FootballScore
+# ⚽ FootballScore
 
-Modern football league management platform built with ASP.NET Core Web API and Angular.
+FootballScore is a modern football league management web application built with **.NET Web API** and **Angular UI**.
 
-FootballScore allows you to manage teams, create matches, track standings and automatically update the league table after each game.
+The system allows you to manage teams, matches and automatically calculate league standings in real time.
 
-⸻
+---
 
-✨ Features
-	•	✅ Create, edit and delete teams
-	•	✅ Live league standings
-	•	✅ Create matches between teams
-	•	✅ Automatic table updates after each match
-	•	✅ Validation and business rules
-	•	✅ Dark / Light theme toggle
-	•	✅ Modern UI inspired by Premier League design
+## 🚀 Features
 
-⸻
+### 🏆 Standings
+- Automatic ranking by points
+- Goal difference and goals scored
+- League positions (1,2,3…)
+- Real-time updates after each match
 
-🏗 Tech Stack
+### 👥 Team Management
+- Create teams
+- Edit team names
+- Delete teams (with validation if matches exist)
+- Unique name validation
 
-Backend
-	•	ASP.NET Core Web API
-	•	Entity Framework Core
-	•	MediatR (CQRS)
-	•	PostgreSQL / SQL Server
-	•	Clean Architecture
+### ⚽ Match Management
+- Create matches between teams
+- Enter match results
+- Automatic team statistics recalculation
 
-Frontend
-	•	Angular (Standalone Components)
-	•	Reactive Forms
-	•	Modern UI & custom design system
-	•	Dark / Light Theme
+### 🎨 UI
+- Dark / Light theme toggle
+- Modern Premier League inspired design
+- Responsive layout
+- Standings table and match form on the same page
 
-⸻
+---
 
-📊 Domain Model
-	•	Team
-	•	Match
-	•	Standings
+## 🛠 Tech Stack
 
-Each match automatically updates:
-	•	Played matches
-	•	Wins / Draws / Losses
-	•	Goals for / against
-	•	Goal difference
-	•	Points
+### Backend
+- **.NET Web API**
+- **Entity Framework Core**
+- **MediatR (CQRS Pattern)**
+- **SQL Server**
+- Clean Architecture
 
-⸻
+### Frontend
+- **Angular (Standalone Components)**
+- Reactive Forms
+- RxJS
+- SCSS
+- Custom Theme System (Dark / Light)
 
-🚀 Getting Started
+---
 
-Backend
+## 🏗 Architecture
 
+### Backend Structure
+FootballScore.API
+├── Controllers
+├── Data (DbContext)
+├── Entities
+├── Features
+│   ├── Teams
+│   ├── Matches
+│   └── Standings
+└── Program.cs
+
+### Frontend Structure
+footballscore-ui
+├── pages
+│   ├── standings
+│   ├── teams
+│   └── matches
+├── api
+├── theme
+└── app.routes.ts
+
+---
+
+## ▶ Getting Started
+
+### Backend
+
+```bash
+cd FootballScore.API
 dotnet restore
 dotnet run
 
-API will run on:
-
-http://localhost:4200/api
-
-Frontend
-
-npm install
-npm start
-
-Angular app runs on:
-
-http://localhost:4200
-
-
-⸻
-
-⚙️ Business Rules
-	•	Teams cannot have duplicate names
-	•	Teams that have played matches cannot be deleted
-	•	Matches require two different teams
-	•	Standings are recalculated automatically
-
-⸻
-
-🎨 UI Highlights
-	•	Premier League inspired table
-	•	Inline match creation form
-	•	Animated buttons and transitions
-	•	Custom confirmation dialogs
-	•	Responsive layout
-
-⸻
-
-🧠 Architecture
-	•	CQRS with MediatR
-	•	Clean separation of concerns
-	•	Feature-based folder structure
-	•	Reactive state updates
-
-⸻
-
-📌 Roadmap
-	•	Player management
-	•	Match events (goals, cards, assists)
-	•	Statistics dashboard
-	•	AI-powered match analysis
-	•	Club management system
-	•	SaaS deployment
-
-⸻
-
-👨‍💻 Author
-
-Built with ❤️ as a full-stack football analytics platform.
-
-⸻
-
-📄 License
-
-MIT License
+ ▶ API will start on:
+ http://localhost:5119
