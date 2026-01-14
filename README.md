@@ -96,3 +96,26 @@ http://localhost:5119
 ```bash
 http://localhost:5119/swagger
 ```
+
+### Frontend: 
+
+```bash
+cd footballscore-ui
+npm install
+npm start
+```
+
+### UI will start on:
+
+```bash
+http://localhost:4200
+```
+
+--- 
+
+## 📌 How it works
+
+# 1. Create teams
+# 2. Create matches between teams
+# 3. Standings update automatically
+# 4. View the league table in real time
