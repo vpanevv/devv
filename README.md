@@ -1,118 +1,71 @@
-# ⚽ FootballScore API  
-A clean, maintainable **.NET 5 Web API** for managing football match results and league standings.
+# 👋 Hi, I'm Vladimir — Full Stack .NET & Angular Developer
 
-This project was built using **CQRS + Mediator Pattern**, **Entity Framework Core**, **SQL Server (Docker)** and includes structured feature-based architecture, automatic standings calculation, and full Swagger documentation.
+Welcome to my personal GitHub repository.
 
----
-
-## 🚀 Features
-
-### 🏆 Teams
-- Create a new team  
-- Update a team  
-- Delete a team  
-- Get all teams  
-- Get team statistics (matches played, wins, draws, losses, goals, points)
-
-### ⚽ Matches (Played Only)
-- Record a played match  
-- Update an existing match  
-- Delete a match  
-- Automatically updates both teams’:
-  - Points  
-  - Wins / Draws / Losses  
-  - Goals For & Against  
-  - Played matches  
-
-### 📊 Standings (League Table)
-- Returns all teams sorted by:
-  1. Points (descending)
-  2. Goal Difference (descending)
-
-### 🛡 Global Error Handling
-- Centralized exception middleware  
-- Converts internal exceptions into clean API error responses  
-
-### 🗄 Database
-- SQL Server running in **Docker**  
-- Database schema created automatically via `EnsureCreated()`  
-- Works perfectly with **VS Code MSSQL Extension**  
-
-### 🧱 Architecture
-- Feature-based folder structure  
-- CQRS  
-- Mediator Pattern (MediatR)  
-- Domain separated into clean aggregates (Teams, Matches)  
-- Services for shared logic (TeamStatisticsService)
+This repo contains my practice projects, experiments, and real-world applications built with modern backend and frontend technologies. It serves as my personal development lab where I continuously improve my skills and build production-ready systems.
 
 ---
 
-## 🏗 Tech Stack
+## 👨‍💻 About Me
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | **ASP.NET Core 5.0** |
-| Architecture | **CQRS**, **Mediator Pattern** |
-| ORM | **Entity Framework Core 5** |
-| Database | **SQL Server 2019 (Docker)** |
-| Documentation | **Swagger / OpenAPI** |
-| DI | Built-in .NET Dependency Injection |
+I'm **Vladimir**, a **Full Stack Developer** with **3+ years of experience** working with:
 
----
+- C# & .NET
+- Web APIs & MVC
+- SQL Server
+- Angular
+- Docker
 
-## 📦 Project Structure
+I focus mainly on backend development, but I also enjoy building clean and modern UIs with Angular.
 
-FootballScore.API
-│
-├── Controllers/
-│── Data/
-│   └── ApplicationDbContext.cs
-│
-├── Features/
-│   ├── Teams/
-│   │   ├── Commands/
-│   │   ├── Queries/
-│   │   └── Shared/
-│   ├── Matches/
-│   │   ├── Commands/
-│   │   ├── Queries/
-│   │   └── Shared/
-│   └── Standings/
-│
-├── Infrastructure/
-│   └── Services/
-│       └── TeamStatisticsService.cs
-│
-├── Models/
-├── Startup.cs
-├── Program.cs
-└── appsettings.json
+This repository represents my growth as a developer and contains real projects built with clean architecture, modern patterns, and best practices.
 
 ---
 
-## 🐳 Running the Database via Docker
+## 🚀 Tech Stack
 
-## Database is created automatically on application startup 🎉
+### Backend
+- **C#**
+- **.NET (Web API, MVC)**
+- **Entity Framework Core**
+- **MediatR (CQRS)**
+- **SQL Server**
+- **Docker**
 
-### 1️⃣ Start SQL Server container:
+### Frontend
+- **Angular**
+- TypeScript
+- RxJS
+- SCSS
 
-```bash
-docker run -e "ACCEPT_EULA=Y" \
-           -e "SA_PASSWORD=StrongPassw0rD!" \
-           -p 1433:1433 \
-           --name sqlserver \
-           -d mcr.microsoft.com/mssql/server:2019-latest
+### Tools & Practices
+- REST APIs
+- Clean Architecture
+- SOLID principles
+- Git & GitHub
+- Swagger
+- Docker Compose
 
-```
+---
 
- ## 📘 Swagger Documentation
+## 🎯 Purpose of This Repository
 
-Once running, open:
+- Practice modern .NET & Angular development
+- Build portfolio-ready projects
+- Experiment with architecture patterns
+- Prepare for technical interviews
+- Improve software engineering skills
 
-👉 https://localhost:5188/swagger
+---
 
-## Swagger UI allows you to test all endpoints:
-- Create teams
-- Play matches
-- Update standings
-- Get team statistics
+## 📫 Contact
+
+You can find me on LinkedIn: 
+
+🔗 **LinkedIn:** https://www.linkedin.com/in/vpanev
+
+This repository is continuously evolving as I grow as a developer.
+
+---
+
+> “Code is like humor. When you have to explain it, it’s bad.” — Cory House
