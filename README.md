@@ -119,3 +119,18 @@ http://localhost:4200
 - Create matches between teams
 - Standings update automatically
 - View the league table in real time
+
+--- 
+
+## 🎯 Project Goal
+
+# This project is build as:
+
+- Portfolio project
+- .NET + Angular practice project
+
+--- 
+
+### License
+
+## MIT License - free to use and extend.
