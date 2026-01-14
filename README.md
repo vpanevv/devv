@@ -115,7 +115,7 @@ http://localhost:4200
 
 ## 📌 How it works
 
-# 1. Create teams
-# 2. Create matches between teams
-# 3. Standings update automatically
-# 4. View the league table in real time
+- Create teams
+- Create matches between teams
+- Standings update automatically
+- View the league table in real time
