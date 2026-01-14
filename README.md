@@ -84,6 +84,15 @@ footballscore-ui
 cd FootballScore.API
 dotnet restore
 dotnet run
+``` 
+### API will start on:
 
- ## API will start on:
- http://localhost:5119
+```bash
+http://localhost:5119
+``` 
+
+### Swagger:
+
+```bash
+http://localhost:5119/swagger
+```
