@@ -124,13 +124,13 @@ http://localhost:4200
 
 ## 🎯 Project Goal
 
-# This project is build as:
+### This project is build as:
 
 - Portfolio project
 - .NET + Angular practice project
 
 --- 
 
-### License
+## License
 
-## MIT License - free to use and extend.
+### MIT License - free to use and extend.
