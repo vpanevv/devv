@@ -6,15 +6,29 @@
 
 .hero {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    gap: 16px;
 
-    padding: 36px 42px;
-    border-radius: 28px;
+    padding: 22px 22px;
+    border-radius: 18px;
 
-    background: linear-gradient(135deg, rgba(109, 40, 217, .45), rgba(236, 72, 153, .35));
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
-    margin-bottom: 32px;
+    background:
+        radial-gradient(900px 500px at 18% 10%, rgba(167, 139, 250, 0.22), transparent 60%),
+        radial-gradient(900px 500px at 88% 30%, rgba(244, 114, 182, 0.18), transparent 55%),
+        linear-gradient(135deg, rgba(17, 24, 39, 0.65), rgba(17, 24, 39, 0.40));
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(14px);
+}
+
+.hero {
+    margin-bottom: 16px;
+}
+
+.matchCard {
+    margin-bottom: 16px;
 }
 
 .heroContent {
@@ -24,9 +38,10 @@
 }
 
 .heroTitle {
-    font-size: 30px;
+    font-size: 22px;
     font-weight: 800;
-    letter-spacing: 0.4px;
+    letter-spacing: .2px;
+    color: var(--text);
 }
 
 .hero .btn {
@@ -48,30 +63,34 @@
 .heroActions {
     display: flex;
     align-items: center;
+    gap: 12px;
 }
 
 .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
     color: var(--text);
+    border-radius: 14px;
+    padding: 10px 14px;
+    font-weight: 700;
     cursor: pointer;
-    text-decoration: none;
     transition: transform .12s ease, background .12s ease, border-color .12s ease;
 }
 
 .btn:hover {
     transform: translateY(-1px);
-    background: var(--panel-2);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.16);
 }
 
-.btnPrimary {
-    border-color: rgba(109, 40, 217, 0.45);
-    background: linear-gradient(135deg, rgba(109, 40, 217, 0.85), rgba(236, 72, 153, 0.70));
+.btn-primary {
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 10px 26px rgba(109, 40, 217, 0.22);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 14px 34px rgba(109, 40, 217, 0.28);
 }
 
 .btnDanger {
@@ -320,22 +339,31 @@ tbody tr:hover {
 .modalOverlay {
     position: fixed;
     inset: 0;
+    z-index: 999;
+    display: grid;
+    place-items: center;
+    padding: 18px;
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    z-index: 9999;
+    backdrop-filter: blur(8px);
+}
+
+.modalClose {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    cursor: pointer;
 }
 
 .modal {
-    width: min(680px, 100%);
+    width: min(520px, 92vw);
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: linear-gradient(135deg, rgba(29, 20, 44, 0.92), rgba(12, 16, 28, 0.92));
-    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
-    overflow: hidden;
+    padding: 16px 16px 14px;
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
 }
 
 .modalHeader {
@@ -348,9 +376,22 @@ tbody tr:hover {
 }
 
 .modalTitle {
+    font-weight: 900;
     font-size: 16px;
-    font-weight: 800;
-    letter-spacing: .3px;
+}
+
+.modalText {
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.35;
+    margin-bottom: 14px;
+}
+
+.modalHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
 }
 
 .iconBtn {
@@ -421,7 +462,7 @@ tbody tr:hover {
 .modalActions {
     display: flex;
     justify-content: flex-end;
-    padding: 0 18px 18px;
+    gap: 10px;
 }
 
 /* overlay fade */

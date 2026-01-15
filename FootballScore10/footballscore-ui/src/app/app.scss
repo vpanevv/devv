@@ -1,16 +1,15 @@
 .topbar {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    backdrop-filter: blur(20px);
-    background: linear-gradient(180deg, rgba(10, 10, 20, .75), rgba(10, 10, 20, .45));
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    width: 100%;
+    padding: 18px 0;
+    background: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(17, 24, 39, 0.9));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
 }
 
 .topbarInner {
-    max-width: 1200px;
+    max-width: 1200px; // същото като container-а на standings
     margin: 0 auto;
-    padding: 18px 28px;
+    padding: 0 24px;
 
     display: flex;
     align-items: center;
@@ -18,10 +17,10 @@
 }
 
 .brand {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 800;
-    letter-spacing: 0.5px;
-    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    letter-spacing: .4px;
+    background: linear-gradient(135deg, #a78bfa, #f472b6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }

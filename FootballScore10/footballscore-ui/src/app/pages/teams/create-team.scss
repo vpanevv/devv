@@ -1,11 +1,91 @@
-.form-card {
-    max-width: 520px;
-    margin: 0 auto;
+.pageHead {
+    margin-bottom: 14px;
+}
+
+.h1 {
+    margin: 0;
+    font-size: 34px;
+    line-height: 1.1;
+}
+
+.sub {
+    margin: 6px 0 0;
+    opacity: .75;
+}
+
+.formCard {
+    max-width: 920px;
 }
 
 .actions {
+    margin-top: 16px;
     display: flex;
-    gap: 10px;
     justify-content: flex-end;
-    margin-top: 14px;
+    gap: 10px;
+}
+
+/* Modal */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    z-index: 1000;
+}
+
+.modalCard {
+    width: min(560px, 94vw);
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+    overflow: hidden;
+}
+
+.modalHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.modalBadge {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, .06);
+}
+
+.modalTitle {
+    font-weight: 800;
+    font-size: 16px;
+    flex: 1;
+}
+
+.modalClose {
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 16px;
+    opacity: .8;
+}
+
+.modalBody {
+    padding: 14px 16px;
+}
+
+.modalText {
+    opacity: .9;
+}
+
+.modalActions {
+    padding: 14px 16px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border);
 }

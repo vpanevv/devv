@@ -15,6 +15,12 @@ import { finalize } from 'rxjs';
 export class CreateTeamComponent {
     isSaving = false;
     error: string | null = null;
+
+    // success modal
+    successOpen = false;
+    successTitle = 'Team created';
+    successText = '';
+
     form: FormGroup;
 
     constructor(
@@ -24,11 +30,17 @@ export class CreateTeamComponent {
         private cdr: ChangeDetectorRef
     ) {
         this.form = this.fb.group({
-            name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]]
+            name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
         });
     }
 
     cancel(): void {
+        this.router.navigateByUrl('/standings');
+    }
+
+    closeSuccess(): void {
+        this.successOpen = false;
+        this.cdr.detectChanges();
         this.router.navigateByUrl('/standings');
     }
 
@@ -40,7 +52,7 @@ export class CreateTeamComponent {
             return;
         }
 
-        const name = ((this.form.value as any).name ?? '').trim();
+        const name = (((this.form.value as any).name ?? '') as string).trim();
         if (!name) {
             this.error = 'Team name is required';
             return;
@@ -58,22 +70,26 @@ export class CreateTeamComponent {
             )
             .subscribe({
                 next: () => {
-                    this.isSaving = false;
+                    // show success modal (stay on page until OK)
+                    this.successText = `✅ ${name} joined the league.`;
+                    this.successOpen = true;
                     this.cdr.detectChanges();
-                    this.router.navigateByUrl('/standings');
                 },
                 error: (err) => {
                     console.error('API Error', err);
 
-                    this.isSaving = false;
-
-                    if (err.status === 400) {
-                        this.error = typeof err.error === 'string' ? err.error : 'Validation error';
-                    } else {
-                        this.error = 'Failed to create team';
+                    // backend often returns plain string in err.error
+                    if (err?.status === 400 && typeof err.error === 'string') {
+                        this.error = err.error;
+                        return;
                     }
 
-                    this.cdr.detectChanges();
+                    if (typeof err?.error === 'string') {
+                        this.error = err.error;
+                        return;
+                    }
+
+                    this.error = 'Failed to create team';
                 }
             });
     }
