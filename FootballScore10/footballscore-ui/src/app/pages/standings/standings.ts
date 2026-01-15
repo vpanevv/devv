@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { finalize } from 'rxjs/operators';
-
 import { StandingsService, StandingDto } from '../../api/standings.service';
 import { TeamsService } from '../../api/team.service';
 import { MatchesService } from '../../api/matches.service'; // <-- ако е с друго име, смени
+import { ToastService } from '../../ui/toast/toast.service';
 
 @Component({
     selector: 'app-standings',
@@ -56,7 +56,8 @@ export class StandingComponent implements OnInit {
         private teams: TeamsService,
         private matches: MatchesService,
         private fb: FormBuilder,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private toast: ToastService
     ) {
         // default date: today (YYYY-MM-DD) – удобно за <input type="date">
         const today = new Date();
@@ -141,6 +142,7 @@ export class StandingComponent implements OnInit {
                         err?.status === 400 && typeof err.error === 'string'
                             ? err.error
                             : 'Failed to delete team';
+                    this.toast.error(typeof err?.error === 'string' ? err.error : 'Failed to delete team');
                     this.closeDelete();
                 },
             });
@@ -214,6 +216,7 @@ export class StandingComponent implements OnInit {
                     }
                     this.matchSuccessOpen = true;
                     // след мач: рефреш таблицата
+                    this.toast.success('Match created and standing updated.');
                     this.load();
                 },
                 error: (err) => {
@@ -223,6 +226,7 @@ export class StandingComponent implements OnInit {
                         this.matchError = err.error;
                         return;
                     }
+                    this.toast.error(typeof err?.error === 'string' ? err.error : 'Failed to create match');
                     this.matchError = 'Failed to create match';
                 },
             });

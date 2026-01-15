@@ -2,34 +2,26 @@
 
     <!-- Header -->
     <div class="hero">
-        <div class="heroContent">
-            <div class="heroTitle">League table standing</div>
-            <div class="heroSub">Premier League style standings & live results</div>
-        </div>
+        <div class="heroTitle">League table standing</div>
 
         <div class="heroActions">
-            <a class="btn btn-primary btn-lg" routerLink="/teams/create">
-                + Add Team
-            </a>
+            <a class="btn btn-primary" routerLink="/teams/create">+ Add Team</a>
         </div>
     </div>
 
-    <!-- CREATE MATCH CARD -->
+    <!-- Match form -->
     <div class="card matchCard">
         <div class="cardTitle">Create match</div>
         <div class="cardSub">Pick teams, enter score, save — standings will update.</div>
 
         <div *ngIf="matchError" class="alert error">{{ matchError }}</div>
 
-        <!-- FORM -->
-        <form id="matchFormEl" class="matchGrid" [formGroup]="matchForm" (ngSubmit)="createMatch()">
+        <form class="matchGrid" [formGroup]="matchForm" (ngSubmit)="createMatch()">
             <div class="field">
                 <label class="label">Home team</label>
                 <select class="select" formControlName="homeTeamId">
                     <option [ngValue]="null" disabled>Select team…</option>
-                    <option *ngFor="let t of items" [ngValue]="t.teamId">
-                        {{ t.name }}
-                    </option>
+                    <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
                 </select>
             </div>
 
@@ -37,9 +29,7 @@
                 <label class="label">Away team</label>
                 <select class="select" formControlName="awayTeamId">
                     <option [ngValue]="null" disabled>Select team…</option>
-                    <option *ngFor="let t of items" [ngValue]="t.teamId">
-                        {{ t.name }}
-                    </option>
+                    <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
                 </select>
             </div>
 
@@ -57,24 +47,21 @@
                 <label class="label">Date played</label>
                 <input class="input" type="date" formControlName="datePlayed" />
             </div>
+
+            <div class="matchActions">
+                <button type="button" class="btn" (click)="swapTeams()">Swap</button>
+                <button class="btn btn-primary" type="submit" [disabled]="isCreatingMatch">
+                    {{ isCreatingMatch ? 'Saving…' : 'Create match' }}
+                </button>
+            </div>
         </form>
-
-        <!-- ACTIONS -->
-        <div class="matchActions">
-            <button type="button" class="btn" (click)="swapTeams()">Swap</button>
-
-            <!-- Variant A: submit button извън form -->
-            <button class="btn btn-primary" type="submit" form="matchFormEl" [disabled]="isCreatingMatch">
-                {{ isCreatingMatch ? 'Saving…' : 'Create match' }}
-            </button>
-        </div>
     </div>
 
-    <!-- STATES -->
+    <!-- States -->
     <div *ngIf="isLoading" class="state">Loading…</div>
     <div *ngIf="error" class="alert error">{{ error }}</div>
 
-    <!-- TABLE -->
+    <!-- Table -->
     <div *ngIf="!isLoading && !error" class="card tableCard">
         <table class="table">
             <thead>
@@ -104,11 +91,7 @@
                     <td class="num">{{ x.wins }}</td>
                     <td class="num">{{ x.draws }}</td>
                     <td class="num">{{ x.loses }}</td>
-
-                    <td class="num" [ngClass]="gdClass(x.goalDifference)">
-                        {{ gdLabel(x.goalDifference) }}
-                    </td>
-
+                    <td class="num" [ngClass]="gdClass(x.goalDifference)">{{ gdLabel(x.goalDifference) }}</td>
                     <td class="num pts"><b>{{ x.points }}</b></td>
 
                     <td class="num">
@@ -123,56 +106,20 @@
             </tbody>
         </table>
 
-        <!-- Match success modal -->
-        <div *ngIf="matchSuccessOpen && lastMatch" class="modalOverlay modalOverlay--enter"
-            (click)="closeMatchSuccess()">
-            <div class="modal modal--enter" (click)="$event.stopPropagation()">
-                <div class="modalHeader">
-                    <div class="modalTitle">Match played</div>
-                    <button type="button" class="iconBtn" (click)="closeMatchSuccess()">✕</button>
-                </div>
-
-                <div class="matchSummary">
-                    <div class="teamBlock">
-                        <div class="teamDot"></div>
-                        <div class="teamName">{{ lastMatch.homeTeam }}</div>
-                    </div>
-
-                    <div class="scoreBlock">
-                        <div class="score score--pop">{{ lastMatch.homeGoals }} : {{ lastMatch.awayGoals }}</div>
-                        <div class="meta">Date: {{ lastMatch.datePlayed }}</div>
-                    </div>
-
-                    <div class="teamBlock right">
-                        <div class="teamName">{{ lastMatch.awayTeam }}</div>
-                        <div class="teamDot"></div>
-                    </div>
-                </div>
-
-                <div class="modalActions">
-                    <button type="button" class="btn" (click)="closeMatchSuccess()">Close</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- DELETE CONFIRM BAR -->
+        <!-- confirm delete -->
         <div *ngIf="confirmOpen && pendingDelete" class="confirmBar">
             <div class="confirmTitle">Delete team</div>
             <div class="confirmText">
-                Are you sure you want to delete
-                <b>{{ pendingDelete.name }}</b>? This cannot be undone.
+                Are you sure you want to delete <b>{{ pendingDelete.name }}</b>? This cannot be undone.
             </div>
 
             <div class="confirmActions">
-                <button class="btn btn-sm" type="button" (click)="closeDelete()" [disabled]="isDeleting">
-                    Cancel
-                </button>
-
+                <button class="btn btn-sm" type="button" (click)="closeDelete()" [disabled]="isDeleting">Cancel</button>
                 <button class="btn btn-sm btn-danger" type="button" (click)="confirmDelete()" [disabled]="isDeleting">
                     {{ isDeleting ? 'Deleting…' : 'Delete' }}
                 </button>
             </div>
         </div>
-    </div>
 
+    </div>
 </div>
