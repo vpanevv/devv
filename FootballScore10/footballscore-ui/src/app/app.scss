@@ -1,26 +1,61 @@
-.topbar {
-    width: 100%;
-    padding: 18px 0;
-    background: linear-gradient(135deg, rgba(88, 28, 135, 0.35), rgba(17, 24, 39, 0.9));
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(12px);
-}
-
-.topbarInner {
-    max-width: 1200px; // същото като container-а на standings
-    margin: 0 auto;
-    padding: 0 24px;
-
+.splashOverlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #0b0f1f, #1a1033, #2b124f);
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeOut 1s ease forwards;
+    animation-delay: 3s;
 }
 
-.brand {
-    font-size: 22px;
+.splashCard {
+    background: rgba(20, 20, 30, 0.85);
+    border-radius: 20px;
+    padding: 48px 64px;
+    text-align: center;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+
+    animation: zoomIn 1.5s ease forwards;
+}
+
+.splashTitle {
+    font-size: 38px;
     font-weight: 800;
-    letter-spacing: .4px;
-    background: linear-gradient(135deg, #a78bfa, #f472b6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: white;
+    margin-bottom: 12px;
+}
+
+.splashSub {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+}
+
+/* Blur effect for app */
+.appShell.isBlur {
+    filter: blur(14px);
+    pointer-events: none;
+}
+
+/* Animations */
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
 }
