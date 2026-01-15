@@ -339,22 +339,31 @@ tbody tr:hover {
 .modalOverlay {
     position: fixed;
     inset: 0;
+    z-index: 999;
+    display: grid;
+    place-items: center;
+    padding: 18px;
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    z-index: 9999;
+    backdrop-filter: blur(8px);
+}
+
+.modalClose {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    cursor: pointer;
 }
 
 .modal {
-    width: min(680px, 100%);
+    width: min(520px, 92vw);
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: linear-gradient(135deg, rgba(29, 20, 44, 0.92), rgba(12, 16, 28, 0.92));
-    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
-    overflow: hidden;
+    padding: 16px 16px 14px;
+    background: var(--panel);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
 }
 
 .modalHeader {
@@ -367,9 +376,22 @@ tbody tr:hover {
 }
 
 .modalTitle {
+    font-weight: 900;
     font-size: 16px;
-    font-weight: 800;
-    letter-spacing: .3px;
+}
+
+.modalText {
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.35;
+    margin-bottom: 14px;
+}
+
+.modalHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
 }
 
 .iconBtn {
@@ -440,7 +462,7 @@ tbody tr:hover {
 .modalActions {
     display: flex;
     justify-content: flex-end;
-    padding: 0 18px 18px;
+    gap: 10px;
 }
 
 /* overlay fade */

@@ -97,7 +97,9 @@
                     <td class="num">
                         <div class="rowActions">
                             <a class="btn btn-sm" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
-                            <button class="btn btn-sm btn-danger" type="button" (click)="openDelete(x.teamId, x.name)">
+                            <button class="btn btn-sm btn-danger" type="button"
+                                (click)="openDelete(x.teamId, x.name); $event.stopPropagation()"
+                                [disabled]="confirmOpen || isDeleting">
                                 Delete
                             </button>
                         </div>
@@ -107,17 +109,26 @@
         </table>
 
         <!-- confirm delete -->
-        <div *ngIf="confirmOpen && pendingDelete" class="confirmBar">
-            <div class="confirmTitle">Delete team</div>
-            <div class="confirmText">
-                Are you sure you want to delete <b>{{ pendingDelete.name }}</b>? This cannot be undone.
-            </div>
+        <!-- Delete confirm modal -->
+        <div *ngIf="confirmOpen && pendingDelete" class="modalOverlay" (click)="closeDelete()">
+            <div class="modal" (click)="$event.stopPropagation()">
+                <div class="modalHead">
+                    <div class="modalTitle">Delete team</div>
+                    <button class="modalClose" type="button" (click)="closeDelete()" [disabled]="isDeleting">✕</button>
+                </div>
 
-            <div class="confirmActions">
-                <button class="btn btn-sm" type="button" (click)="closeDelete()" [disabled]="isDeleting">Cancel</button>
-                <button class="btn btn-sm btn-danger" type="button" (click)="confirmDelete()" [disabled]="isDeleting">
-                    {{ isDeleting ? 'Deleting…' : 'Delete' }}
-                </button>
+                <div class="modalText">
+                    Are you sure you want to delete <b>{{ pendingDelete.name }}</b>? This cannot be undone.
+                </div>
+
+                <div class="modalActions">
+                    <button class="btn btn-sm" type="button" (click)="closeDelete()"
+                        [disabled]="isDeleting">Cancel</button>
+                    <button class="btn btn-sm btn-danger" type="button"
+                        (click)="confirmDelete(); $event.stopPropagation()" [disabled]="isDeleting">
+                        {{ isDeleting ? 'Deleting…' : 'Delete' }}
+                    </button>
+                </div>
             </div>
         </div>
 
