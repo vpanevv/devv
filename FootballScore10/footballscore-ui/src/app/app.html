@@ -1,8 +1,10 @@
-<div class="topbar">
-    <div class="topbarInner">
-        <div class="brand">FootballScore</div>
-        <app-theme-toggle></app-theme-toggle>
+<div class="splashOverlay" *ngIf="showSplash">
+    <div class="splashCard">
+        <div class="splashTitle">Welcome to Premier League standing</div>
+        <div class="splashSub">Loading your table…</div>
     </div>
 </div>
 
-<router-outlet></router-outlet>
+<div class="appShell" [class.isBlur]="showSplash">
+    <router-outlet></router-outlet>
+</div>
