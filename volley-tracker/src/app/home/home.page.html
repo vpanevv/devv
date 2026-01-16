@@ -1,20 +1,50 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+    <ion-title>Training Tracker</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
+  <!-- HELLO VIEW -->
+  <ng-container *ngIf="savedCoachName; else setup">
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Hello, Coach {{ savedCoachName }} 👋</ion-card-title>
+        <ion-card-subtitle>Ready for today’s training?</ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-button expand="block" (click)="changeCoach()">
+          Change coach name
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </ng-container>
+
+  <!-- SETUP VIEW -->
+  <ng-template #setup>
+    <ion-card>
+      <ion-card-header>
+        <ion-card-title>Get started</ion-card-title>
+        <ion-card-subtitle>Set your coach name (one-time)</ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-item>
+          <ion-label position="stacked">Coach name</ion-label>
+          <ion-input [(ngModel)]="coachName" placeholder="e.g. Vladimir"></ion-input>
+        </ion-item>
+
+        <ion-text color="danger" *ngIf="error">
+          <p style="margin:10px 0 0;">{{ error }}</p>
+        </ion-text>
+
+        <ion-button expand="block" style="margin-top:14px;" (click)="save()">
+          Save
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </ng-template>
+
 </ion-content>
