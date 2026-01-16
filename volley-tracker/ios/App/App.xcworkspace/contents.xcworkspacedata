@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <Group
+      location = "group:App"
+      name = "App">
+      <FileRef
+         location = "group:Assets.xcassets">
+      </FileRef>
+      <Group
+         location = "group:Base.lproj"
+         name = "Base.lproj">
+         <FileRef
+            location = "group:LaunchScreen.storyboard">
+         </FileRef>
+         <FileRef
+            location = "group:Main.storyboard">
+         </FileRef>
+         <FileRef
+            location = "container:App.xcodeproj">
+         </FileRef>
+         <FileRef
+            location = "container:App.xcworkspace">
+         </FileRef>
+         <FileRef
+            location = "container:Podfile">
+         </FileRef>
+      </Group>
+      <FileRef
+         location = "group:config.xml">
+      </FileRef>
+      <Group
+         location = "group:public"
+         name = "public">
+         <FileRef
+            location = "group:chunk-DRFLI3H6.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-HJCS7IPT.js">
+         </FileRef>
+         <FileRef
+            location = "group:main-FLNMB37D.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-OZYWYLNK.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-DZWTQQUB.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-YWEOSVEY.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-OBIIRMK7.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-EAO2GMQP.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-J3OIRSJC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KFFG5M3R.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-NZDIGSXS.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-23BLZIRM.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-L6EBLBIW.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-P5FJYL7I.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KLQJDAJU.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-BANGDX2W.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-T2Z3RKML.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JYDLNYYK.js">
+         </FileRef>
+         <FileRef
+            location = "group:styles-6KTEQGYX.css">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-AVDT5SXG.js">
+         </FileRef>
+         <FileRef
+            location = "group:index.html">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-FA25AEA4.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-NMKO26ZT.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-DO7DB4KY.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JHI3MBHO.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-QXRKCPK7.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-XTVTS2NW.js">
+         </FileRef>
+         <FileRef
+            location = "group:polyfills-TDCRLYKL.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JEIPFCFM.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-QUJFQN2Y.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-FZZJS3QZ.js">
+         </FileRef>
+         <FileRef
+            location = "group:cordova.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-WL4OHKNV.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-YMP7O2XR.js">
+         </FileRef>
+         <FileRef
+            location = "group:prerendered-routes.json">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-I55E56DC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-ZXHGJIM2.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-WPRTUFAF.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-GQZD5KRY.js">
+         </FileRef>
+         <FileRef
+            location = "group:3rdpartylicenses.txt">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-7FY2OE2O.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-LXXSHCVF.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KNWMSRHT.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-MK4FAL6Y.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-J4UFPNGQ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-F2YSC6UC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-4NTDCCU6.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-FPOZYJOD.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-HJRICCH7.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-I7YVNKUQ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-O5ENOXHG.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-NHTWKMVM.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-5ZWTHNK7.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-T5SMKMZC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-SOGS6TO6.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-5TIAO6TV.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JYHQEH75.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-RKKSCWJN.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-572LLHHX.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-LMC6Z2QD.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-TM2GUZZM.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-C5RKBJS2.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-BSURAJ2H.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-TTSZU5SZ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KI6VUG4M.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-7KZAQF7I.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-7YHTVC3X.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-PGRQS55F.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-V2Q6RYIS.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-ULUBRAOE.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-YEFNKQCE.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-5HKGP5UB.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JYW7XKGL.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-MH3WRPLM.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-IE7V6VIN.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KKY23JAO.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-GFHBKKLD.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-54W5WZQA.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-IZS4SZIN.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-E7ZOKENL.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-BXGZEXDX.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-HAKKNN4W.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-FCLZCBMY.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-YVS4RHOB.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-SCKONRGC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-42C7ZIID.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-FZQDFHAZ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-IYBGMXDC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-SC2FL3M6.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-CKP3SGE2.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-G3FC7JDQ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-BI2BIYVC.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-SAEGEBNJ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-FWWMGAQR.js">
+         </FileRef>
+         <FileRef
+            location = "group:cordova_plugins.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-RZ2LQNOW.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-E654DAUP.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-2GJSD7OP.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-LW5NWWBJ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-NV3QH4JK.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KOIUV53V.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-Z2CMNZ7N.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-X53KV4RH.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-SDMF56A4.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-IGVXFY24.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-36ESZ2IJ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-CLDSZD2A.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-ZSBMZMUY.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JUOKR6O7.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-5JDF6DOQ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-EZPGRIYL.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-MYMRFBIP.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-IULK653U.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-MTHZ7MWU.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-3JOXYCZN.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-M2X7KQLB.js">
+         </FileRef>
+         <Group
+            location = "group:assets"
+            name = "assets">
+            <FileRef
+               location = "group:shapes.svg">
+            </FileRef>
+            <Group
+               location = "group:icon"
+               name = "icon">
+               <FileRef
+                  location = "group:favicon.png">
+               </FileRef>
+            </Group>
+         </Group>
+         <FileRef
+            location = "group:chunk-WI5MSH4N.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-L6QOL6Z4.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-ARXY4OWW.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-B62X6NNM.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-UVVWTVHU.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-DVVH2KKN.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-6XEXXZ3D.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-JSHRBCPZ.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-4AIEKOTY.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-ZVJP6ZW7.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-OU2OQHXH.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-LLZTQ36H.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-F6A6Z7TB.js">
+         </FileRef>
+         <FileRef
+            location = "group:chunk-KJUFVVXH.js">
+         </FileRef>
+      </Group>
+      <FileRef
+         location = "group:capacitor.config.json">
+      </FileRef>
+      <FileRef
+         location = "group:AppDelegate.swift">
+      </FileRef>
+      <FileRef
+         location = "group:Info.plist">
+      </FileRef>
+   </Group>
+   <FileRef
+      location = "group:App.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Pods/Pods.xcodeproj">
+   </FileRef>
+</Workspace>
