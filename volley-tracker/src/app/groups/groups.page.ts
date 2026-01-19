@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, AlertController } from '@ionic/angular';
+import { Router } from '@angular/router';
 import { GroupsService } from '../core/groups.service';
 import { Group } from '../core/models';
 
@@ -11,16 +12,27 @@ import { Group } from '../core/models';
     templateUrl: './groups.page.html',
 })
 export class GroupsPage {
+    coachName: string | null = null;
+
     groups: Group[] = [];
+    playersCountByGroup: Record<string, number> = {};
+
     isLoading = true;
     error: string | null = null;
 
     constructor(
         private groupsService: GroupsService,
-        private alertCtrl: AlertController
+        private alertCtrl: AlertController,
+        private router: Router
     ) { }
 
     async ionViewWillEnter() {
+        this.coachName = await this.groupsService.getCoachName();
+        if (!this.coachName) {
+            await this.router.navigateByUrl('/setup', { replaceUrl: true });
+            return;
+        }
+
         await this.load();
     }
 
@@ -30,12 +42,39 @@ export class GroupsPage {
 
         try {
             this.groups = await this.groupsService.getAll();
+
+            // compute players counts (no playersCount field in Group model)
+            const map: Record<string, number> = {};
+            for (const g of this.groups) {
+                map[g.id] = await this.groupsService.getPlayersCount(g.id);
+            }
+            this.playersCountByGroup = map;
         } catch (e) {
             console.error(e);
             this.error = 'Failed to load groups.';
         } finally {
             this.isLoading = false;
         }
+    }
+
+    async changeName() {
+        const alert = await this.alertCtrl.create({
+            header: 'Change coach name?',
+            message: 'You will go back to setup. Existing groups stay saved under the previous name.',
+            buttons: [
+                { text: 'Cancel', role: 'cancel' },
+                {
+                    text: 'Change',
+                    role: 'destructive',
+                    handler: async () => {
+                        await this.groupsService.clearCoachName();
+                        await this.router.navigateByUrl('/setup', { replaceUrl: true });
+                    },
+                },
+            ],
+        });
+
+        await alert.present();
     }
 
     async addGroup() {
