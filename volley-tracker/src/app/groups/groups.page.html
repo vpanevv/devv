@@ -1,0 +1,43 @@
+<ion-header>
+    <ion-toolbar>
+        <ion-title>Groups</ion-title>
+        <ion-buttons slot="end">
+            <ion-button (click)="addGroup()">Add</ion-button>
+        </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+    <ion-text color="danger" *ngIf="error">
+        <p>{{ error }}</p>
+    </ion-text>
+
+    <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+
+    <ion-list *ngIf="!isLoading">
+        <ion-item *ngFor="let g of groups" button>
+            <ion-label>
+                <h2>{{ g.name }}</h2>
+                <p>Tap ⋯ to manage</p>
+            </ion-label>
+
+            <ion-buttons slot="end">
+                <ion-button fill="clear" (click)="renameGroup(g); $event.stopPropagation()">
+                    Rename
+                </ion-button>
+                <ion-button color="danger" fill="clear" (click)="deleteGroup(g); $event.stopPropagation()">
+                    Delete
+                </ion-button>
+            </ion-buttons>
+        </ion-item>
+    </ion-list>
+
+    <ion-card *ngIf="!isLoading && groups.length === 0">
+        <ion-card-header>
+            <ion-card-title>No groups yet</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            Create your first group with the <b>Add</b> button.
+        </ion-card-content>
+    </ion-card>
+</ion-content>
