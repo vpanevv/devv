@@ -41,14 +41,14 @@ export class GroupsPage {
         this.error = null;
 
         try {
-            this.groups = await this.groupsService.getAll();
+            const state = await this.groupsService.getState();
+            this.groups = state.groups ?? [];
 
-            // compute players counts (no playersCount field in Group model)
-            const map: Record<string, number> = {};
-            for (const g of this.groups) {
-                map[g.id] = await this.groupsService.getPlayersCount(g.id);
+            const counts: Record<string, number> = {};
+            for (const p of state.players ?? []) {
+                counts[p.groupId] = (counts[p.groupId] ?? 0) + 1;
             }
-            this.playersCountByGroup = map;
+            this.playersCountByGroup = counts;
         } catch (e) {
             console.error(e);
             this.error = 'Failed to load groups.';
@@ -60,7 +60,7 @@ export class GroupsPage {
     async changeName() {
         const alert = await this.alertCtrl.create({
             header: 'Change coach name?',
-            message: 'You will go back to setup. Existing groups stay saved under the previous name.',
+            message: 'This will take you back to the welcome screen.',
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
                 {

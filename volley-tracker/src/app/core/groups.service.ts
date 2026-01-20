@@ -2,12 +2,11 @@ import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
 import { AppStateV1, Group } from './models';
 
-const KEY_CURRENT_COACH = 'vt.currentCoach';
-const KEY_STATE_PREFIX = 'vt.state.v1.'; // + encodeURIComponent(coachName)
+const STATE_KEY = 'vt.state.v1';
 
-function emptyState(coachName: string): AppStateV1 {
+function createEmptyState(): AppStateV1 {
     return {
-        coachName,
+        coachName: null,
         groups: [],
         players: [],
         attendance: {},
@@ -16,123 +15,95 @@ function emptyState(coachName: string): AppStateV1 {
 
 @Injectable({ providedIn: 'root' })
 export class GroupsService {
-    // ---- Coach helpers ----
+    async getState(): Promise<AppStateV1> {
+        const { value } = await Preferences.get({ key: STATE_KEY });
+        if (!value) return createEmptyState();
+
+        try {
+            const parsed = JSON.parse(value);
+            // merge с defaults, за да не крашва ако липсва поле
+            return { ...createEmptyState(), ...parsed };
+        } catch {
+            // ако има corrupted JSON — ресет
+            const empty = createEmptyState();
+            await Preferences.set({ key: STATE_KEY, value: JSON.stringify(empty) });
+            return empty;
+        }
+    }
+
+    async setState(next: AppStateV1): Promise<void> {
+        await Preferences.set({ key: STATE_KEY, value: JSON.stringify(next) });
+    }
+
     async getCoachName(): Promise<string | null> {
-        const { value } = await Preferences.get({ key: KEY_CURRENT_COACH });
-        const name = (value ?? '').trim();
-        return name.length ? name : null;
+        const s = await this.getState();
+        return s.coachName;
     }
 
     async setCoachName(name: string): Promise<void> {
-        const trimmed = (name ?? '').trim();
+        const trimmed = (name || '').trim();
         if (!trimmed) throw new Error('Coach name is required.');
 
-        await Preferences.set({ key: KEY_CURRENT_COACH, value: trimmed });
-
-        // ensure state exists for this coach
-        const stateKey = this.stateKey(trimmed);
-        const existing = await Preferences.get({ key: stateKey });
-        if (!existing.value) {
-            await Preferences.set({
-                key: stateKey,
-                value: JSON.stringify(emptyState(trimmed)),
-            });
-        }
+        const s = await this.getState();
+        s.coachName = trimmed;
+        await this.setState(s);
     }
 
     async clearCoachName(): Promise<void> {
-        await Preferences.remove({ key: KEY_CURRENT_COACH });
+        const s = await this.getState();
+        s.coachName = null;
+        await this.setState(s);
     }
 
-    // ---- Groups API ----
     async getAll(): Promise<Group[]> {
-        const state = await this.readStateOrThrow();
-        // stable ordering (by createdAt)
-        return [...state.groups].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        const s = await this.getState();
+        return s.groups ?? [];
     }
 
-    async create(name: string): Promise<void> {
-        const state = await this.readStateOrThrow();
-        const trimmed = (name ?? '').trim();
+    async create(name: string): Promise<Group> {
+        const trimmed = (name || '').trim();
         if (!trimmed) throw new Error('Group name is required.');
 
-        const exists = state.groups.some(g => g.name.toLowerCase() === trimmed.toLowerCase());
+        const s = await this.getState();
+
+        const exists = (s.groups ?? []).some(g => g.name.toLowerCase() === trimmed.toLowerCase());
         if (exists) throw new Error('A group with this name already exists.');
 
         const now = new Date().toISOString();
-        const id = crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+        const g: Group = {
+            id: crypto.randomUUID(),
+            name: trimmed,
+            createdAt: now,
+        };
 
-        state.groups.push({ id, name: trimmed, createdAt: now });
-        await this.writeState(state);
+        s.groups = [...(s.groups ?? []), g];
+        await this.setState(s);
+        return g;
     }
 
-    async rename(id: string, name: string): Promise<void> {
-        const state = await this.readStateOrThrow();
-        const trimmed = (name ?? '').trim();
+    async rename(id: string, newName: string): Promise<void> {
+        const trimmed = (newName || '').trim();
         if (!trimmed) throw new Error('Group name is required.');
 
-        const g = state.groups.find(x => x.id === id);
-        if (!g) throw new Error('Group not found.');
+        const s = await this.getState();
 
-        const exists = state.groups.some(
-            x => x.id !== id && x.name.toLowerCase() === trimmed.toLowerCase()
-        );
+        const exists = (s.groups ?? []).some(g => g.id !== id && g.name.toLowerCase() === trimmed.toLowerCase());
         if (exists) throw new Error('A group with this name already exists.');
 
-        g.name = trimmed;
-        await this.writeState(state);
+        s.groups = (s.groups ?? []).map(g => (g.id === id ? { ...g, name: trimmed } : g));
+        await this.setState(s);
     }
 
     async delete(id: string): Promise<void> {
-        const state = await this.readStateOrThrow();
+        const s = await this.getState();
+        s.groups = (s.groups ?? []).filter(g => g.id !== id);
 
-        const group = state.groups.find(x => x.id === id);
-        if (!group) return;
-
-        // remove group
-        state.groups = state.groups.filter(x => x.id !== id);
-
-        // remove players in that group
-        state.players = state.players.filter(p => p.groupId !== id);
-
-        // remove attendance for that group
-        delete state.attendance[id];
-
-        await this.writeState(state);
-    }
-
-    // ---- Extra helper: players count per group ----
-    async getPlayersCount(groupId: string): Promise<number> {
-        const state = await this.readStateOrThrow();
-        return state.players.filter(p => p.groupId === groupId).length;
-    }
-
-    // ---- Storage internals ----
-    private stateKey(coachName: string): string {
-        return KEY_STATE_PREFIX + encodeURIComponent(coachName);
-    }
-
-    private async readStateOrThrow(): Promise<AppStateV1> {
-        const coach = await this.getCoachName();
-        if (!coach) throw new Error('Coach name not set.');
-
-        const key = this.stateKey(coach);
-        const { value } = await Preferences.get({ key });
-
-        if (!value) {
-            const st = emptyState(coach);
-            await Preferences.set({ key, value: JSON.stringify(st) });
-            return st;
+        // (по желание) чистим players + attendance за групата
+        s.players = (s.players ?? []).filter(p => p.groupId !== id);
+        if (s.attendance && s.attendance[id]) {
+            delete s.attendance[id];
         }
 
-        return JSON.parse(value) as AppStateV1;
-    }
-
-    private async writeState(state: AppStateV1): Promise<void> {
-        const coach = await this.getCoachName();
-        if (!coach) throw new Error('Coach name not set.');
-
-        const key = this.stateKey(coach);
-        await Preferences.set({ key, value: JSON.stringify(state) });
+        await this.setState(s);
     }
 }

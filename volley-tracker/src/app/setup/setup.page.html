@@ -17,8 +17,8 @@
                 <ion-input [(ngModel)]="coachName" placeholder="e.g. Vladi"></ion-input>
             </ion-item>
 
-            <ion-button expand="block" style="margin-top: 14px" (click)="save()" [disabled]="isSaving">
-                {{ isSaving ? 'Saving…' : 'Save' }}
+            <ion-button expand="block" (click)="save()" [disabled]="isSaving">
+                {{ isSaving ? 'Saving...' : 'Save' }}
             </ion-button>
         </ion-card-content>
     </ion-card>
