@@ -1,0 +1,35 @@
+<ion-header>
+    <ion-toolbar>
+        <ion-buttons slot="start">
+            <ion-back-button defaultHref="/groups"></ion-back-button>
+        </ion-buttons>
+
+        <ion-title>
+            {{ group?.name || 'Group' }}
+        </ion-title>
+
+        <ion-buttons slot="end">
+            <ion-button (click)="addPlayer()">Add</ion-button>
+        </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content>
+    <ion-list *ngIf="!isLoading && !error">
+        <ion-item *ngFor="let p of players">
+            <ion-label>{{ p.name }}</ion-label>
+
+            <ion-buttons slot="end">
+                <ion-button fill="clear" (click)="renamePlayer(p)">Rename</ion-button>
+                <ion-button fill="clear" color="danger" (click)="deletePlayer(p)">Delete</ion-button>
+            </ion-buttons>
+        </ion-item>
+
+        <ion-item *ngIf="players.length === 0">
+            <ion-label>No players yet. Tap <b>Add</b>.</ion-label>
+        </ion-item>
+    </ion-list>
+
+    <div *ngIf="isLoading" style="padding:16px;">Loading…</div>
+    <div *ngIf="error" style="padding:16px;">{{ error }}</div>
+</ion-content>

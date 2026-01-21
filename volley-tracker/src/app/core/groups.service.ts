@@ -28,6 +28,11 @@ export class GroupsService {
         return value ? (JSON.parse(value) as Group[]) : [];
     }
 
+    async getById(groupId: string): Promise<Group | null> {
+        const groups = await this.getAll();
+        return groups.find(g => g.id === groupId) ?? null;
+    }
+
     async create(name: string): Promise<void> {
         const coachId = await this.requireCoachId();
         const trimmed = (name ?? '').trim();
@@ -49,7 +54,9 @@ export class GroupsService {
         if (!trimmed) throw new Error('Group name is required.');
 
         const groups = await this.getAll();
-        const exists = groups.some(g => g.id !== groupId && g.name.toLowerCase() === trimmed.toLowerCase());
+        const exists = groups.some(
+            g => g.id !== groupId && g.name.toLowerCase() === trimmed.toLowerCase()
+        );
         if (exists) throw new Error('Group with this name already exists.');
 
         const idx = groups.findIndex(g => g.id === groupId);

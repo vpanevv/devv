@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { RouterOutlet, Router } from '@angular/router';
+import { AlertInput } from '@ionic/angular';
 
 import { CoachService, Coach } from './core/coach.service';
 
@@ -19,35 +20,41 @@ export class AppComponent {
   ) { }
 
   async switchCoach() {
-    await this.coachService.init();
-
-    const coaches = await this.coachService.listCoaches();
+    const coaches = await this.coachService.getAllCoaches();
     const active = this.coachService.activeCoachId;
+
+    const inputs: AlertInput[] = [
+      ...coaches.map(c => ({
+        type: 'radio',
+        label: c.name,
+        value: c.id,
+        checked: c.id === active,
+      }) as AlertInput),
+      {
+        type: 'radio',
+        label: '➕ New coach',
+        value: '__NEW__',
+      } as AlertInput,
+    ];
 
     const alert = await this.alertCtrl.create({
       header: 'Switch coach',
-      inputs: [
-        ...coaches.map(c => ({
-          type: 'radio' as const,
-          label: c.name,
-          value: c.id,
-          checked: c.id === active,
-        })),
-        { type: 'radio', label: '➕ New coach…', value: '__NEW__' },
-      ],
+      inputs,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
           text: 'Select',
-          handler: async (value) => {
+          handler: async (value: string) => {
             if (value === '__NEW__') {
               await this.router.navigateByUrl('/setup');
               return;
             }
-            if (typeof value === 'string' && value) {
-              await this.coachService.setActiveCoach(value);
-              await this.router.navigateByUrl('/groups');
-            }
+
+            const coach = coaches.find(c => c.id === value);
+            if (!coach) return;
+
+            await this.coachService.setActiveCoach(coach);
+            await this.router.navigateByUrl('/groups', { replaceUrl: true });
           },
         },
       ],

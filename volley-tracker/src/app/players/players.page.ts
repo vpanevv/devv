@@ -1,32 +1,35 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { IonicModule, AlertController } from '@ionic/angular';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 
 import { GroupsService } from '../core/groups.service';
-import { CoachService } from '../core/coach.service';
-import { Group } from '../core/models';
+import { PlayersService } from '../core/players.service';
+import { Group, Player } from '../core/models';
 
 @Component({
-    selector: 'app-groups',
+    selector: 'app-players',
     standalone: true,
     imports: [CommonModule, IonicModule, RouterModule],
-    templateUrl: './groups.page.html',
+    templateUrl: './players.page.html',
 })
-export class GroupsPage {
-    groups: Group[] = [];
+export class PlayersPage {
+    groupId = '';
+    group: Group | null = null;
+
+    players: Player[] = [];
     isLoading = true;
     error: string | null = null;
 
-    coachName: string | null = null;
-
     constructor(
+        private route: ActivatedRoute,
         private groupsService: GroupsService,
-        private coachService: CoachService,
+        private playersService: PlayersService,
         private alertCtrl: AlertController
     ) { }
 
     async ionViewWillEnter() {
+        this.groupId = this.route.snapshot.paramMap.get('groupId') ?? '';
         await this.load();
     }
 
@@ -35,32 +38,37 @@ export class GroupsPage {
         this.error = null;
 
         try {
-            await this.coachService.init();
-            this.coachName = this.coachService.activeCoachName ?? null;
-            this.groups = await this.groupsService.getAll();
+            this.group = await this.groupsService.getById(this.groupId);
+            if (!this.group) {
+                this.error = 'Group not found.';
+                this.players = [];
+                return;
+            }
+
+            this.players = await this.playersService.getByGroup(this.groupId);
         } catch (e) {
             console.error(e);
-            this.error = 'Failed to load groups.';
+            this.error = 'Failed to load players.';
         } finally {
             this.isLoading = false;
         }
     }
 
-    async addGroup() {
+    async addPlayer() {
         const alert = await this.alertCtrl.create({
-            header: 'New group',
-            message: 'Enter group name (e.g. U12, U14, Beginners).',
-            inputs: [{ name: 'name', type: 'text', placeholder: 'Group name' }],
+            header: 'New player',
+            message: 'Enter player name.',
+            inputs: [{ name: 'name', type: 'text', placeholder: 'e.g. Ivan Petrov' }],
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
                 {
-                    text: 'Create',
+                    text: 'Add',
                     handler: async (data) => {
                         try {
-                            await this.groupsService.create(data?.name ?? '');
+                            await this.playersService.create(this.groupId, data?.name ?? '');
                             await this.load();
                         } catch (e: any) {
-                            await this.showError(e?.message ?? 'Could not create group.');
+                            await this.showError(e?.message ?? 'Could not add player.');
                         }
                     },
                 },
@@ -70,20 +78,20 @@ export class GroupsPage {
         await alert.present();
     }
 
-    async renameGroup(g: Group) {
+    async renamePlayer(p: Player) {
         const alert = await this.alertCtrl.create({
-            header: 'Rename group',
-            inputs: [{ name: 'name', type: 'text', value: g.name }],
+            header: 'Rename player',
+            inputs: [{ name: 'name', type: 'text', value: p.name }],
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
                 {
                     text: 'Save',
                     handler: async (data) => {
                         try {
-                            await this.groupsService.rename(g.id, data?.name ?? '');
+                            await this.playersService.rename(p.id, data?.name ?? '');
                             await this.load();
                         } catch (e: any) {
-                            await this.showError(e?.message ?? 'Could not rename group.');
+                            await this.showError(e?.message ?? 'Could not rename player.');
                         }
                     },
                 },
@@ -93,10 +101,10 @@ export class GroupsPage {
         await alert.present();
     }
 
-    async deleteGroup(g: Group) {
+    async deletePlayer(p: Player) {
         const alert = await this.alertCtrl.create({
-            header: 'Delete group?',
-            message: `This will remove <b>${g.name}</b> and its players.`,
+            header: 'Delete player?',
+            message: `Delete <b>${p.name}</b>? This cannot be undone.`,
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
                 {
@@ -104,10 +112,10 @@ export class GroupsPage {
                     role: 'destructive',
                     handler: async () => {
                         try {
-                            await this.groupsService.delete(g.id);
+                            await this.playersService.delete(p.id);
                             await this.load();
                         } catch (e: any) {
-                            await this.showError(e?.message ?? 'Could not delete group.');
+                            await this.showError(e?.message ?? 'Could not delete player.');
                         }
                     },
                 },

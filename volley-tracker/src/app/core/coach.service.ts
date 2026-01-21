@@ -1,15 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
-import { BehaviorSubject } from 'rxjs';
 
-export type Coach = {
+export interface Coach {
     id: string;
     name: string;
-    createdAt: string; // ISO
-};
+}
 
+const ACTIVE_COACH_KEY = 'VT_ACTIVE_COACH';
 const COACHES_KEY = 'VT_COACHES';
-const ACTIVE_COACH_KEY = 'VT_ACTIVE_COACH_ID';
 
 function uid() {
     return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
@@ -17,33 +15,78 @@ function uid() {
 
 @Injectable({ providedIn: 'root' })
 export class CoachService {
-    private activeCoachIdSubject = new BehaviorSubject<string | null>(null);
-    activeCoachId$ = this.activeCoachIdSubject.asObservable();
+    activeCoachId: string | null = null;
+    activeCoachName: string | null = null;
 
     private initialized = false;
 
-    get activeCoachId(): string | null {
-        return this.activeCoachIdSubject.value;
-    }
-
-    async init(): Promise<void> {
+    async init() {
         if (this.initialized) return;
+
         const { value } = await Preferences.get({ key: ACTIVE_COACH_KEY });
-        this.activeCoachIdSubject.next(value ?? null);
+        if (value) {
+            const coach = JSON.parse(value) as Coach;
+            this.activeCoachId = coach.id;
+            this.activeCoachName = coach.name;
+        }
+
         this.initialized = true;
     }
 
-    async listCoaches(): Promise<Coach[]> {
+    async getAllCoaches(): Promise<Coach[]> {
         const { value } = await Preferences.get({ key: COACHES_KEY });
-        return value ? (JSON.parse(value) as Coach[]) : [];
+        return value ? JSON.parse(value) : [];
     }
 
+    async setActiveCoach(coach: Coach) {
+        this.activeCoachId = coach.id;
+        this.activeCoachName = coach.name;
+
+        await Preferences.set({
+            key: ACTIVE_COACH_KEY,
+            value: JSON.stringify(coach),
+        });
+    }
+
+    async createCoach(name: string): Promise<Coach> {
+        const trimmed = name.trim();
+        if (!trimmed) throw new Error('Coach name is required');
+
+        const coaches = await this.getAllCoaches();
+
+        const coach: Coach = {
+            id: uid(),
+            name: trimmed,
+        };
+
+        coaches.push(coach);
+
+        await Preferences.set({
+            key: COACHES_KEY,
+            value: JSON.stringify(coaches),
+        });
+
+        await this.setActiveCoach(coach);
+
+        return coach;
+    }
+
+    /**
+  * Finds coach by name (case-insensitive). If not found, creates it.
+  * Returns the coach object.
+  */
     async upsertCoachByName(name: string): Promise<Coach> {
+        await this.init();
+
         const trimmed = (name ?? '').trim();
         if (!trimmed) throw new Error('Coach name is required.');
 
-        const coaches = await this.listCoaches();
-        const existing = coaches.find(c => c.name.toLowerCase() === trimmed.toLowerCase());
+        const coaches = await this.getAllCoaches();
+
+        const existing = coaches.find(
+            c => c.name.trim().toLowerCase() === trimmed.toLowerCase()
+        );
+
         if (existing) return existing;
 
         const coach: Coach = {
@@ -52,26 +95,15 @@ export class CoachService {
             createdAt: new Date().toISOString(),
         };
 
-        coaches.push(coach);
+        coaches.unshift(coach);
         await Preferences.set({ key: COACHES_KEY, value: JSON.stringify(coaches) });
+
         return coach;
     }
 
-    async setActiveCoach(id: string): Promise<void> {
-        await Preferences.set({ key: ACTIVE_COACH_KEY, value: id });
-        this.activeCoachIdSubject.next(id); // 🔥 instant update
-    }
-
-    async clearActiveCoach(): Promise<void> {
+    async clearActiveCoach() {
+        this.activeCoachId = null;
+        this.activeCoachName = null;
         await Preferences.remove({ key: ACTIVE_COACH_KEY });
-        this.activeCoachIdSubject.next(null);
-    }
-
-    async getActiveCoach(): Promise<Coach | null> {
-        await this.init();
-        const id = this.activeCoachId;
-        if (!id) return null;
-        const coaches = await this.listCoaches();
-        return coaches.find(c => c.id === id) ?? null;
     }
 }
