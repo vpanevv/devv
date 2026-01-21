@@ -1,5 +1,3 @@
-export type Theme = 'dark' | 'light';
-
 export interface Group {
     id: string;
     name: string;
@@ -13,12 +11,13 @@ export interface Player {
     createdAt: string; // ISO date string
 }
 
-export type AttendaceStatus = 'present' | 'absent' | 'excused';
+export type AttendanceStatus = 'present' | 'absent' | 'excused';
 
-export type AttendanceByGroup = Record<string, Record<string, Record<string, AttendaceStatus>>>;
+export type AttendanceByGroup =
+    Record<string, Record<string, Record<string, AttendanceStatus>>>;
 
+// NOTE: вече НЕ пазим coachName тук (coach-овете са отделно)
 export interface AppStateV1 {
-    coachName: string | null;
     groups: Group[];
     players: Player[];
     attendance: AttendanceByGroup;

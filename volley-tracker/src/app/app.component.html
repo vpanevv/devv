@@ -1,3 +1,15 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>VolleyTracker</ion-title>
+
+      <ion-buttons slot="end">
+        <ion-button (click)="switchCoach()">Switch coach</ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-content>
+    <ion-router-outlet></ion-router-outlet>
+  </ion-content>
 </ion-app>

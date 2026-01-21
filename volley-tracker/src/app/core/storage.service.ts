@@ -1,18 +1,16 @@
-import { Injectable } from "@angular/core";
-import { Preferences } from "@capacitor/preferences";
-import { AppStateV1 } from "./models";
+import { Injectable } from '@angular/core';
+import { Preferences } from '@capacitor/preferences';
+import { AppStateV1 } from './models';
 
-const STORAGE_KEY = 'volleytracker:v1';
+const STORAGE_KEY = 'CapacitorStorage.vt.state.v1';
 
 const DEFAULT_STATE: AppStateV1 = {
-    coachName: null,
     groups: [],
     players: [],
-    attendance: {}
+    attendance: {},
 };
 
 @Injectable({ providedIn: 'root' })
-
 export class StorageService {
     async load(): Promise<AppStateV1> {
         const { value } = await Preferences.get({ key: STORAGE_KEY });
@@ -20,7 +18,7 @@ export class StorageService {
         if (!value) return { ...DEFAULT_STATE };
 
         try {
-            const parsed = JSON.parse(value) as AppStateV1;
+            const parsed = JSON.parse(value) as Partial<AppStateV1>;
 
             return {
                 ...DEFAULT_STATE,
@@ -37,7 +35,7 @@ export class StorageService {
     async save(state: AppStateV1): Promise<void> {
         await Preferences.set({
             key: STORAGE_KEY,
-            value: JSON.stringify(state)
+            value: JSON.stringify(state),
         });
     }
 

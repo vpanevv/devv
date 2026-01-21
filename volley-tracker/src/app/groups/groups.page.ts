@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, AlertController } from '@ionic/angular';
-import { Router } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
+
 import { GroupsService } from '../core/groups.service';
+import { CoachService } from '../core/coach.service';
 import { Group } from '../core/models';
 
 @Component({
@@ -11,29 +13,35 @@ import { Group } from '../core/models';
     imports: [CommonModule, IonicModule],
     templateUrl: './groups.page.html',
 })
-export class GroupsPage {
-    coachName: string | null = null;
-
+export class GroupsPage implements OnDestroy {
     groups: Group[] = [];
-    playersCountByGroup: Record<string, number> = {};
+    coachName: string | null = null;
 
     isLoading = true;
     error: string | null = null;
 
+    private destroy$ = new Subject<void>();
+
     constructor(
         private groupsService: GroupsService,
-        private alertCtrl: AlertController,
-        private router: Router
-    ) { }
+        private coachService: CoachService,
+        private alertCtrl: AlertController
+    ) {
+        // 🔥 instant reload when coach changes
+        this.coachService.activeCoachId$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(async () => {
+                await this.load();
+            });
+    }
 
     async ionViewWillEnter() {
-        this.coachName = await this.groupsService.getCoachName();
-        if (!this.coachName) {
-            await this.router.navigateByUrl('/setup', { replaceUrl: true });
-            return;
-        }
-
         await this.load();
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     private async load() {
@@ -41,40 +49,18 @@ export class GroupsPage {
         this.error = null;
 
         try {
-            const state = await this.groupsService.getState();
-            this.groups = state.groups ?? [];
+            await this.coachService.init();
+            const coach = await this.coachService.getActiveCoach();
+            this.coachName = coach?.name ?? null;
 
-            const counts: Record<string, number> = {};
-            for (const p of state.players ?? []) {
-                counts[p.groupId] = (counts[p.groupId] ?? 0) + 1;
-            }
-            this.playersCountByGroup = counts;
-        } catch (e) {
+            this.groups = await this.groupsService.getAll();
+        } catch (e: any) {
             console.error(e);
-            this.error = 'Failed to load groups.';
+            this.error = e?.message ?? 'Failed to load groups.';
+            this.groups = [];
         } finally {
             this.isLoading = false;
         }
-    }
-
-    async changeName() {
-        const alert = await this.alertCtrl.create({
-            header: 'Change coach name?',
-            message: 'This will take you back to the welcome screen.',
-            buttons: [
-                { text: 'Cancel', role: 'cancel' },
-                {
-                    text: 'Change',
-                    role: 'destructive',
-                    handler: async () => {
-                        await this.groupsService.clearCoachName();
-                        await this.router.navigateByUrl('/setup', { replaceUrl: true });
-                    },
-                },
-            ],
-        });
-
-        await alert.present();
     }
 
     async addGroup() {
@@ -127,7 +113,7 @@ export class GroupsPage {
     async deleteGroup(g: Group) {
         const alert = await this.alertCtrl.create({
             header: 'Delete group?',
-            message: `This will remove <b>${g.name}</b> and all its players & attendance history.`,
+            message: `This will remove <b>${g.name}</b>.`,
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
                 {

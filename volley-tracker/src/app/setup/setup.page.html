@@ -1,24 +1,24 @@
 <ion-header>
     <ion-toolbar>
-        <ion-title>Welcome</ion-title>
+        <ion-title>Setup</ion-title>
     </ion-toolbar>
 </ion-header>
 
 <ion-content class="ion-padding">
     <ion-card>
         <ion-card-header>
-            <ion-card-title>Set your coach name</ion-card-title>
-            <ion-card-subtitle>One-time setup</ion-card-subtitle>
+            <ion-card-title>Training Tracker</ion-card-title>
+            <ion-card-subtitle>Set your coach name</ion-card-subtitle>
         </ion-card-header>
 
         <ion-card-content>
             <ion-item>
                 <ion-label position="stacked">Coach name</ion-label>
-                <ion-input [(ngModel)]="coachName" placeholder="e.g. Vladi"></ion-input>
+                <ion-input [(ngModel)]="coachName" placeholder="e.g. Vladimir"></ion-input>
             </ion-item>
 
-            <ion-button expand="block" (click)="save()" [disabled]="isSaving">
-                {{ isSaving ? 'Saving...' : 'Save' }}
+            <ion-button expand="block" style="margin-top:14px;" (click)="save()" [disabled]="isSaving">
+                {{ isSaving ? 'Saving…' : 'Save' }}
             </ion-button>
         </ion-card-content>
     </ion-card>

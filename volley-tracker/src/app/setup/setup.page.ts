@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { IonicModule, AlertController } from '@ionic/angular';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { GroupsService } from '../core/groups.service';
+import { CoachService } from '../core/coach.service';
 
 @Component({
     selector: 'app-setup',
@@ -16,20 +16,19 @@ export class SetupPage {
     isSaving = false;
 
     constructor(
-        private groupsService: GroupsService,
+        private coachService: CoachService,
         private router: Router,
         private alertCtrl: AlertController
     ) { }
 
     async ionViewWillEnter() {
-        const name = await this.groupsService.getCoachName();
-        if (name) {
-            await this.router.navigateByUrl('/groups', { replaceUrl: true });
-        }
+        await this.coachService.init();
+        const coach = await this.coachService.getActiveCoach();
+        this.coachName = coach?.name ?? '';
     }
 
     async save() {
-        const name = (this.coachName || '').trim();
+        const name = (this.coachName ?? '').trim();
         if (!name) {
             const a = await this.alertCtrl.create({
                 header: 'Validation',
@@ -42,12 +41,13 @@ export class SetupPage {
 
         this.isSaving = true;
         try {
-            await this.groupsService.setCoachName(name);
+            const coach = await this.coachService.upsertCoachByName(name);
+            await this.coachService.setActiveCoach(coach.id);
             await this.router.navigateByUrl('/groups', { replaceUrl: true });
         } catch (e: any) {
             const a = await this.alertCtrl.create({
                 header: 'Error',
-                message: e?.message ?? 'Could not save coach name.',
+                message: e?.message ?? 'Could not save coach.',
                 buttons: ['OK'],
             });
             await a.present();
