@@ -1,13 +1,10 @@
 import { Routes } from '@angular/router';
+import { SetupPage } from './setup/setup.page';
+import { GroupsPage } from './groups/groups.page';
 
 export const routes: Routes = [
-  {
-    path: 'home',
-    loadComponent: () => import('./home/home.page').then((m) => m.HomePage),
-  },
-  {
-    path: '',
-    redirectTo: 'home',
-    pathMatch: 'full',
-  },
+  { path: '', redirectTo: 'setup', pathMatch: 'full' },
+  { path: 'setup', component: SetupPage },
+  { path: 'groups', component: GroupsPage },
+  { path: '**', redirectTo: 'setup' },
 ];
