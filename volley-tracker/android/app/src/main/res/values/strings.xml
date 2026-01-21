@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">VolleyTracker</string>
-    <string name="title_activity_main">VolleyTracker</string>
-    <string name="package_name">com.vladimir.volleytracker</string>
-    <string name="custom_url_scheme">com.vladimir.volleytracker</string>
-</resources>
