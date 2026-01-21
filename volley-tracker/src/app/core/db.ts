@@ -6,34 +6,39 @@ import {
   SQLiteDBConnection,
 } from '@capacitor-community/sqlite';
 
-const DB_NAME = 'volleytracker';
-const DB_VERSION = 1;
+const DB_NAME = 'volleytracker'; // database file name
+const DB_VERSION = 1; // database version
 
 @Injectable({ providedIn: 'root' })
 export class DbService {
-  private sqlite = new SQLiteConnection(CapacitorSQLite);
-  private db: SQLiteDBConnection | null = null;
-  private initializing: Promise<void> | null = null;
+  private sqlite = new SQLiteConnection(CapacitorSQLite); // the manager of the sqlite connections
+  private db: SQLiteDBConnection | null = null; // the database connection instance (db.Open(), db.close(), db.query(), ...)
+  private initializing: Promise<void> | null = null; // keep Promise while initializing
 
+  // Initialize the database connection and run migrations
+
+  // the heart of the DbService
   async init(): Promise<void> {
-    if (this.db) return;
-    if (this.initializing) return this.initializing;
+    if (this.db) return; // if DB is already open, return
+    if (this.initializing) return this.initializing; // if already initializing, return the same Promise
 
     this.initializing = (async () => {
-      const platform = Capacitor.getPlatform();
+      const platform = Capacitor.getPlatform(); // to make difference between 'web'(ionic serve) and 'ios'/'android'
 
       // ✅ IMPORTANT for WEB (ionic serve) – initialize jeep-sqlite bridge
       if (platform === 'web') {
         // This is provided by jeep-sqlite (see main.ts + index.html below)
         // @ts-ignore
-        await customElements.whenDefined('jeep-sqlite');
+        await customElements.whenDefined('jeep-sqlite'); // web component which makes the bridge 
         // @ts-ignore
         const jeepEl = document.querySelector('jeep-sqlite');
         if (!jeepEl) throw new Error('jeep-sqlite element not found in index.html');
 
-        await this.sqlite.initWebStore();
+        await this.sqlite.initWebStore(); // REQUIRED to initialize the web store and to work in the browser
       }
 
+
+      // create (or get if already created) a database connection
       this.db = await this.sqlite.createConnection(
         DB_NAME,
         false,              // encrypted
@@ -42,10 +47,12 @@ export class DbService {
         false               // readonly
       );
 
+      // this guarantees that the database is open before CRUD operations and the tables exist
       await this.db.open();
       await this.runMigrations();
     })();
 
+    // wait until initialization is complete, if init() is failed, reset initializing to null
     try {
       await this.initializing;
     } finally {
@@ -57,11 +64,11 @@ export class DbService {
     if (!this.db) throw new Error('DB not initialized');
 
     // Enable foreign keys
-    await this.db.execute(`PRAGMA foreign_keys = ON;`);
+    await this.db.execute(`PRAGMA foreign_keys = ON;`); // SQLite on default has foreign keys disabled, this enables them
 
     // Schema (V1)
     await this.db.execute(`
-      CREATE TABLE IF NOT EXISTS coaches (
+      CREATE TABLE IF NOT EXISTS coaches ( 
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
         createdAt TEXT NOT NULL
