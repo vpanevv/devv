@@ -15,9 +15,10 @@ export function uid(prefix = ''): string {
     const bytes = crypto.getRandomValues(new Uint8Array(16));
 
     // convert to hex
-    const hex = Array.from(bytes)
+    const hex = Array.from(bytes) // превръща Uint8Array в обикновен JS масив [12, 255, 3, 98, ...]
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
+    // b е число от 0 до 255 -> превръща го в hex (0-ff) -> 0->"00", 10->"0a", 255->"ff"
 
     return prefix ? `${prefix}_${hex}` : hex;
 }
