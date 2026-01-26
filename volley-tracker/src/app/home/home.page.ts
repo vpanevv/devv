@@ -1,27 +1,27 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import {
-  IonHeader, IonToolbar, IonTitle, IonContent,
-  IonButton, IonActionSheet
+  IonContent,
+  IonButton,
+  IonIcon,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { arrowForwardOutline, readerOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, IonHeader, IonToolbar, IonTitle, IonContent, IonButton, IonActionSheet],
+  imports: [IonContent, IonButton, IonIcon],
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
 })
 export class HomePage {
-  isOpen = false;
+  constructor(private router: Router) {
+    // регистрираме иконите, за да работят в iOS/Android
+    addIcons({ arrowForwardOutline, readerOutline });
+  }
 
-  buttons = [
-    { text: 'Delete', role: 'destructive', handler: () => console.log('Delete') },
-    { text: 'Share', handler: () => console.log('Share') },
-    { text: 'Cancel', role: 'cancel' },
-  ];
-
-  openActions() {
-    this.isOpen = true;
+  getStarted() {
+    this.router.navigateByUrl('/setup');
   }
 }

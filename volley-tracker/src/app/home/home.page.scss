@@ -1,44 +1,170 @@
-#container {
-  text-align: center;
+// .vt-home {
+//   --background: transparent;
+// }
 
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+// .vt-bg {
+//   position: absolute;
+//   inset: 0;
+//   background:
+//     radial-gradient(1200px 700px at 20% 10%, rgba(60, 130, 255, 0.35), transparent 55%),
+//     radial-gradient(900px 600px at 85% 25%, rgba(120, 90, 255, 0.28), transparent 55%),
+//     radial-gradient(900px 600px at 40% 95%, rgba(0, 200, 180, 0.20), transparent 55%),
+//     linear-gradient(180deg, #0b0f1a 0%, #06080f 100%);
+// }
+
+// .vt-wrap {
+//   position: relative;
+//   min-height: 100%;
+//   display: flex;
+//   flex-direction: column;
+//   justify-content: center;
+//   padding: 28px 20px;
+//   max-width: 520px;
+//   margin: 0 auto;
+//   gap: 20px;
+// }
+
+// .vt-hero {
+//   text-align: center;
+//   color: #fff;
+// }
+
+// .vt-appicon {
+//   width: 64px;
+//   height: 64px;
+//   margin: 0 auto 12px;
+//   border-radius: 18px;
+//   display: grid;
+//   place-items: center;
+//   background: rgba(255, 255, 255, 0.08);
+//   border: 1px solid rgba(255, 255, 255, 0.12);
+//   backdrop-filter: blur(12px);
+//   -webkit-backdrop-filter: blur(12px);
+
+//   ion-icon {
+//     font-size: 30px;
+//     color: rgba(255, 255, 255, 0.92);
+//   }
+// }
+
+// .vt-title {
+//   font-size: 34px;
+//   font-weight: 800;
+//   letter-spacing: -0.6px;
+//   margin: 0;
+// }
+
+// .vt-subtitle {
+//   margin: 8px 0 0;
+//   opacity: 0.82;
+//   font-size: 15px;
+// }
+
+// .vt-card {
+//   background: rgba(255, 255, 255, 0.08);
+//   border: 1px solid rgba(255, 255, 255, 0.12);
+//   border-radius: 18px;
+//   padding: 18px;
+//   color: rgba(255, 255, 255, 0.92);
+//   backdrop-filter: blur(14px);
+//   -webkit-backdrop-filter: blur(14px);
+// }
+
+// .vt-card-title {
+//   margin: 0;
+//   font-weight: 700;
+//   font-size: 16px;
+//   letter-spacing: -0.2px;
+// }
+
+// .vt-card-text {
+//   margin: 8px 0 14px;
+//   opacity: 0.82;
+//   font-size: 14px;
+//   line-height: 1.35;
+// }
+
+// .vt-cta {
+//   --border-radius: 14px;
+//   --box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+//   font-weight: 700;
+// }
+
+// .vt-hint {
+//   margin: 12px 0 0;
+//   font-size: 12px;
+//   opacity: 0.65;
+//   text-align: center;
+// }
+
+ion-content {
+  --background: transparent;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
-}
-
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
-}
-
-#container a {
-  text-decoration: none;
-}
-
-.wrap {
+.hero {
+  position: relative;
   height: 100%;
+  width: 100%;
+
+  background-image: url('/assets/volleyball.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.55),
+      rgba(0, 0, 0, 0.75));
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+
+  height: 100%;
+  padding: 24px;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
   text-align: center;
-  padding: 24px;
+  color: #fff;
+
+  h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 32px;
+  }
+
+  ion-button {
+    --background: #4f8cff;
+    --box-shadow: 0 10px 30px rgba(79, 140, 255, 0.4);
+    font-weight: 600;
+  }
 }
 
-.center {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.subtitle {
+  display: inline-block;
+  padding: 8px 14px;
+  margin-bottom: 24px;
+
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+
+  border-radius: 12px;
+
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
 }
