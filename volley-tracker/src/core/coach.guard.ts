@@ -16,3 +16,5 @@ export const coachGuard: CanActivateFn = async () => {
 
     return true;
 };
+
+// #sourceMappingURL=coach.guard.js.map
