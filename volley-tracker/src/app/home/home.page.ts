@@ -6,7 +6,7 @@ import {
   IonIcon,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { arrowForwardOutline } from 'ionicons/icons';
+import { arrowForwardOutline, readerOutline } from 'ionicons/icons';
 
 @Component({
   selector: 'app-home',
@@ -18,7 +18,7 @@ import { arrowForwardOutline } from 'ionicons/icons';
 export class HomePage {
   constructor(private router: Router) {
     // регистрираме иконите, за да работят в iOS/Android
-    addIcons({ arrowForwardOutline });
+    addIcons({ arrowForwardOutline, readerOutline });
   }
 
   getStarted() {

@@ -1,15 +1,16 @@
-<ion-content [fullscreen]="true" class="vt-home">
+<!-- <ion-content [fullscreen]="true" class="vt-home">
   <div class="vt-bg"></div>
 
   <div class="vt-wrap">
     <div class="vt-hero">
       <div class="vt-appicon">
-        <!--<ion-icon name="volleyball-outline"></ion-icon>-->
+        <ion-icon name="reader-outline"></ion-icon>
       </div>
 
       <h1 class="vt-title">VolleyTracker</h1>
       <p class="vt-subtitle">
-        Track attendance fast. Stay organized.
+        The app designed for volleyball coaches.
+        Track your team fast & stay organized.
       </p>
     </div>
 
@@ -27,6 +28,25 @@
       <p class="vt-hint">
         Offline-first • iOS-style UI
       </p>
+    </div>
+  </div>
+</ion-content> -->
+
+<ion-content fullscreen>
+  <div class="hero">
+    <div class="overlay"></div>
+
+    <div class="content">
+      <h1>VolleyTracker</h1>
+
+      <p class="subtitle">
+        Track attendance fast. Stay organized.
+      </p>
+
+      <ion-button shape="round" size="large" (click)="getStarted()">
+        Get Started
+        <ion-icon slot="end" name="arrow-forward-outline"></ion-icon>
+      </ion-button>
     </div>
   </div>
 </ion-content>
