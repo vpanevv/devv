@@ -35,3 +35,40 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+
+/* VolleyTracker shared background (reusable on any page) */
+.vt-bg {
+    --background: transparent;
+    position: relative;
+}
+
+.vt-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("/assets/volleyball.jpg") center/cover no-repeat;
+    filter: blur(10px);
+    transform: scale(1.06);
+    /* avoids edge blur borders */
+    z-index: 0;
+}
+
+.vt-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    /* dark overlay for readability */
+    z-index: 1;
+}
+
+/* Content wrapper that sits ABOVE the background */
+.vt-bg>.vt-screen {
+    position: relative;
+    z-index: 2;
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
