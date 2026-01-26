@@ -110,25 +110,25 @@ export class CoachService {
      * We keep active coach in SQLite, so everything is consistent & offline.
      * This is a "single-row config" table pattern.
      */
-    async getActiveCoachId(): Promise<string | null> {
-        // ensure meta row exists
-        await this.ensureMetaRow();
+    private readonly ACTIVE_KEY = 'ACTIVE_COACH_ID';
 
-        const rows = await this.db.query<{ activeCoachId: string | null }>(
-            `SELECT activeCoachId FROM app_meta WHERE id = 1 LIMIT 1`
+    async getActiveCoachId(): Promise<string | null> {
+        const rows = await this.db.query<{ value: string | null }>(
+            `SELECT value FROM app_settings WHERE key = ? LIMIT 1`,
+            [this.ACTIVE_KEY]
         );
 
-        const v = rows[0]?.activeCoachId ?? null;
+        const v = rows[0]?.value ?? null;
         return v && v.trim() ? v : null;
     }
 
     async setActiveCoachId(coachId: string | null): Promise<void> {
-        await this.ensureMetaRow();
+        // UPSERT pattern
         await this.db.execute(
-            `UPDATE app_meta
-       SET activeCoachId = ?
-       WHERE id = 1`,
-            [coachId]
+            `INSERT INTO app_settings (key, value)
+     VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+            [this.ACTIVE_KEY, coachId]
         );
     }
 
@@ -136,29 +136,5 @@ export class CoachService {
         const id = await this.getActiveCoachId();
         if (!id) return null;
         return this.getById(id);
-    }
-
-    // ---------- internal ----------
-
-    private async ensureMetaRow(): Promise<void> {
-        // Create the table if not exists (safe), then ensure row id=1 exists.
-        // NOTE: If you already created app_meta in migrations, this is still safe.
-        await this.db.execute(`
-      CREATE TABLE IF NOT EXISTS app_meta (
-        id INTEGER PRIMARY KEY NOT NULL,
-        activeCoachId TEXT NULL
-      );
-    `);
-
-        const rows = await this.db.query<{ cnt: number }>(
-            `SELECT COUNT(1) as cnt FROM app_meta WHERE id = 1`
-        );
-
-        if ((rows[0]?.cnt ?? 0) === 0) {
-            await this.db.execute(
-                `INSERT INTO app_meta (id, activeCoachId)
-         VALUES (1, NULL)`
-            );
-        }
     }
 }
