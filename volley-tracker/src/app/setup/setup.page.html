@@ -1,4 +1,4 @@
-<ion-content [fullscreen]="true">
+<!-- <ion-content [fullscreen]="true">
     <div class="hero">
         <div class="overlay"></div>
 
@@ -27,6 +27,44 @@
                     <ion-icon slot="end" name="arrow-forward-outline"></ion-icon>
                 </ion-button>
             </div>
+        </div>
+    </div>
+</ion-content> -->
+
+<ion-content [fullscreen]="true" class="setup-bg">
+    <div class="hero">
+        <div class="overlay">
+        </div>
+
+        <div class="wrap">
+            <div class="title">
+                <h1>Create your coach profile</h1>
+            </div>
+
+            <ion-card class="glass">
+                <ion-card-header>
+                    <ion-card-title class="text-name">Coach details</ion-card-title>
+                    <ion-card-subtitle>One-time setup (you can switch later)</ion-card-subtitle>
+                </ion-card-header>
+
+                <ion-card-content>
+                    <ion-item lines="none" class="input-item">
+                        <ion-label position="stacked" class="text-name">Coach name</ion-label>
+                        <ion-input [(ngModel)]="coachName" placeholder="e.g. Vladi" [disabled]="isSaving"
+                            enterkeyhint="done"></ion-input>
+                    </ion-item>
+
+                    <div *ngIf="error" class="error">
+                        <ion-text color="danger">{{ error }}</ion-text>
+                    </div>
+
+                    <ion-button expand="block" shape="round" size="large" class="primary" (click)="continue()"
+                        [disabled]="isSaving">
+                        <ion-spinner *ngIf="isSaving" name="crescent" style="margin-right: 10px"></ion-spinner>
+                        Create
+                    </ion-button>
+                </ion-card-content>
+            </ion-card>
         </div>
     </div>
 </ion-content>
