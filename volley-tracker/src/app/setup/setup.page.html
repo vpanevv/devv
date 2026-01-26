@@ -1,0 +1,32 @@
+<ion-content [fullscreen]="true">
+    <div class="hero">
+        <div class="overlay"></div>
+
+        <div class="content">
+            <h1>Setup</h1>
+
+            <p class="subtitle">
+                Create your coach profile and start adding groups and players.
+            </p>
+
+            <div class="card">
+                <div class="card-title">
+                    <ion-icon name="person-circle-outline"></ion-icon>
+                    <span>Coach name</span>
+                </div>
+
+                <ion-item lines="none" class="input-item">
+                    <ion-label position="stacked" class="text-name">Your name</ion-label>
+                    <ion-input [(ngModel)]="coachName" placeholder="e.g. John" inputmode="text"
+                        autocomplete="name"></ion-input>
+                </ion-item>
+
+                <ion-button expand="block" shape="round" size="large" class="primary-btn"
+                    [disabled]="!coachName.trim() || isSaving" (click)="continue()">
+                    Continue
+                    <ion-icon slot="end" name="arrow-forward-outline"></ion-icon>
+                </ion-button>
+            </div>
+        </div>
+    </div>
+</ion-content>
