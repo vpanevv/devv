@@ -6,7 +6,7 @@ This repo contains my practice projects, experiments, and real-world application
 
 ---
 
-## 👨‍💻 About Me hehe
+## 👨‍💻 About Me 
 
 I'm **Vladimir**, a **Full Stack Developer** with **3+ years of experience** working with:
 
