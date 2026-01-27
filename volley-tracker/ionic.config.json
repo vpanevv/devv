@@ -1,7 +1,0 @@
-{
-  "name": "volley-tracker",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "angular-standalone"
-}
