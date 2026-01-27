@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  VolleyTracker
 //
-//  Created by Vladimir Panev on 27/01/2026.
+//  Created by Vladimir Panev on 27/01/2026. First time iOS app.
 //
 
 import SwiftUI
