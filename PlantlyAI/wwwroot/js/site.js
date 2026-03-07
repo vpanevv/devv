@@ -25,35 +25,112 @@ if (dateElement && timeElement) {
   window.setInterval(updateSignalClock, 1000);
 }
 
-const servicesDialog = document.querySelector("[data-services-dialog]");
-const openServicesButton = document.querySelector("[data-open-services-dialog]");
-const closeServicesButtons = document.querySelectorAll("[data-close-services-dialog]");
+const setupDialog = ({ dialogSelector, openSelector, closeSelector }) => {
+  const dialog = document.querySelector(dialogSelector);
+  const openButton = document.querySelector(openSelector);
+  const closeButtons = document.querySelectorAll(closeSelector);
 
-if (servicesDialog && openServicesButton) {
-  const toggleServicesDialog = (isOpen) => {
-    servicesDialog.hidden = !isOpen;
+  if (!dialog || !openButton) {
+    return;
+  }
+
+  const toggleDialog = (isOpen) => {
+    dialog.hidden = !isOpen;
     document.body.style.overflow = isOpen ? "hidden" : "";
   };
 
-  openServicesButton.addEventListener("click", () => {
-    toggleServicesDialog(true);
+  openButton.addEventListener("click", () => {
+    toggleDialog(true);
   });
 
-  closeServicesButtons.forEach((button) => {
+  closeButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      toggleServicesDialog(false);
+      toggleDialog(false);
     });
   });
 
-  servicesDialog.addEventListener("click", (event) => {
-    if (event.target === servicesDialog) {
-      toggleServicesDialog(false);
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) {
+      toggleDialog(false);
     }
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !servicesDialog.hidden) {
-      toggleServicesDialog(false);
+    if (event.key === "Escape" && !dialog.hidden) {
+      toggleDialog(false);
     }
+  });
+};
+
+setupDialog({
+  dialogSelector: "[data-services-dialog]",
+  openSelector: "[data-open-services-dialog]",
+  closeSelector: "[data-close-services-dialog]"
+});
+
+setupDialog({
+  dialogSelector: "[data-brand-dialog]",
+  openSelector: "[data-open-brand-dialog]",
+  closeSelector: "[data-close-brand-dialog]"
+});
+
+const mapLocationInput = document.querySelector("[data-map-location-input]");
+const mapChoiceButtons = document.querySelectorAll("[data-map-choice]");
+const mapLocationSelect = document.querySelector("[data-map-location-select]");
+
+if (mapLocationInput && mapChoiceButtons.length > 0) {
+  mapChoiceButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      mapLocationInput.value = button.getAttribute("data-map-choice") ?? "";
+      mapLocationInput.focus();
+    });
+  });
+}
+
+if (mapLocationInput && mapLocationSelect) {
+  mapLocationSelect.addEventListener("change", () => {
+    mapLocationInput.value = mapLocationSelect.value;
+    mapLocationInput.focus();
+  });
+}
+
+const frequencyInput = document.querySelector("[data-frequency-input]");
+const frequencyOptions = document.querySelectorAll("[data-frequency-choice]");
+
+if (frequencyInput && frequencyOptions.length > 0) {
+  frequencyOptions.forEach((button) => {
+    button.addEventListener("click", () => {
+      frequencyOptions.forEach((option) => {
+        option.classList.remove("is-selected");
+      });
+
+      button.classList.add("is-selected");
+      frequencyInput.value = button.getAttribute("data-frequency-choice") ?? "";
+    });
+  });
+}
+
+const platformToggles = document.querySelectorAll("[data-platform-toggle]");
+
+if (platformToggles.length > 0) {
+  platformToggles.forEach((toggle) => {
+    const platformName = toggle.getAttribute("data-platform-toggle");
+
+    if (!platformName) {
+      return;
+    }
+
+    const linkInput = document.querySelector(`[data-platform-link="${platformName}"]`);
+
+    if (!(linkInput instanceof HTMLInputElement) || !(toggle instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const syncPlatformRequirement = () => {
+      linkInput.required = toggle.checked;
+    };
+
+    syncPlatformRequirement();
+    toggle.addEventListener("change", syncPlatformRequirement);
   });
 }

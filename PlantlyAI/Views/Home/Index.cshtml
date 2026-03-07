@@ -1,4 +1,6 @@
-﻿@{
+﻿@model BrandSetupViewModel
+
+@{
     ViewData["Title"] = "Plantly AI";
 }
 
@@ -51,9 +53,9 @@
                 Plan campaigns, organize your posting calendar, and grow a brand presence with an AI-first workflow.
             </p>
             <div class="hero-actions">
-                <a class="hero-cta" href="#" role="button" aria-label="Sign in to Plantly AI">
+                <button class="hero-cta" type="button" aria-label="Sign in to Plantly AI" data-open-brand-dialog>
                     SIGN IN
-                </a>
+                </button>
                 <a class="hero-cta" href="#" role="button" aria-label="Log in to Plantly AI">
                     LOG IN
                 </a>
@@ -117,6 +119,269 @@
                         </p>
                     </article>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="services-dialog-backdrop" data-brand-dialog hidden>
+        <div class="services-dialog brand-dialog" role="dialog" aria-modal="true" aria-labelledby="brand-dialog-title">
+            <div class="services-dialog-background" aria-hidden="true">
+                <span class="dialog-orb dialog-orb-one"></span>
+                <span class="dialog-orb dialog-orb-two"></span>
+                <span class="dialog-orb dialog-orb-three"></span>
+                <span class="dialog-spark dialog-spark-one"></span>
+                <span class="dialog-spark dialog-spark-two"></span>
+                <span class="dialog-spark dialog-spark-three"></span>
+                <span class="dialog-spark dialog-spark-four"></span>
+            </div>
+
+            <button class="services-close" type="button" aria-label="Close sign in dialog" data-close-brand-dialog>
+                X
+            </button>
+
+            <div class="services-dialog-content">
+                <div class="brand-dialog-header">
+                    <p class="brand-dialog-kicker">Create your business workspace</p>
+                    <h2 id="brand-dialog-title">Set Up Plantly AI For Your Brand</h2>
+                    <p class="brand-dialog-copy">
+                        Start with the essentials your business needs so Plantly AI can build smarter content plans,
+                        stronger brand guidance, and a more useful dashboard from day one.
+                    </p>
+                </div>
+
+                <form class="brand-form" enctype="multipart/form-data">
+                    <div class="brand-section-card">
+                        <div class="brand-section-heading">
+                            <span class="brand-section-step">01</span>
+                            <div>
+                                <h3>Basic Brand Information</h3>
+                                <p>The core identity of the brand.</p>
+                            </div>
+                        </div>
+
+                        <div class="brand-form-grid">
+                            <label class="field-group field-group-full">
+                                <span class="field-label">Business Email <strong>*</strong></span>
+                                <input asp-for="Email" type="email" placeholder="founder@yourbrand.com" required />
+                            </label>
+
+                            <label class="field-group">
+                                <span class="field-label">Brand Name <strong>*</strong></span>
+                                <input asp-for="BrandName" type="text" placeholder="Plantly Coffee Studio" required />
+                            </label>
+
+                            <label class="field-group">
+                                <span class="field-label">Industry</span>
+                                <select asp-for="Industry">
+                                    <option value="">Select industry</option>
+                                    <option>Restaurant</option>
+                                    <option>Tech</option>
+                                    <option>Fashion</option>
+                                    <option>Beauty</option>
+                                    <option>Fitness</option>
+                                    <option>Wellness</option>
+                                    <option>Real Estate</option>
+                                    <option>Education</option>
+                                    <option>Other</option>
+                                </select>
+                            </label>
+
+                            <label class="field-group">
+                                <span class="field-label">Website URL</span>
+                                <input asp-for="WebsiteUrl" type="url" placeholder="https://yourbrand.com" />
+                            </label>
+
+                            <div class="field-group">
+                                <span class="field-label">Business Location</span>
+                                <div class="map-picker">
+                                    <div class="map-surface">
+                                        <span class="map-grid"></span>
+                                        <span class="map-pin map-pin-one"></span>
+                                        <span class="map-pin map-pin-two"></span>
+                                        <span class="map-pin map-pin-three"></span>
+                                    </div>
+                                    <div class="map-actions">
+                                        <button class="map-chip" type="button" data-map-choice="Sofia">Sofia</button>
+                                        <button class="map-chip" type="button" data-map-choice="London">London</button>
+                                        <button class="map-chip" type="button" data-map-choice="New York">New York</button>
+                                        <button class="map-chip" type="button" data-map-choice="Paris">Paris</button>
+                                        <button class="map-chip" type="button" data-map-choice="Berlin">Berlin</button>
+                                        <button class="map-chip" type="button" data-map-choice="Dubai">Dubai</button>
+                                        <button class="map-chip" type="button" data-map-choice="Tokyo">Tokyo</button>
+                                        <button class="map-chip" type="button" data-map-choice="Los Angeles">Los Angeles</button>
+                                    </div>
+                                    <div class="location-picker-grid">
+                                        <select data-map-location-select>
+                                            <option value="">Choose a city</option>
+                                            <option>Sofia</option>
+                                            <option>London</option>
+                                            <option>New York</option>
+                                            <option>Paris</option>
+                                            <option>Berlin</option>
+                                            <option>Dubai</option>
+                                            <option>Tokyo</option>
+                                            <option>Los Angeles</option>
+                                            <option>Barcelona</option>
+                                            <option>Amsterdam</option>
+                                        </select>
+                                        <input asp-for="BusinessLocation" type="text" placeholder="Selected city or custom location" data-map-location-input />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <label class="field-group">
+                                <span class="field-label">Logo Upload</span>
+                                <span class="upload-panel">
+                                    <span class="upload-background" aria-hidden="true">
+                                        <span class="upload-orb upload-orb-one"></span>
+                                        <span class="upload-orb upload-orb-two"></span>
+                                        <span class="upload-grid"></span>
+                                    </span>
+                                    <span class="upload-content">
+                                        <span class="upload-badge">Future-ready brand identity</span>
+                                        <span class="upload-title">Drop your logo or browse files</span>
+                                        <span class="upload-copy">Prepare your workspace for AI visuals, branded templates, and polished content outputs.</span>
+                                        <span class="upload-button">Choose Logo File</span>
+                                    </span>
+                                    <input class="upload-input" type="file" accept="image/*" />
+                                </span>
+                            </label>
+
+                            <label class="field-group field-group-full">
+                                <span class="field-label">Short Description</span>
+                                <textarea asp-for="ShortDescription" rows="3" placeholder="Describe what your business does and what makes it different."></textarea>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="brand-section-card">
+                        <div class="brand-section-heading">
+                            <span class="brand-section-step">02</span>
+                            <div>
+                                <h3>Social Media Presence</h3>
+                                <p>Primary platforms and publishing rhythm.</p>
+                            </div>
+                        </div>
+
+                        <div class="brand-form-grid">
+                            <fieldset class="field-group field-group-full">
+                                <legend class="field-label">Primary Platforms</legend>
+                                <div class="check-grid">
+                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="instagram" /> Instagram</label>
+                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="facebook" /> Facebook</label>
+                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="linkedin" /> LinkedIn</label>
+                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="tiktok" /> TikTok</label>
+                                </div>
+                            </fieldset>
+
+                            <label class="field-group">
+                                <span class="field-label">Instagram Link</span>
+                                <input type="url" placeholder="https://instagram.com/yourbrand" data-platform-link="instagram" />
+                            </label>
+
+                            <label class="field-group">
+                                <span class="field-label">Facebook Link</span>
+                                <input type="url" placeholder="https://facebook.com/yourbrand" data-platform-link="facebook" />
+                            </label>
+
+                            <label class="field-group">
+                                <span class="field-label">LinkedIn Link</span>
+                                <input type="url" placeholder="https://linkedin.com/company/yourbrand" data-platform-link="linkedin" />
+                            </label>
+
+                            <label class="field-group">
+                                <span class="field-label">TikTok Link</span>
+                                <input type="url" placeholder="https://tiktok.com/yourbrand" data-platform-link="tiktok" />
+                            </label>
+
+                            <fieldset class="field-group field-group-full">
+                                <legend class="field-label">Posting Frequency Goal</legend>
+                                <div class="frequency-selector">
+                                    <button class="frequency-option" type="button" data-frequency-choice="1 post/week">1 / week</button>
+                                    <button class="frequency-option" type="button" data-frequency-choice="2 posts/week">2 / week</button>
+                                    <button class="frequency-option" type="button" data-frequency-choice="3 posts/week">3 / week</button>
+                                    <button class="frequency-option" type="button" data-frequency-choice="5 posts/week">5 / week</button>
+                                    <button class="frequency-option" type="button" data-frequency-choice="7 posts/week">Daily</button>
+                                </div>
+                                <input asp-for="PostingFrequencyGoal" type="hidden" data-frequency-input />
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="brand-section-card">
+                        <div class="brand-section-heading">
+                            <span class="brand-section-step">03</span>
+                            <div>
+                                <h3>Target Audience</h3>
+                                <p>Helps with planning and AI generation.</p>
+                            </div>
+                        </div>
+
+                        <div class="brand-form-grid">
+                            <fieldset class="field-group field-group-full">
+                                <legend class="field-label">Age Range Choice</legend>
+                                <div class="check-grid">
+                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 18-24</label>
+                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 25-34</label>
+                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 35-44</label>
+                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 45+</label>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="brand-section-card">
+                        <div class="brand-section-heading">
+                            <span class="brand-section-step">04</span>
+                            <div>
+                                <h3>Brand Voice</h3>
+                                <p>The most important section for AI guidance.</p>
+                            </div>
+                        </div>
+
+                        <div class="brand-form-grid">
+                            <fieldset class="field-group field-group-full">
+                                <legend class="field-label">Brand Voice</legend>
+                                <div class="check-grid">
+                                    <label class="choice-pill"><input type="checkbox" /> Professional</label>
+                                    <label class="choice-pill"><input type="checkbox" /> Friendly</label>
+                                    <label class="choice-pill"><input type="checkbox" /> Luxury</label>
+                                    <label class="choice-pill"><input type="checkbox" /> Playful</label>
+                                    <label class="choice-pill"><input type="checkbox" /> Minimal</label>
+                                    <label class="choice-pill"><input type="checkbox" /> Bold</label>
+                                    <label class="choice-pill"><input type="checkbox" /> Inspirational</label>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="brand-section-card">
+                        <div class="brand-section-heading">
+                            <span class="brand-section-step">05</span>
+                            <div>
+                                <h3>Content Goals</h3>
+                                <p>Define the main business outcome you want from your content.</p>
+                            </div>
+                        </div>
+
+                        <div class="brand-form-grid">
+                            <fieldset class="field-group field-group-full">
+                                <legend class="field-label">Main Goal</legend>
+                                <div class="check-grid">
+                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Brand Awareness</label>
+                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Engagement</label>
+                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Sales</label>
+                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Community Growth</label>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+
+                    <div class="brand-form-actions">
+                        <p><strong>*</strong> Required for the initial sign-in flow.</p>
+                        <button class="workspace-cta" type="button">CREATE WORKSPACE</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
