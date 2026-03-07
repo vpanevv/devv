@@ -2,6 +2,9 @@
 
 @{
     ViewData["Title"] = "Plantly AI";
+    var openBrandDialog = ViewData["OpenBrandDialog"] as bool? ?? false;
+    var statusMessage = TempData["StatusMessage"] as string;
+    var openSuccessDialog = TempData["OpenSuccessDialog"] as bool? ?? false;
 }
 
 <section class="hero-shell">
@@ -45,6 +48,11 @@
     </div>
 
     <div class="hero-content">
+        @if (!string.IsNullOrWhiteSpace(statusMessage) && !openSuccessDialog)
+        {
+            <div class="status-toast">@statusMessage</div>
+        }
+
         <p class="hero-eyebrow">AI CONTENT PLANNER FOR BUSINESSES</p>
 
         <div class="hero-card">
@@ -123,7 +131,7 @@
         </div>
     </div>
 
-    <div class="services-dialog-backdrop" data-brand-dialog hidden>
+    <div class="services-dialog-backdrop" data-brand-dialog hidden="@(openBrandDialog ? null : "hidden")">
         <div class="services-dialog brand-dialog" role="dialog" aria-modal="true" aria-labelledby="brand-dialog-title">
             <div class="services-dialog-background" aria-hidden="true">
                 <span class="dialog-orb dialog-orb-one"></span>
@@ -149,7 +157,9 @@
                     </p>
                 </div>
 
-                <form class="brand-form" enctype="multipart/form-data">
+                <form asp-action="CreateWorkspace" asp-controller="Home" method="post" class="brand-form" enctype="multipart/form-data" novalidate data-brand-form>
+                    <div asp-validation-summary="ModelOnly" class="validation-panel"></div>
+
                     <div class="brand-section-card">
                         <div class="brand-section-heading">
                             <span class="brand-section-step">01</span>
@@ -213,16 +223,16 @@
                                     <div class="location-picker-grid">
                                         <select data-map-location-select>
                                             <option value="">Choose a city</option>
-                                            <option>Sofia</option>
-                                            <option>London</option>
-                                            <option>New York</option>
-                                            <option>Paris</option>
-                                            <option>Berlin</option>
-                                            <option>Dubai</option>
-                                            <option>Tokyo</option>
-                                            <option>Los Angeles</option>
-                                            <option>Barcelona</option>
-                                            <option>Amsterdam</option>
+                                            <option selected="@(Model.BusinessLocation == "Sofia" ? "selected" : null)">Sofia</option>
+                                            <option selected="@(Model.BusinessLocation == "London" ? "selected" : null)">London</option>
+                                            <option selected="@(Model.BusinessLocation == "New York" ? "selected" : null)">New York</option>
+                                            <option selected="@(Model.BusinessLocation == "Paris" ? "selected" : null)">Paris</option>
+                                            <option selected="@(Model.BusinessLocation == "Berlin" ? "selected" : null)">Berlin</option>
+                                            <option selected="@(Model.BusinessLocation == "Dubai" ? "selected" : null)">Dubai</option>
+                                            <option selected="@(Model.BusinessLocation == "Tokyo" ? "selected" : null)">Tokyo</option>
+                                            <option selected="@(Model.BusinessLocation == "Los Angeles" ? "selected" : null)">Los Angeles</option>
+                                            <option selected="@(Model.BusinessLocation == "Barcelona" ? "selected" : null)">Barcelona</option>
+                                            <option selected="@(Model.BusinessLocation == "Amsterdam" ? "selected" : null)">Amsterdam</option>
                                         </select>
                                         <input asp-for="BusinessLocation" type="text" placeholder="Selected city or custom location" data-map-location-input />
                                     </div>
@@ -243,7 +253,7 @@
                                         <span class="upload-copy">Prepare your workspace for AI visuals, branded templates, and polished content outputs.</span>
                                         <span class="upload-button">Choose Logo File</span>
                                     </span>
-                                    <input class="upload-input" type="file" accept="image/*" />
+                                    <input asp-for="LogoFile" class="upload-input" type="file" accept="image/*" />
                                 </span>
                             </label>
 
@@ -267,31 +277,31 @@
                             <fieldset class="field-group field-group-full">
                                 <legend class="field-label">Primary Platforms</legend>
                                 <div class="check-grid">
-                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="instagram" /> Instagram</label>
-                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="facebook" /> Facebook</label>
-                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="linkedin" /> LinkedIn</label>
-                                    <label class="choice-pill"><input type="checkbox" data-platform-toggle="tiktok" /> TikTok</label>
+                                    <label class="choice-pill"><input type="checkbox" name="SelectedPlatforms" value="Instagram" data-platform-toggle="instagram" checked="@(Model.SelectedPlatforms.Contains("Instagram") ? "checked" : null)" /> Instagram</label>
+                                    <label class="choice-pill"><input type="checkbox" name="SelectedPlatforms" value="Facebook" data-platform-toggle="facebook" checked="@(Model.SelectedPlatforms.Contains("Facebook") ? "checked" : null)" /> Facebook</label>
+                                    <label class="choice-pill"><input type="checkbox" name="SelectedPlatforms" value="LinkedIn" data-platform-toggle="linkedin" checked="@(Model.SelectedPlatforms.Contains("LinkedIn") ? "checked" : null)" /> LinkedIn</label>
+                                    <label class="choice-pill"><input type="checkbox" name="SelectedPlatforms" value="TikTok" data-platform-toggle="tiktok" checked="@(Model.SelectedPlatforms.Contains("TikTok") ? "checked" : null)" /> TikTok</label>
                                 </div>
                             </fieldset>
 
                             <label class="field-group">
                                 <span class="field-label">Instagram Link</span>
-                                <input type="url" placeholder="https://instagram.com/yourbrand" data-platform-link="instagram" />
+                                <input asp-for="InstagramUrl" type="url" placeholder="https://instagram.com/yourbrand" data-platform-link="instagram" />
                             </label>
 
                             <label class="field-group">
                                 <span class="field-label">Facebook Link</span>
-                                <input type="url" placeholder="https://facebook.com/yourbrand" data-platform-link="facebook" />
+                                <input asp-for="FacebookUrl" type="url" placeholder="https://facebook.com/yourbrand" data-platform-link="facebook" />
                             </label>
 
                             <label class="field-group">
                                 <span class="field-label">LinkedIn Link</span>
-                                <input type="url" placeholder="https://linkedin.com/company/yourbrand" data-platform-link="linkedin" />
+                                <input asp-for="LinkedInUrl" type="url" placeholder="https://linkedin.com/company/yourbrand" data-platform-link="linkedin" />
                             </label>
 
                             <label class="field-group">
                                 <span class="field-label">TikTok Link</span>
-                                <input type="url" placeholder="https://tiktok.com/yourbrand" data-platform-link="tiktok" />
+                                <input asp-for="TikTokUrl" type="url" placeholder="https://tiktok.com/yourbrand" data-platform-link="tiktok" />
                             </label>
 
                             <fieldset class="field-group field-group-full">
@@ -321,10 +331,10 @@
                             <fieldset class="field-group field-group-full">
                                 <legend class="field-label">Age Range Choice</legend>
                                 <div class="check-grid">
-                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 18-24</label>
-                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 25-34</label>
-                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 35-44</label>
-                                    <label class="choice-pill"><input type="radio" name="AgeRange" /> 45+</label>
+                                    <label class="choice-pill"><input asp-for="AgeRange" type="radio" value="18-24" checked="@(Model.AgeRange == "18-24" ? "checked" : null)" /> 18-24</label>
+                                    <label class="choice-pill"><input asp-for="AgeRange" type="radio" value="25-34" checked="@(Model.AgeRange == "25-34" ? "checked" : null)" /> 25-34</label>
+                                    <label class="choice-pill"><input asp-for="AgeRange" type="radio" value="35-44" checked="@(Model.AgeRange == "35-44" ? "checked" : null)" /> 35-44</label>
+                                    <label class="choice-pill"><input asp-for="AgeRange" type="radio" value="45+" checked="@(Model.AgeRange == "45+" ? "checked" : null)" /> 45+</label>
                                 </div>
                             </fieldset>
                         </div>
@@ -343,13 +353,13 @@
                             <fieldset class="field-group field-group-full">
                                 <legend class="field-label">Brand Voice</legend>
                                 <div class="check-grid">
-                                    <label class="choice-pill"><input type="checkbox" /> Professional</label>
-                                    <label class="choice-pill"><input type="checkbox" /> Friendly</label>
-                                    <label class="choice-pill"><input type="checkbox" /> Luxury</label>
-                                    <label class="choice-pill"><input type="checkbox" /> Playful</label>
-                                    <label class="choice-pill"><input type="checkbox" /> Minimal</label>
-                                    <label class="choice-pill"><input type="checkbox" /> Bold</label>
-                                    <label class="choice-pill"><input type="checkbox" /> Inspirational</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Professional" checked="@(Model.BrandVoices.Contains("Professional") ? "checked" : null)" /> Professional</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Friendly" checked="@(Model.BrandVoices.Contains("Friendly") ? "checked" : null)" /> Friendly</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Luxury" checked="@(Model.BrandVoices.Contains("Luxury") ? "checked" : null)" /> Luxury</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Playful" checked="@(Model.BrandVoices.Contains("Playful") ? "checked" : null)" /> Playful</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Minimal" checked="@(Model.BrandVoices.Contains("Minimal") ? "checked" : null)" /> Minimal</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Bold" checked="@(Model.BrandVoices.Contains("Bold") ? "checked" : null)" /> Bold</label>
+                                    <label class="choice-pill"><input type="checkbox" name="BrandVoices" value="Inspirational" checked="@(Model.BrandVoices.Contains("Inspirational") ? "checked" : null)" /> Inspirational</label>
                                 </div>
                             </fieldset>
                         </div>
@@ -368,10 +378,10 @@
                             <fieldset class="field-group field-group-full">
                                 <legend class="field-label">Main Goal</legend>
                                 <div class="check-grid">
-                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Brand Awareness</label>
-                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Engagement</label>
-                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Sales</label>
-                                    <label class="choice-pill"><input type="radio" name="MainGoal" /> Community Growth</label>
+                                    <label class="choice-pill"><input asp-for="MainGoal" type="radio" value="Brand Awareness" checked="@(Model.MainGoal == "Brand Awareness" ? "checked" : null)" /> Brand Awareness</label>
+                                    <label class="choice-pill"><input asp-for="MainGoal" type="radio" value="Engagement" checked="@(Model.MainGoal == "Engagement" ? "checked" : null)" /> Engagement</label>
+                                    <label class="choice-pill"><input asp-for="MainGoal" type="radio" value="Sales" checked="@(Model.MainGoal == "Sales" ? "checked" : null)" /> Sales</label>
+                                    <label class="choice-pill"><input asp-for="MainGoal" type="radio" value="Community Growth" checked="@(Model.MainGoal == "Community Growth" ? "checked" : null)" /> Community Growth</label>
                                 </div>
                             </fieldset>
                         </div>
@@ -379,9 +389,34 @@
 
                     <div class="brand-form-actions">
                         <p><strong>*</strong> Required for the initial sign-in flow.</p>
-                        <button class="workspace-cta" type="button">CREATE WORKSPACE</button>
+                        <button class="workspace-cta" type="submit">CREATE WORKSPACE</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="services-dialog-backdrop" data-success-dialog hidden="@(openSuccessDialog ? null : "hidden")">
+        <div class="services-dialog success-dialog" role="dialog" aria-modal="true" aria-labelledby="success-dialog-title">
+            <div class="services-dialog-background" aria-hidden="true">
+                <span class="dialog-orb dialog-orb-one"></span>
+                <span class="dialog-orb dialog-orb-two"></span>
+                <span class="dialog-orb dialog-orb-three"></span>
+                <span class="dialog-spark dialog-spark-one"></span>
+                <span class="dialog-spark dialog-spark-two"></span>
+                <span class="dialog-spark dialog-spark-three"></span>
+            </div>
+
+            <button class="services-close" type="button" aria-label="Close success dialog" data-close-success-dialog>
+                X
+            </button>
+
+            <div class="services-dialog-content success-dialog-content">
+                <p class="brand-dialog-kicker">Workspace ready</p>
+                <h2 id="success-dialog-title">The workspace is created</h2>
+                <p class="brand-dialog-copy">
+                    The form data has been saved, and this popup is here for testing the successful flow.
+                </p>
             </div>
         </div>
     </div>
