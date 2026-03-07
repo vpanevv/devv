@@ -27,10 +27,10 @@ if (dateElement && timeElement) {
 
 const setupDialog = ({ dialogSelector, openSelector, closeSelector }) => {
   const dialog = document.querySelector(dialogSelector);
-  const openButton = document.querySelector(openSelector);
+  const openButton = openSelector ? document.querySelector(openSelector) : null;
   const closeButtons = document.querySelectorAll(closeSelector);
 
-  if (!dialog || !openButton) {
+  if (!dialog) {
     return;
   }
 
@@ -39,7 +39,7 @@ const setupDialog = ({ dialogSelector, openSelector, closeSelector }) => {
     document.body.style.overflow = isOpen ? "hidden" : "";
   };
 
-  openButton.addEventListener("click", () => {
+  openButton?.addEventListener("click", () => {
     toggleDialog(true);
   });
 
@@ -74,6 +74,11 @@ setupDialog({
   closeSelector: "[data-close-brand-dialog]"
 });
 
+setupDialog({
+  dialogSelector: "[data-success-dialog]",
+  closeSelector: "[data-close-success-dialog]"
+});
+
 const mapLocationInput = document.querySelector("[data-map-location-input]");
 const mapChoiceButtons = document.querySelectorAll("[data-map-choice]");
 const mapLocationSelect = document.querySelector("[data-map-location-select]");
@@ -98,6 +103,14 @@ const frequencyInput = document.querySelector("[data-frequency-input]");
 const frequencyOptions = document.querySelectorAll("[data-frequency-choice]");
 
 if (frequencyInput && frequencyOptions.length > 0) {
+  if (frequencyInput instanceof HTMLInputElement && frequencyInput.value) {
+    frequencyOptions.forEach((option) => {
+      if (option.getAttribute("data-frequency-choice") === frequencyInput.value) {
+        option.classList.add("is-selected");
+      }
+    });
+  }
+
   frequencyOptions.forEach((button) => {
     button.addEventListener("click", () => {
       frequencyOptions.forEach((option) => {
@@ -132,5 +145,56 @@ if (platformToggles.length > 0) {
 
     syncPlatformRequirement();
     toggle.addEventListener("change", syncPlatformRequirement);
+  });
+}
+
+const brandForm = document.querySelector("[data-brand-form]");
+
+if (brandForm instanceof HTMLFormElement) {
+  const clearFieldErrors = () => {
+    brandForm.querySelectorAll(".field-group.has-error").forEach((group) => {
+      group.classList.remove("has-error");
+    });
+
+    brandForm.querySelectorAll(".field-error").forEach((error) => {
+      error.remove();
+    });
+  };
+
+  const showFieldError = (field, message) => {
+    const group = field.closest(".field-group");
+
+    if (!group) {
+      return;
+    }
+
+    group.classList.add("has-error");
+
+    const error = document.createElement("div");
+    error.className = "field-error";
+    error.textContent = message;
+    group.appendChild(error);
+  };
+
+  brandForm.addEventListener("submit", (event) => {
+    clearFieldErrors();
+
+    const invalidFields = Array.from(brandForm.querySelectorAll("input, select, textarea"))
+      .filter((field) => field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)
+      .filter((field) => !field.checkValidity());
+
+    if (invalidFields.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    invalidFields.forEach((field) => {
+      showFieldError(field, field.validationMessage);
+    });
+
+    const firstInvalid = invalidFields[0];
+    firstInvalid.focus();
+    firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 }

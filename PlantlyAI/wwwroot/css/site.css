@@ -185,6 +185,17 @@ a {
   width: min(100%, 44rem);
 }
 
+.status-toast {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1.15rem;
+  border: 1px solid rgba(121, 255, 183, 0.26);
+  border-radius: 999px;
+  background: rgba(7, 24, 30, 0.78);
+  color: #dffef0;
+  font-weight: 700;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+
 .services-cta {
   position: absolute;
   left: 50%;
@@ -333,6 +344,16 @@ a {
   width: min(100%, 76rem);
   max-height: min(90vh, 62rem);
   overflow-y: auto;
+}
+
+.success-dialog {
+  width: min(100%, 34rem);
+  max-height: none;
+  padding-bottom: 2.4rem;
+}
+
+.success-dialog-content {
+  text-align: center;
 }
 
 .services-dialog-content {
@@ -549,6 +570,49 @@ a {
   z-index: 2;
   display: grid;
   gap: 1.15rem;
+}
+
+.validation-panel {
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 120, 120, 0.2);
+  border-radius: 1.2rem;
+  background: rgba(48, 11, 18, 0.72);
+  color: #ffd7db;
+  text-align: center;
+}
+
+.validation-panel:empty {
+  display: none;
+}
+
+.validation-panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.validation-panel li + li {
+  margin-top: 0.45rem;
+}
+
+.field-group.has-error .field-label,
+.field-group.has-error .field-label strong {
+  color: #ff97a3;
+}
+
+.field-group.has-error input,
+.field-group.has-error select,
+.field-group.has-error textarea {
+  border-color: rgba(255, 151, 163, 0.72);
+  box-shadow:
+    0 0 0 4px rgba(255, 151, 163, 0.12),
+    0 10px 24px rgba(255, 151, 163, 0.08);
+}
+
+.field-error {
+  color: #ffb4bc;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .brand-section-card {
