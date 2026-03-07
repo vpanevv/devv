@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FootballScore.API", "FootballScore.API\FootballScore.API.csproj", "{1ADE70A9-D75B-1942-14AF-0353153834CE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlantlyAI", "PlantlyAI\PlantlyAI.csproj", "{089C1025-42AF-4E24-BA35-495BCBFADE74}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{1ADE70A9-D75B-1942-14AF-0353153834CE}.Release|x64.Build.0 = Release|Any CPU
 		{1ADE70A9-D75B-1942-14AF-0353153834CE}.Release|x86.ActiveCfg = Release|Any CPU
 		{1ADE70A9-D75B-1942-14AF-0353153834CE}.Release|x86.Build.0 = Release|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Debug|x64.Build.0 = Debug|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Debug|x86.Build.0 = Debug|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Release|x64.ActiveCfg = Release|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Release|x64.Build.0 = Release|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Release|x86.ActiveCfg = Release|Any CPU
+		{089C1025-42AF-4E24-BA35-495BCBFADE74}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
