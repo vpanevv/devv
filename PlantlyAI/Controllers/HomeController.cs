@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PlantlyAI.Data;
 using PlantlyAI.Models;
 
@@ -8,6 +10,7 @@ namespace PlantlyAI.Controllers;
 
 public class HomeController : Controller
 {
+    private const string WorkspaceSessionKey = "WorkspaceId";
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IWebHostEnvironment _environment;
@@ -25,6 +28,44 @@ public class HomeController : Controller
     public IActionResult Index()
     {
         return View(new BrandSetupViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LogIn(string email)
+    {
+        var normalizedEmail = email?.Trim() ?? string.Empty;
+
+        if (!new EmailAddressAttribute().IsValid(normalizedEmail))
+        {
+            return ShowLoginError("Please enter a valid email address.", normalizedEmail);
+        }
+
+        var user = await _userManager.FindByEmailAsync(normalizedEmail);
+
+        if (user is null)
+        {
+            return ShowLoginError("A brand name with this email isn't registered.", normalizedEmail);
+        }
+
+        var workspace = await _dbContext.Workspaces
+            .AsNoTracking()
+            .Where(x => x.Members.Any(member => member.UserId == user.Id))
+            .OrderBy(x => x.CreatedUtc)
+            .Select(x => new WorkspaceWelcomeViewModel
+            {
+                Id = x.Id,
+                BrandName = x.BrandName
+            })
+            .FirstOrDefaultAsync();
+
+        if (workspace is null)
+        {
+            return ShowLoginError("A brand name with this email isn't registered.", normalizedEmail);
+        }
+
+        HttpContext.Session.SetInt32(WorkspaceSessionKey, workspace.Id);
+        return RedirectToAction(nameof(Workspace));
     }
 
     [HttpPost]
@@ -100,6 +141,34 @@ public class HomeController : Controller
         return View();
     }
 
+    public async Task<IActionResult> Workspace()
+    {
+        var workspaceId = HttpContext.Session.GetInt32(WorkspaceSessionKey);
+
+        if (workspaceId is null)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        var workspace = await _dbContext.Workspaces
+            .AsNoTracking()
+            .Where(x => x.Id == workspaceId.Value)
+            .Select(x => new WorkspaceWelcomeViewModel
+            {
+                Id = x.Id,
+                BrandName = x.BrandName
+            })
+            .FirstOrDefaultAsync();
+
+        if (workspace is null)
+        {
+            HttpContext.Session.Remove(WorkspaceSessionKey);
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(workspace);
+    }
+
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {
@@ -141,5 +210,13 @@ public class HomeController : Controller
             Platform = platform,
             ProfileUrl = profileUrl
         });
+    }
+
+    private IActionResult ShowLoginError(string message, string? email)
+    {
+        ViewData["OpenLoginDialog"] = true;
+        ViewData["LoginError"] = message;
+        ViewData["LoginEmail"] = email;
+        return View("Index", new BrandSetupViewModel());
     }
 }
