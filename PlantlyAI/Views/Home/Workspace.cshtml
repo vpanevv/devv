@@ -1,0 +1,33 @@
+@model WorkspaceWelcomeViewModel
+
+@{
+    ViewData["Title"] = $"{Model.BrandName} Workspace";
+}
+
+<section class="hero-shell">
+    <div class="hero-background" aria-hidden="true">
+        <span class="orb orb-one"></span>
+        <span class="orb orb-two"></span>
+        <span class="orb orb-three"></span>
+        <span class="orb orb-four"></span>
+        <span class="orb orb-five"></span>
+        <span class="orb orb-six"></span>
+        <span class="spark spark-one"></span>
+        <span class="spark spark-two"></span>
+        <span class="spark spark-three"></span>
+        <span class="spark spark-four"></span>
+        <span class="spark spark-five"></span>
+        <span class="spark spark-six"></span>
+        <span class="spark spark-seven"></span>
+        <span class="spark spark-eight"></span>
+        <span class="halo-ring halo-ring-one"></span>
+        <span class="halo-ring halo-ring-two"></span>
+        <span class="data-stream data-stream-one"></span>
+        <span class="data-stream data-stream-two"></span>
+        <span class="grid-glow"></span>
+    </div>
+
+    <div class="workspace-welcome">
+        <h1>Welcome to the @Model.BrandName workspace</h1>
+    </div>
+</section>

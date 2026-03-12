@@ -75,6 +75,12 @@ setupDialog({
 });
 
 setupDialog({
+  dialogSelector: "[data-login-dialog]",
+  openSelector: "[data-open-login-dialog]",
+  closeSelector: "[data-close-login-dialog]"
+});
+
+setupDialog({
   dialogSelector: "[data-success-dialog]",
   closeSelector: "[data-close-success-dialog]"
 });
@@ -146,6 +152,28 @@ if (platformToggles.length > 0) {
     syncPlatformRequirement();
     toggle.addEventListener("change", syncPlatformRequirement);
   });
+}
+
+const logoUploadInput = document.querySelector("[data-logo-upload-input]");
+const logoUploadStatus = document.querySelector("[data-logo-upload-status]");
+const logoUploadPanel = document.querySelector("[data-logo-upload-panel]");
+
+if (
+  logoUploadInput instanceof HTMLInputElement &&
+  logoUploadStatus &&
+  logoUploadPanel
+) {
+  const defaultUploadStatus = logoUploadStatus.textContent?.trim() || "Choose Logo File";
+
+  const syncLogoUploadState = () => {
+    const hasFile = Boolean(logoUploadInput.files?.length);
+
+    logoUploadStatus.textContent = hasFile ? "Successful uploading" : defaultUploadStatus;
+    logoUploadPanel.classList.toggle("is-uploaded", hasFile);
+  };
+
+  syncLogoUploadState();
+  logoUploadInput.addEventListener("change", syncLogoUploadState);
 }
 
 const brandForm = document.querySelector("[data-brand-form]");

@@ -3,6 +3,9 @@
 @{
     ViewData["Title"] = "Plantly AI";
     var openBrandDialog = ViewData["OpenBrandDialog"] as bool? ?? false;
+    var openLoginDialog = ViewData["OpenLoginDialog"] as bool? ?? false;
+    var loginError = ViewData["LoginError"] as string;
+    var loginEmail = ViewData["LoginEmail"] as string;
     var statusMessage = TempData["StatusMessage"] as string;
     var openSuccessDialog = TempData["OpenSuccessDialog"] as bool? ?? false;
 }
@@ -64,9 +67,9 @@
                 <button class="hero-cta" type="button" aria-label="Sign in to Plantly AI" data-open-brand-dialog>
                     SIGN IN
                 </button>
-                <a class="hero-cta" href="#" role="button" aria-label="Log in to Plantly AI">
+                <button class="hero-cta hero-cta-secondary" type="button" aria-label="Log in to Plantly AI" data-open-login-dialog>
                     LOG IN
-                </a>
+                </button>
             </div>
         </div>
     </div>
@@ -241,7 +244,7 @@
 
                             <label class="field-group">
                                 <span class="field-label">Logo Upload</span>
-                                <span class="upload-panel">
+                                <span class="upload-panel" data-logo-upload-panel>
                                     <span class="upload-background" aria-hidden="true">
                                         <span class="upload-orb upload-orb-one"></span>
                                         <span class="upload-orb upload-orb-two"></span>
@@ -251,9 +254,9 @@
                                         <span class="upload-badge">Future-ready brand identity</span>
                                         <span class="upload-title">Drop your logo or browse files</span>
                                         <span class="upload-copy">Prepare your workspace for AI visuals, branded templates, and polished content outputs.</span>
-                                        <span class="upload-button">Choose Logo File</span>
+                                        <span class="upload-button" data-logo-upload-status aria-live="polite">Choose Logo File</span>
                                     </span>
-                                    <input asp-for="LogoFile" class="upload-input" type="file" accept="image/*" />
+                                    <input asp-for="LogoFile" class="upload-input" type="file" accept="image/*" data-logo-upload-input />
                                 </span>
                             </label>
 
@@ -390,6 +393,56 @@
                     <div class="brand-form-actions">
                         <p><strong>*</strong> Required for the initial sign-in flow.</p>
                         <button class="workspace-cta" type="submit">CREATE WORKSPACE</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="services-dialog-backdrop" data-login-dialog hidden="@(openLoginDialog ? null : "hidden")">
+        <div class="services-dialog login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-dialog-title">
+            <div class="services-dialog-background" aria-hidden="true">
+                <span class="dialog-orb dialog-orb-one"></span>
+                <span class="dialog-orb dialog-orb-two"></span>
+                <span class="dialog-orb dialog-orb-three"></span>
+                <span class="dialog-spark dialog-spark-one"></span>
+                <span class="dialog-spark dialog-spark-two"></span>
+                <span class="dialog-spark dialog-spark-three"></span>
+                <span class="dialog-spark dialog-spark-four"></span>
+            </div>
+
+            <button class="services-close" type="button" aria-label="Close log in dialog" data-close-login-dialog>
+                X
+            </button>
+
+            <div class="services-dialog-content">
+                <div class="brand-dialog-header">
+                    <p class="brand-dialog-kicker">Log in to your workspace</p>
+                    <h2 id="login-dialog-title">Continue with your business email</h2>
+                    <p class="brand-dialog-copy">
+                        Use the same email address you used when creating the workspace.
+                    </p>
+                </div>
+
+                <form asp-action="LogIn" asp-controller="Home" method="post" class="brand-form login-form">
+                    @Html.AntiForgeryToken()
+
+                    @if (!string.IsNullOrWhiteSpace(loginError))
+                    {
+                        <div class="validation-panel validation-panel-inline">
+                            <ul>
+                                <li>@loginError</li>
+                            </ul>
+                        </div>
+                    }
+
+                    <label class="field-group field-group-full">
+                        <span class="field-label">Business Email <strong>*</strong></span>
+                        <input name="email" type="email" value="@loginEmail" placeholder="founder@yourbrand.com" required />
+                    </label>
+
+                    <div class="brand-form-actions login-form-actions">
+                        <button class="workspace-cta" type="submit">LOG IN</button>
                     </div>
                 </form>
             </div>
