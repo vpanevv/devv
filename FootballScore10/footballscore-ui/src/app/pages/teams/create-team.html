@@ -1,9 +1,11 @@
-<div class="container">
+<div class="container formPage">
     <div class="pageHead">
         <div>
-            <h1 class="h1">Add team</h1>
-            <p class="sub">Create a new team for the league.</p>
+            <div class="cardEyebrow">Club management</div>
+            <h1 class="h1">Add a new team</h1>
+            <p class="sub">Register a club and it joins the league standings instantly.</p>
         </div>
+        <a class="btn btn-ghost" routerLink="/standings">← Back to dashboard</a>
     </div>
 
     <div *ngIf="error" class="alert error" style="margin-bottom: 12px;">{{ error }}</div>
@@ -12,8 +14,7 @@
         <form [formGroup]="form" (ngSubmit)="submit()">
             <div class="field">
                 <label class="label">Team name</label>
-                <input class="input" formControlName="name" placeholder="e.g. Barcelona" />
-
+                <input class="input" formControlName="name" placeholder="e.g. Arsenal" />
                 <div class="hint" *ngIf="form.controls['name'].touched && form.controls['name'].invalid">
                     <span *ngIf="form.controls['name'].errors?.['required']">Name is required.</span>
                     <span *ngIf="form.controls['name'].errors?.['minlength']">Min 3 chars.</span>
@@ -22,31 +23,27 @@
             </div>
 
             <div class="actions">
-                <button type="button" class="btn" (click)="cancel()" [disabled]="isSaving">Cancel</button>
-
+                <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="isSaving">Cancel</button>
                 <button class="btn btn-primary" type="submit" [disabled]="isSaving">
-                    {{ isSaving ? 'Saving…' : 'Create team' }}
+                    {{ isSaving ? 'Saving…' : '＋ Create team' }}
                 </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- ✅ Success modal -->
 <div *ngIf="successOpen" class="modalOverlay" (click)="closeSuccess()">
     <div class="modalCard" (click)="$event.stopPropagation()">
-        <div class="modalHeader">
-            <div class="modalBadge">Premier League</div>
-            <div class="modalTitle">{{ successTitle }}</div>
+        <div class="modalHead">
+            <div>
+                <div class="cardEyebrow gradient-ai">✓ Registered</div>
+                <div class="modalTitle">{{ successTitle }}</div>
+            </div>
             <button class="modalClose" type="button" (click)="closeSuccess()">✕</button>
         </div>
-
-        <div class="modalBody">
-            <div class="modalText">{{ successText }}</div>
-        </div>
-
+        <div class="modalBody">{{ successText }}</div>
         <div class="modalActions">
-            <button class="btn btn-primary" type="button" (click)="closeSuccess()">OK</button>
+            <button class="btn btn-primary" type="button" (click)="closeSuccess()">Go to league</button>
         </div>
     </div>
 </div>
