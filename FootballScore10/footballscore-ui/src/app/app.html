@@ -1,10 +1,90 @@
 <div class="splashOverlay" *ngIf="showSplash">
-    <div class="splashCard">
-        <div class="splashTitle">Welcome to Premier League standing</div>
-        <div class="splashSub">Loading your table…</div>
+    <div class="splashPitch">
+        <div class="splashLines"></div>
+        <div class="splashCard">
+            <div class="splashLogo">
+                <div class="splashCrest">
+                    <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="splashG" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#00ff87" />
+                                <stop offset="100%" stop-color="#05f0ff" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M24 4 L40 12 L40 28 C40 37 33 42 24 44 C15 42 8 37 8 28 L8 12 Z"
+                              fill="url(#splashG)" stroke="#fff" stroke-width="1.4" opacity="0.95"/>
+                        <text x="24" y="29" text-anchor="middle" font-size="14" font-weight="900"
+                              fill="#37003c">FPL</text>
+                    </svg>
+                </div>
+                <div class="splashBrand">
+                    <div class="splashEyebrow">Premier League</div>
+                    <div class="splashTitle">Fantasy</div>
+                </div>
+            </div>
+            <div class="splashSub">
+                <span class="splashDot"></span>
+                Loading matchweek…
+            </div>
+        </div>
     </div>
 </div>
 
 <div class="appShell" [class.isBlur]="showSplash">
+    <header class="topNav">
+        <div class="topNavInner">
+            <a class="brand" routerLink="/standings">
+                <span class="brandCrest">
+                    <svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="brandG" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#00ff87" />
+                                <stop offset="100%" stop-color="#05f0ff" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M24 4 L40 12 L40 28 C40 37 33 42 24 44 C15 42 8 37 8 28 L8 12 Z"
+                              fill="url(#brandG)" stroke="#fff" stroke-width="1.4"/>
+                        <text x="24" y="29" text-anchor="middle" font-size="14" font-weight="900"
+                              fill="#37003c">FPL</text>
+                    </svg>
+                </span>
+                <span class="brandText">
+                    <span class="brandEyebrow">Premier League</span>
+                    <span class="brandName">Fantasy</span>
+                </span>
+            </a>
+
+            <nav class="topNavLinks">
+                <a class="navLink active" routerLink="/standings">
+                    <span class="navIcon">◉</span> Dashboard
+                </a>
+                <a class="navLink" routerLink="/standings">
+                    <span class="navIcon">▦</span> League
+                </a>
+                <a class="navLink" href="#" (click)="$event.preventDefault()">
+                    <span class="navIcon">◎</span> Fixtures
+                </a>
+                <a class="navLink" href="#" (click)="$event.preventDefault()">
+                    <span class="navIcon">✦</span> AI Insights
+                </a>
+            </nav>
+
+            <div class="topNavRight">
+                <div class="gwChip">
+                    <span class="gwLabel">GW</span>
+                    <span class="gwValue">28</span>
+                </div>
+                <div class="userChip" title="Manager profile">
+                    <div class="userAvatar">V</div>
+                    <div class="userMeta">
+                        <div class="userName">Vladimir</div>
+                        <div class="userRank">Rank 1,284,309</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
     <router-outlet></router-outlet>
+    <app-toast-container></app-toast-container>
 </div>

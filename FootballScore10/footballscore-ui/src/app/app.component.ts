@@ -1,11 +1,12 @@
 import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { ToastContainerComponent } from './ui/toast/toast-container';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, RouterLink, ToastContainerComponent],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
 })
@@ -20,6 +21,6 @@ export class AppComponent implements OnInit {
     setTimeout(() => {
       this.showSplash = false;
       this.cdr.detectChanges();
-    }, 4000);
+    }, 2200);
   }
 }

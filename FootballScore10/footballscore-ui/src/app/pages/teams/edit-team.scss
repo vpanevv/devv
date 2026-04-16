@@ -1,11 +1,67 @@
-.form-card {
-    max-width: 520px;
+.formPage { animation: slideUp 0.45s ease both; }
+
+.pageHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.h1 {
+    margin: 2px 0 0;
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    background: linear-gradient(135deg, #fff, #05f0ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.sub {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 14.5px;
+}
+
+.cardEyebrow {
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.formCard {
+    max-width: 620px;
     margin: 0 auto;
+    padding: 28px;
 }
 
 .actions {
+    margin-top: 18px;
     display: flex;
     gap: 10px;
     justify-content: flex-end;
-    margin-top: 14px;
+}
+
+.loadingState {
+    padding: 20px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-right: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+    border-top-color: #00ff87;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
 }
