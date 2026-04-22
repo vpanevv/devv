@@ -33,6 +33,11 @@ struct TaskStore {
         save()
     }
 
+    func deleteCompleted(_ tasks: [TaskItem]) {
+        tasks.forEach(context.delete)
+        save()
+    }
+
     private func save() {
         do {
             try context.save()

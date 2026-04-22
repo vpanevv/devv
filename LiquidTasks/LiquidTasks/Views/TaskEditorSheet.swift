@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TaskEditorSheet: View {
+    @Environment(\.colorScheme) private var colorScheme
     enum Mode {
         case add
         case edit(String)
@@ -43,11 +44,7 @@ struct TaskEditorSheet: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    Color(red: 0.02, green: 0.05, blue: 0.13),
-                    Color(red: 0.05, green: 0.08, blue: 0.22),
-                    Color(red: 0.02, green: 0.16, blue: 0.20)
-                ],
+                colors: sheetColors,
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -62,14 +59,15 @@ struct TaskEditorSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(mode.title)
                         .font(.system(.largeTitle, design: .rounded, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(primaryText)
 
                     TextField("Name the task", text: $title, axis: .vertical)
                         .font(.system(.title3, design: .rounded, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(primaryText)
                         .lineLimit(1...4)
                         .padding(18)
-                        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .frame(minHeight: 58)
+                        .background(fieldFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .stroke(.white.opacity(0.22), lineWidth: 1)
@@ -84,7 +82,7 @@ struct TaskEditorSheet: View {
                             .font(.system(.headline, design: .rounded, weight: .semibold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 56)
+                            .frame(height: 60)
                             .background(
                                 LinearGradient(
                                     colors: [.cyan, .blue, .indigo],
@@ -108,6 +106,30 @@ struct TaskEditorSheet: View {
         .presentationCornerRadius(34)
         .onAppear {
             isFocused = true
+        }
+    }
+
+    private var primaryText: Color {
+        colorScheme == .dark ? .white : Color(red: 0.04, green: 0.10, blue: 0.22)
+    }
+
+    private var fieldFill: Color {
+        colorScheme == .dark ? .white.opacity(0.12) : .white.opacity(0.28)
+    }
+
+    private var sheetColors: [Color] {
+        if colorScheme == .dark {
+            [
+                Color(red: 0.02, green: 0.05, blue: 0.13),
+                Color(red: 0.05, green: 0.08, blue: 0.22),
+                Color(red: 0.02, green: 0.16, blue: 0.20)
+            ]
+        } else {
+            [
+                Color(red: 0.80, green: 0.95, blue: 1.00),
+                Color(red: 0.70, green: 0.82, blue: 0.98),
+                Color(red: 0.58, green: 0.86, blue: 0.92)
+            ]
         }
     }
 }
