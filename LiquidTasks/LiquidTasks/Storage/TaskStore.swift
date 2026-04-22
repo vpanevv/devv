@@ -5,19 +5,27 @@ import SwiftUI
 struct TaskStore {
     let context: ModelContext
 
-    func addTask(title: String) {
+    func addTask(title: String, notes: String?, priority: TaskPriority) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
 
-        context.insert(TaskItem(title: cleanTitle))
+        context.insert(
+            TaskItem(
+                title: cleanTitle,
+                notes: cleanedNotes(notes),
+                priority: priority
+            )
+        )
         save()
     }
 
-    func update(_ task: TaskItem, title: String) {
+    func update(_ task: TaskItem, title: String, notes: String?, priority: TaskPriority) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
 
         task.title = cleanTitle
+        task.notes = cleanedNotes(notes)
+        task.priority = priority
         save()
     }
 
@@ -44,5 +52,10 @@ struct TaskStore {
         } catch {
             assertionFailure("Unable to persist tasks: \(error.localizedDescription)")
         }
+    }
+
+    private func cleanedNotes(_ notes: String?) -> String? {
+        let cleanNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return cleanNotes.isEmpty ? nil : cleanNotes
     }
 }
