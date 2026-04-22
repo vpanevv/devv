@@ -80,13 +80,13 @@ struct TaskListView: View {
             resetDailyXPIfNeeded()
         }
         .sheet(isPresented: $isAddingTask) {
-            TaskEditorSheet(mode: .add) { title in
-                store.addTask(title: title)
+            TaskEditorSheet(mode: .add) { title, notes, priority in
+                store.addTask(title: title, notes: notes, priority: priority)
             }
         }
         .sheet(item: $taskToEdit) { task in
-            TaskEditorSheet(mode: .edit(task.title)) { title in
-                store.update(task, title: title)
+            TaskEditorSheet(mode: .edit(title: task.title, notes: task.notes, priority: task.priority)) { title, notes, priority in
+                store.update(task, title: title, notes: notes, priority: priority)
             }
         }
         .sheet(isPresented: $isXPStatsPresented) {
@@ -169,6 +169,15 @@ struct TaskListView: View {
                 } header: {
                     sectionHeader("Active", count: activeTasks.count)
                 }
+            } else if !completedTasks.isEmpty {
+                Section {
+                    inlineEmptyState
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 12, trailing: 18))
+                } header: {
+                    sectionHeader("Active", count: 0)
+                }
             }
 
             if !completedTasks.isEmpty {
@@ -212,11 +221,11 @@ struct TaskListView: View {
                     }
 
                     VStack(spacing: 8) {
-                        Text("Clear field")
+                        Text(emptyStateCopy.title)
                             .font(.system(.title2, design: .rounded, weight: .semibold))
                             .foregroundStyle(primaryText)
 
-                        Text("Add one task and let the interface breathe.")
+                        Text(emptyStateCopy.subtitle)
                             .font(.system(.body, design: .rounded, weight: .medium))
                             .foregroundStyle(secondaryText)
                             .multilineTextAlignment(.center)
@@ -231,23 +240,48 @@ struct TaskListView: View {
     private func taskRow(_ task: TaskItem, isCompletedSection: Bool) -> some View {
         GlassCard(cornerRadius: 26) {
             HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 99, style: .continuous)
+                    .fill(priorityColor(for: task.priority))
+                    .frame(width: 4)
+                    .frame(maxHeight: .infinity)
+                    .shadow(color: priorityColor(for: task.priority).opacity(task.isCompleted ? 0.10 : 0.42), radius: 10, x: 0, y: 0)
+                    .opacity(task.isCompleted ? 0.46 : 0.92)
+
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 25, weight: .semibold))
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(task.isCompleted ? .cyan : iconText)
+                    .foregroundStyle(task.isCompleted ? .cyan : priorityColor(for: task.priority).opacity(0.92))
                     .frame(width: 42, height: 42)
 
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 7) {
                     Text(task.title)
                         .font(.system(.body, design: .rounded, weight: .semibold))
                         .foregroundStyle(task.isCompleted ? completedText : primaryText)
                         .strikethrough(task.isCompleted, color: completedText)
                         .lineLimit(3)
 
-                    Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                        .font(.system(.caption, design: .rounded, weight: .semibold))
-                        .foregroundStyle(task.isCompleted ? completedText : secondaryText)
-                        .labelStyle(.titleAndIcon)
+                    if let notes = task.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(task.isCompleted ? completedText : secondaryText)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                    }
+
+                    HStack(spacing: 10) {
+                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
+                            .labelStyle(.titleAndIcon)
+
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(priorityColor(for: task.priority))
+                                .frame(width: 6, height: 6)
+
+                            Text(task.priority.title)
+                        }
+                    }
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(task.isCompleted ? completedText : secondaryText)
                 }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -264,9 +298,9 @@ struct TaskListView: View {
                 .accessibilityLabel("Edit task")
             }
             .padding(.vertical, 13)
-            .padding(.leading, 16)
+            .padding(.leading, 12)
             .padding(.trailing, 12)
-            .frame(minHeight: 72)
+            .frame(minHeight: task.notes?.isEmpty == false ? 102 : 78)
             .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
             .onTapGesture {
                 toggle(task)
@@ -284,6 +318,36 @@ struct TaskListView: View {
             }
         }
         .opacity(isCompletedSection ? 0.82 : 1)
+    }
+
+    private var inlineEmptyState: some View {
+        GlassCard(cornerRadius: 26) {
+            HStack(spacing: 15) {
+                ZStack {
+                    Circle()
+                        .fill(.cyan.opacity(0.15))
+                        .frame(width: 58, height: 58)
+                        .blur(radius: 10)
+
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(.cyan)
+                }
+
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(emptyStateCopy.title)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
+                        .foregroundStyle(primaryText)
+
+                    Text(emptyStateCopy.subtitle)
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(secondaryText)
+                        .lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(20)
+        }
     }
 
     private func toggle(_ task: TaskItem) {
@@ -447,6 +511,25 @@ struct TaskListView: View {
         return openCount == 1 ? "1 signal waiting" : "\(openCount) signals waiting"
     }
 
+    private var emptyStateCopy: EmptyStateCopy {
+        if tasks.isEmpty {
+            EmptyStateCopy(
+                title: "Your space is clear",
+                subtitle: "Capture the next useful thought when it arrives."
+            )
+        } else if activeTasks.isEmpty {
+            EmptyStateCopy(
+                title: "Everything is done for now",
+                subtitle: "Nothing urgent right now. Your attention can stay quiet."
+            )
+        } else {
+            EmptyStateCopy(
+                title: "Nothing urgent right now",
+                subtitle: "The active lane is calm and ready for the next signal."
+            )
+        }
+    }
+
     private var currentDayKey: String {
         Self.dayFormatter.string(from: .now)
     }
@@ -479,6 +562,17 @@ struct TaskListView: View {
         colorScheme == .dark ? .black.opacity(0.22) : .white.opacity(0.28)
     }
 
+    private func priorityColor(for priority: TaskPriority) -> Color {
+        switch priority {
+        case .low:
+            Color(red: 0.43, green: 0.82, blue: 1.00)
+        case .medium:
+            Color(red: 0.22, green: 0.82, blue: 0.56)
+        case .high:
+            Color(red: 1.00, green: 0.32, blue: 0.38)
+        }
+    }
+
     private static let dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = .current
@@ -487,6 +581,11 @@ struct TaskListView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+}
+
+private struct EmptyStateCopy {
+    let title: String
+    let subtitle: String
 }
 
 private struct XPStatusPill: View {
