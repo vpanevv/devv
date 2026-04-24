@@ -39,6 +39,16 @@ struct TaskListView: View {
         )
     }
 
+    private var currentXPFromTasks: Int {
+        completedTasks.count * 5
+    }
+
+    private var xpSyncSignature: [String] {
+        tasks
+            .map { "\($0.id.uuidString):\($0.isCompleted)" }
+            .sorted()
+    }
+
     var body: some View {
         ZStack {
             LiquidBackground()
@@ -78,6 +88,11 @@ struct TaskListView: View {
         }
         .onAppear {
             resetDailyXPIfNeeded()
+            synchronizeXPState()
+        }
+        .onChange(of: xpSyncSignature) { _, _ in
+            resetDailyXPIfNeeded()
+            synchronizeXPState()
         }
         .sheet(isPresented: $isAddingTask) {
             TaskEditorSheet(mode: .add) { title, notes, priority in
@@ -351,12 +366,13 @@ struct TaskListView: View {
     }
 
     private func toggle(_ task: TaskItem) {
+        let previousXP = currentXPFromTasks
         let didComplete = !task.isCompleted
         store.toggle(task)
 
         guard didComplete else { return }
         playCompletionFeedback()
-        awardCompletionXP()
+        synchronizeXPState(previousXP: previousXP, showReward: true)
 
         withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
             completionBurstID = UUID()
@@ -377,12 +393,13 @@ struct TaskListView: View {
         AudioServicesPlaySystemSound(1025)
     }
 
-    private func awardCompletionXP() {
-        resetDailyXPIfNeeded()
+    private func synchronizeXPState(previousXP: Int? = nil, showReward: Bool = false) {
+        let resolvedPreviousXP = previousXP ?? todayXP
+        let resolvedXP = currentXPFromTasks
+        todayXP = resolvedXP
+        recordXP = max(recordXP, resolvedXP)
 
-        let previousXP = todayXP
-        todayXP += 5
-        recordXP = max(recordXP, todayXP)
+        guard showReward else { return }
 
         showAchievement(
             AchievementPopupData(
@@ -393,7 +410,7 @@ struct TaskListView: View {
             )
         )
 
-        let reachedTarget = previousXP < dailyTargetXP && todayXP >= dailyTargetXP
+        let reachedTarget = resolvedPreviousXP < dailyTargetXP && resolvedXP >= dailyTargetXP
         guard reachedTarget, lastTargetHitDate != currentDayKey else { return }
 
         lastTargetHitDate = currentDayKey
@@ -405,7 +422,7 @@ struct TaskListView: View {
                 showAchievement(
                     AchievementPopupData(
                         title: "Daily Target Hit",
-                        message: "\(todayXP) XP collected today",
+                        message: "\(resolvedXP) XP collected today",
                         icon: "crown.fill",
                         isMajor: true
                     )
@@ -434,7 +451,6 @@ struct TaskListView: View {
         let key = currentDayKey
         guard xpDateKey != key else { return }
         xpDateKey = key
-        todayXP = 0
         lastTargetHitDate = ""
     }
 
