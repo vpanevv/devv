@@ -8,6 +8,14 @@ enum TaskPriority: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
+    var xpValue: Int {
+        switch self {
+        case .low: 2
+        case .medium: 5
+        case .high: 8
+        }
+    }
+
     var title: String {
         switch self {
         case .low: "Low"

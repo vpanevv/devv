@@ -40,12 +40,14 @@ struct TaskListView: View {
     }
 
     private var currentXPFromTasks: Int {
-        completedTasks.count * 5
+        completedTasks.reduce(into: 0) { partialResult, task in
+            partialResult += task.priority.xpValue
+        }
     }
 
     private var xpSyncSignature: [String] {
         tasks
-            .map { "\($0.id.uuidString):\($0.isCompleted)" }
+            .map { "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue)" }
             .sorted()
     }
 
@@ -66,7 +68,16 @@ struct TaskListView: View {
                     }
                 }
                 .animation(.smooth(duration: 0.34), value: tasks.count)
+
+                Spacer(minLength: 0)
             }
+
+            VStack {
+                Spacer()
+                bottomCreateTaskButton
+            }
+            .padding(.horizontal, 22)
+            .padding(.bottom, 18)
 
             if let completionBurstID {
                 CompletionBurstView(id: completionBurstID)
@@ -135,20 +146,6 @@ struct TaskListView: View {
                 }
 
                 AppearanceToggle(mode: appearanceBinding)
-
-                Button {
-                    isAddingTask = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 54, height: 54)
-                        .background(.white.opacity(0.14), in: Circle())
-                        .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: 1))
-                        .shadow(color: .cyan.opacity(0.22), radius: 18, y: 8)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Add task")
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -165,6 +162,69 @@ struct TaskListView: View {
         .padding(.horizontal, 22)
         .padding(.top, 54)
         .padding(.bottom, 22)
+    }
+
+    private var bottomCreateTaskButton: some View {
+        Button {
+            isAddingTask = true
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .bold))
+
+                Text("Create Task")
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .bold))
+                    .opacity(0.92)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 20)
+            .frame(height: 54)
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(.ultraThinMaterial)
+
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.00, green: 0.36, blue: 0.42),
+                            Color(red: 0.92, green: 0.20, blue: 0.30)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .opacity(0.92)
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(.white.opacity(0.26), lineWidth: 1)
+            )
+            .shadow(color: Color.red.opacity(0.24), radius: 24, y: 12)
+            .shadow(color: Color(red: 1.00, green: 0.40, blue: 0.48).opacity(0.20), radius: 8, y: 0)
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: 220)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .background(
+            ZStack {
+                Capsule()
+                    .fill(Color(red: 1.00, green: 0.34, blue: 0.42).opacity(colorScheme == .dark ? 0.42 : 0.32))
+                    .blur(radius: 28)
+                    .scaleEffect(1.18)
+
+                Capsule()
+                    .fill(Color(red: 1.00, green: 0.62, blue: 0.68).opacity(colorScheme == .dark ? 0.18 : 0.14))
+                    .blur(radius: 14)
+                    .scaleEffect(1.06)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, -8)
+        )
+        .accessibilityLabel("Create task")
     }
 
     private var taskList: some View {
@@ -368,11 +428,12 @@ struct TaskListView: View {
     private func toggle(_ task: TaskItem) {
         let previousXP = currentXPFromTasks
         let didComplete = !task.isCompleted
+        let rewardXP = task.priority.xpValue
         store.toggle(task)
 
         guard didComplete else { return }
         playCompletionFeedback()
-        synchronizeXPState(previousXP: previousXP, showReward: true)
+        synchronizeXPState(previousXP: previousXP, rewardXP: rewardXP)
 
         withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
             completionBurstID = UUID()
@@ -393,17 +454,17 @@ struct TaskListView: View {
         AudioServicesPlaySystemSound(1025)
     }
 
-    private func synchronizeXPState(previousXP: Int? = nil, showReward: Bool = false) {
+    private func synchronizeXPState(previousXP: Int? = nil, rewardXP: Int? = nil) {
         let resolvedPreviousXP = previousXP ?? todayXP
         let resolvedXP = currentXPFromTasks
         todayXP = resolvedXP
         recordXP = max(recordXP, resolvedXP)
 
-        guard showReward else { return }
+        guard let rewardXP else { return }
 
         showAchievement(
             AchievementPopupData(
-                title: "+5 XP",
+                title: "+\(rewardXP) XP",
                 message: "Task complete",
                 icon: "sparkles",
                 isMajor: false
@@ -678,7 +739,7 @@ private struct XPStatsSheet: View {
                                 .font(.system(.largeTitle, design: .rounded, weight: .semibold))
                                 .foregroundStyle(primaryText)
 
-                            Text("Every completed task adds 5 XP.")
+                            Text("Low tasks add 2 XP, medium 5, and high priority 8.")
                                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                                 .foregroundStyle(secondaryText)
                         }

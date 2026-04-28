@@ -190,6 +190,12 @@ private struct OnboardingCard {
             glow: .blue
         ),
         OnboardingCard(
+            icon: "bolt.badge.checkmark.fill",
+            title: "Earn XP",
+            subtitle: "Low tasks give 2 XP, medium gives 5, and high-priority work earns 8.",
+            glow: .teal
+        ),
+        OnboardingCard(
             icon: "sparkles",
             title: "Stay organized",
             subtitle: "Active and completed work settle into their own quiet spaces.",
