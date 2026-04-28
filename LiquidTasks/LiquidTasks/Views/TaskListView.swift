@@ -19,6 +19,7 @@ struct TaskListView: View {
     @State private var isXPStatsPresented = false
     @State private var completionBurstID: UUID?
     @State private var achievementPopup: AchievementPopupData?
+    @State private var taskPendingDeletion: TaskItem?
 
     private var store: TaskStore {
         TaskStore(context: modelContext)
@@ -118,6 +119,32 @@ struct TaskListView: View {
         .sheet(isPresented: $isXPStatsPresented) {
             XPStatsSheet(todayXP: todayXP, recordXP: recordXP, targetXP: $dailyTargetXP)
         }
+        .confirmationDialog(
+            "Delete task?",
+            isPresented: Binding(
+                get: { taskPendingDeletion != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        taskPendingDeletion = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Task", role: .destructive) {
+                guard let taskPendingDeletion else { return }
+                withAnimation(.smooth(duration: 0.28)) {
+                    store.delete(taskPendingDeletion)
+                }
+                self.taskPendingDeletion = nil
+            }
+
+            Button("Cancel", role: .cancel) {
+                taskPendingDeletion = nil
+            }
+        } message: {
+            Text("This task will be removed from Liquid Tasks.")
+        }
     }
 
     private var header: some View {
@@ -184,13 +211,13 @@ struct TaskListView: View {
             .frame(height: 54)
             .background {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    Capsule(style: .continuous)
                         .fill(.ultraThinMaterial)
 
                     LinearGradient(
                         colors: [
-                            Color(red: 1.00, green: 0.36, blue: 0.42),
-                            Color(red: 0.92, green: 0.20, blue: 0.30)
+                            Color(red: 0.62, green: 0.38, blue: 1.00),
+                            Color(red: 0.45, green: 0.24, blue: 0.96)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -199,12 +226,12 @@ struct TaskListView: View {
                 }
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                Capsule(style: .continuous)
                     .stroke(.white.opacity(0.26), lineWidth: 1)
             )
-            .shadow(color: Color.red.opacity(0.24), radius: 24, y: 12)
-            .shadow(color: Color(red: 1.00, green: 0.40, blue: 0.48).opacity(0.20), radius: 8, y: 0)
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: Color.purple.opacity(0.28), radius: 24, y: 12)
+            .shadow(color: Color(red: 0.70, green: 0.52, blue: 1.00).opacity(0.22), radius: 10, y: 0)
+            .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
         .frame(maxWidth: 220)
@@ -212,12 +239,12 @@ struct TaskListView: View {
         .background(
             ZStack {
                 Capsule()
-                    .fill(Color(red: 1.00, green: 0.34, blue: 0.42).opacity(colorScheme == .dark ? 0.42 : 0.32))
+                    .fill(Color(red: 0.62, green: 0.38, blue: 1.00).opacity(colorScheme == .dark ? 0.42 : 0.30))
                     .blur(radius: 28)
                     .scaleEffect(1.18)
 
                 Capsule()
-                    .fill(Color(red: 1.00, green: 0.62, blue: 0.68).opacity(colorScheme == .dark ? 0.18 : 0.14))
+                    .fill(Color(red: 0.80, green: 0.68, blue: 1.00).opacity(colorScheme == .dark ? 0.20 : 0.14))
                     .blur(radius: 14)
                     .scaleEffect(1.06)
             }
@@ -386,9 +413,7 @@ struct TaskListView: View {
                 }
 
                 Button("Delete", systemImage: "trash", role: .destructive) {
-                    withAnimation(.smooth(duration: 0.28)) {
-                        store.delete(task)
-                    }
+                    taskPendingDeletion = task
                 }
             }
         }
@@ -574,9 +599,7 @@ struct TaskListView: View {
 
     private func deleteButton(for task: TaskItem) -> some View {
         Button(role: .destructive) {
-            withAnimation(.smooth(duration: 0.28)) {
-                store.delete(task)
-            }
+            taskPendingDeletion = task
         } label: {
             Label("Delete", systemImage: "trash")
         }
