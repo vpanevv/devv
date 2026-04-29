@@ -32,6 +32,7 @@ final class TaskItem {
     var notes: String?
     var isCompleted: Bool
     var createdAt: Date
+    var scheduledAt: Date?
     var priorityRawValue: String?
 
     var priority: TaskPriority {
@@ -50,6 +51,7 @@ final class TaskItem {
         notes: String? = nil,
         isCompleted: Bool = false,
         createdAt: Date = .now,
+        scheduledAt: Date? = nil,
         priority: TaskPriority = .medium
     ) {
         self.id = id
@@ -57,6 +59,7 @@ final class TaskItem {
         self.notes = notes
         self.isCompleted = isCompleted
         self.createdAt = createdAt
+        self.scheduledAt = scheduledAt
         self.priorityRawValue = priority.rawValue
     }
 }

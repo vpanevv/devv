@@ -2,9 +2,10 @@ import SwiftUI
 
 struct TaskEditorSheet: View {
     @Environment(\.colorScheme) private var colorScheme
+    private let reminderManager = ReminderManager.shared
     enum Mode {
         case add
-        case edit(title: String, notes: String?, priority: TaskPriority)
+        case edit(title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?)
 
         var title: String {
             switch self {
@@ -23,21 +24,39 @@ struct TaskEditorSheet: View {
         var initialText: String {
             switch self {
             case .add: ""
-            case .edit(let title, _, _): title
+            case .edit(let title, _, _, _): title
             }
         }
 
         var initialNotes: String {
             switch self {
             case .add: ""
-            case .edit(_, let notes, _): notes ?? ""
+            case .edit(_, let notes, _, _): notes ?? ""
             }
         }
 
         var initialPriority: TaskPriority {
             switch self {
             case .add: .medium
-            case .edit(_, _, let priority): priority
+            case .edit(_, _, let priority, _): priority
+            }
+        }
+
+        var initialReminderDate: Date {
+            switch self {
+            case .add:
+                defaultReminderDate()
+            case .edit(_, _, _, let scheduledAt):
+                defaultReminderDate(from: scheduledAt)
+            }
+        }
+
+        var isReminderInitiallyEnabled: Bool {
+            switch self {
+            case .add:
+                false
+            case .edit(_, _, _, let scheduledAt):
+                scheduledAt != nil
             }
         }
     }
@@ -47,16 +66,22 @@ struct TaskEditorSheet: View {
     @State private var title: String
     @State private var notes: String
     @State private var priority: TaskPriority
+    @State private var isReminderEnabled: Bool
+    @State private var reminderDate: Date
+    @State private var reminderPermissionState: ReminderPermissionState = .unknown
+    @State private var reminderPermissionTask: Task<Void, Never>?
 
     let mode: Mode
-    let onCommit: (String, String?, TaskPriority) -> Void
+    let onCommit: (String, String?, TaskPriority, Date?) -> Void
 
-    init(mode: Mode, onCommit: @escaping (String, String?, TaskPriority) -> Void) {
+    init(mode: Mode, onCommit: @escaping (String, String?, TaskPriority, Date?) -> Void) {
         self.mode = mode
         self.onCommit = onCommit
         _title = State(initialValue: mode.initialText)
         _notes = State(initialValue: mode.initialNotes)
         _priority = State(initialValue: mode.initialPriority)
+        _isReminderEnabled = State(initialValue: mode.isReminderInitiallyEnabled)
+        _reminderDate = State(initialValue: mode.initialReminderDate)
     }
 
     var body: some View {
@@ -106,8 +131,15 @@ struct TaskEditorSheet: View {
 
                     priorityPicker
 
+                    reminderSection
+
                     Button {
-                        onCommit(title, notes, priority)
+                        onCommit(
+                            title,
+                            notes,
+                            priority,
+                            isReminderEnabled ? max(reminderDate, minimumReminderDate) : nil
+                        )
                         dismiss()
                     } label: {
                         Text(mode.actionTitle)
@@ -133,11 +165,33 @@ struct TaskEditorSheet: View {
                 Spacer()
             }
         }
-        .presentationDetents([.height(500)])
+        .presentationDetents([.height(620)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(34)
         .onAppear {
             isFocused = true
+            Task {
+                reminderPermissionState = await reminderManager.authorizationState()
+            }
+        }
+        .onChange(of: isReminderEnabled) { _, isEnabled in
+            reminderPermissionTask?.cancel()
+
+            guard isEnabled else { return }
+            if reminderDate < minimumReminderDate {
+                reminderDate = minimumReminderDate
+            }
+
+            reminderPermissionTask = Task {
+                try? await Task.sleep(for: .milliseconds(220))
+                guard !Task.isCancelled, isReminderEnabled else { return }
+                reminderPermissionState = await reminderManager.requestAuthorizationIfNeeded()
+            }
+        }
+        .onChange(of: reminderDate) { _, newValue in
+            if newValue < minimumReminderDate {
+                reminderDate = minimumReminderDate
+            }
         }
     }
 
@@ -181,6 +235,132 @@ struct TaskEditorSheet: View {
                 }
             }
         }
+    }
+
+    private var reminderSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                Label {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Remind me")
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(primaryText)
+
+                        Text("Schedule a date and time.")
+                            .font(.system(.caption, design: .rounded, weight: .medium))
+                            .foregroundStyle(secondaryText)
+                    }
+                } icon: {
+                    Image(systemName: isReminderEnabled ? "bell.badge.fill" : "bell")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(.cyan)
+                        .frame(width: 24, height: 24)
+                }
+
+                Spacer()
+
+                Toggle("", isOn: $isReminderEnabled)
+                    .labelsHidden()
+                    .tint(.cyan)
+            }
+            .padding(16)
+            .background(fieldFill.opacity(0.70), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+            )
+
+            if isReminderEnabled {
+                VStack(alignment: .leading, spacing: 12) {
+                    reminderPickerRow(
+                        title: "Date",
+                        systemImage: "calendar",
+                        content: AnyView(
+                            DatePicker(
+                                "",
+                                selection: $reminderDate,
+                                in: minimumReminderDate...,
+                                displayedComponents: .date
+                            )
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                            .tint(.cyan)
+                        )
+                    )
+
+                    reminderPickerRow(
+                        title: "Time",
+                        systemImage: "clock",
+                        content: AnyView(
+                            DatePicker(
+                                "",
+                                selection: $reminderDate,
+                                in: minimumReminderDate...,
+                                displayedComponents: .hourAndMinute
+                            )
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                            .tint(.cyan)
+                        )
+                    )
+                }
+                .padding(16)
+                .background(fieldFill.opacity(0.60), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(.white.opacity(0.16), lineWidth: 1)
+                )
+                .transition(
+                    .asymmetric(
+                        insertion: .scale(scale: 0.98, anchor: .top).combined(with: .opacity),
+                        removal: .opacity
+                    )
+                )
+
+                if let reminderStatusMessage {
+                    Label(reminderStatusMessage.text, systemImage: reminderStatusMessage.icon)
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                        .foregroundStyle(reminderStatusMessage.color)
+                        .padding(.horizontal, 4)
+                }
+            }
+        }
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isReminderEnabled)
+    }
+
+    private func reminderPickerRow(title: String, systemImage: String, content: AnyView) -> some View {
+        HStack(spacing: 12) {
+            Label(title, systemImage: systemImage)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(primaryText)
+
+            Spacer()
+
+            content
+        }
+    }
+
+    private var reminderStatusMessage: (text: String, icon: String, color: Color)? {
+        switch reminderPermissionState {
+        case .authorized, .unknown:
+            nil
+        case .notDetermined:
+            (
+                text: "Liquid Tasks will ask once to allow local reminders.",
+                icon: "bell.badge",
+                color: secondaryText
+            )
+        case .denied:
+            (
+                text: "Notifications are off. The schedule will save, but iPhone reminders are disabled.",
+                icon: "bell.slash",
+                color: Color(red: 1.00, green: 0.70, blue: 0.48)
+            )
+        }
+    }
+
+    private var minimumReminderDate: Date {
+        Calendar.current.date(byAdding: .minute, value: 1, to: .now) ?? .now
     }
 
     private var secondaryText: Color {
@@ -228,5 +408,10 @@ struct TaskEditorSheet: View {
 }
 
 #Preview {
-    TaskEditorSheet(mode: .add) { _, _, _ in }
+    TaskEditorSheet(mode: .add) { _, _, _, _ in }
+}
+
+private func defaultReminderDate(from date: Date? = nil) -> Date {
+    let fallback = Calendar.current.date(byAdding: .minute, value: 30, to: .now) ?? .now
+    return max(date ?? fallback, fallback)
 }

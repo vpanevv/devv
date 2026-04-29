@@ -6,6 +6,7 @@ import UIKit
 struct TaskListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    private let reminderManager = ReminderManager.shared
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = true
     @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
@@ -19,6 +20,7 @@ struct TaskListView: View {
     @State private var isXPStatsPresented = false
     @State private var completionBurstID: UUID?
     @State private var achievementPopup: AchievementPopupData?
+    @State private var taskPendingDeletion: TaskItem?
 
     private var store: TaskStore {
         TaskStore(context: modelContext)
@@ -47,8 +49,14 @@ struct TaskListView: View {
 
     private var xpSyncSignature: [String] {
         tasks
-            .map { "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue)" }
+            .map {
+                "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue):\($0.scheduledAt?.timeIntervalSince1970 ?? 0):\($0.title):\($0.notes ?? "")"
+            }
             .sorted()
+    }
+
+    private var reminderSnapshots: [ReminderTaskSnapshot] {
+        tasks.map(ReminderTaskSnapshot.init(task:))
     }
 
     var body: some View {
@@ -100,23 +108,58 @@ struct TaskListView: View {
         .onAppear {
             resetDailyXPIfNeeded()
             synchronizeXPState()
+            synchronizeReminders()
         }
         .onChange(of: xpSyncSignature) { _, _ in
             resetDailyXPIfNeeded()
             synchronizeXPState()
+            synchronizeReminders()
         }
         .sheet(isPresented: $isAddingTask) {
-            TaskEditorSheet(mode: .add) { title, notes, priority in
-                store.addTask(title: title, notes: notes, priority: priority)
+            TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt in
+                store.addTask(title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
             }
         }
         .sheet(item: $taskToEdit) { task in
-            TaskEditorSheet(mode: .edit(title: task.title, notes: task.notes, priority: task.priority)) { title, notes, priority in
-                store.update(task, title: title, notes: notes, priority: priority)
+            TaskEditorSheet(
+                mode: .edit(
+                    title: task.title,
+                    notes: task.notes,
+                    priority: task.priority,
+                    scheduledAt: task.scheduledAt
+                )
+            ) { title, notes, priority, scheduledAt in
+                store.update(task, title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
             }
         }
         .sheet(isPresented: $isXPStatsPresented) {
             XPStatsSheet(todayXP: todayXP, recordXP: recordXP, targetXP: $dailyTargetXP)
+        }
+        .confirmationDialog(
+            "Delete task?",
+            isPresented: Binding(
+                get: { taskPendingDeletion != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        taskPendingDeletion = nil
+                    }
+                }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Task", role: .destructive) {
+                guard let taskPendingDeletion else { return }
+                withAnimation(.smooth(duration: 0.28)) {
+                    store.delete(taskPendingDeletion)
+                }
+                self.taskPendingDeletion = nil
+            }
+
+            Button("Cancel", role: .cancel) {
+                taskPendingDeletion = nil
+            }
+        } message: {
+            Text("This task will be removed from Liquid Tasks.")
         }
     }
 
@@ -184,13 +227,13 @@ struct TaskListView: View {
             .frame(height: 54)
             .background {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    Capsule(style: .continuous)
                         .fill(.ultraThinMaterial)
 
                     LinearGradient(
                         colors: [
-                            Color(red: 1.00, green: 0.36, blue: 0.42),
-                            Color(red: 0.92, green: 0.20, blue: 0.30)
+                            Color(red: 0.62, green: 0.38, blue: 1.00),
+                            Color(red: 0.45, green: 0.24, blue: 0.96)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -199,12 +242,12 @@ struct TaskListView: View {
                 }
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                Capsule(style: .continuous)
                     .stroke(.white.opacity(0.26), lineWidth: 1)
             )
-            .shadow(color: Color.red.opacity(0.24), radius: 24, y: 12)
-            .shadow(color: Color(red: 1.00, green: 0.40, blue: 0.48).opacity(0.20), radius: 8, y: 0)
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: Color.purple.opacity(0.28), radius: 24, y: 12)
+            .shadow(color: Color(red: 0.70, green: 0.52, blue: 1.00).opacity(0.22), radius: 10, y: 0)
+            .contentShape(Capsule(style: .continuous))
         }
         .buttonStyle(.plain)
         .frame(maxWidth: 220)
@@ -212,12 +255,12 @@ struct TaskListView: View {
         .background(
             ZStack {
                 Capsule()
-                    .fill(Color(red: 1.00, green: 0.34, blue: 0.42).opacity(colorScheme == .dark ? 0.42 : 0.32))
+                    .fill(Color(red: 0.62, green: 0.38, blue: 1.00).opacity(colorScheme == .dark ? 0.42 : 0.30))
                     .blur(radius: 28)
                     .scaleEffect(1.18)
 
                 Capsule()
-                    .fill(Color(red: 1.00, green: 0.62, blue: 0.68).opacity(colorScheme == .dark ? 0.18 : 0.14))
+                    .fill(Color(red: 0.80, green: 0.68, blue: 1.00).opacity(colorScheme == .dark ? 0.20 : 0.14))
                     .blur(radius: 14)
                     .scaleEffect(1.06)
             }
@@ -343,9 +386,21 @@ struct TaskListView: View {
                             .truncationMode(.tail)
                     }
 
-                    HStack(spacing: 10) {
-                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                            .labelStyle(.titleAndIcon)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 10) {
+                            Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
+                                .labelStyle(.titleAndIcon)
+                                .lineLimit(1)
+
+                            if let scheduledAt = task.scheduledAt {
+                                Label(
+                                    scheduledAt.formatted(date: .abbreviated, time: .shortened),
+                                    systemImage: "bell.fill"
+                                )
+                                .labelStyle(.titleAndIcon)
+                                .lineLimit(1)
+                            }
+                        }
 
                         HStack(spacing: 5) {
                             Circle()
@@ -386,9 +441,7 @@ struct TaskListView: View {
                 }
 
                 Button("Delete", systemImage: "trash", role: .destructive) {
-                    withAnimation(.smooth(duration: 0.28)) {
-                        store.delete(task)
-                    }
+                    taskPendingDeletion = task
                 }
             }
         }
@@ -492,6 +545,13 @@ struct TaskListView: View {
         }
     }
 
+    private func synchronizeReminders() {
+        let snapshots = reminderSnapshots
+        Task {
+            await reminderManager.synchronize(tasks: snapshots)
+        }
+    }
+
     private func showAchievement(_ data: AchievementPopupData) {
         withAnimation(.spring(response: 0.44, dampingFraction: 0.74)) {
             achievementPopup = data
@@ -574,9 +634,7 @@ struct TaskListView: View {
 
     private func deleteButton(for task: TaskItem) -> some View {
         Button(role: .destructive) {
-            withAnimation(.smooth(duration: 0.28)) {
-                store.delete(task)
-            }
+            taskPendingDeletion = task
         } label: {
             Label("Delete", systemImage: "trash")
         }

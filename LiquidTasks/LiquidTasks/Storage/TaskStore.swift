@@ -5,7 +5,7 @@ import SwiftUI
 struct TaskStore {
     let context: ModelContext
 
-    func addTask(title: String, notes: String?, priority: TaskPriority) {
+    func addTask(title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
 
@@ -13,19 +13,21 @@ struct TaskStore {
             TaskItem(
                 title: cleanTitle,
                 notes: cleanedNotes(notes),
+                scheduledAt: scheduledAt,
                 priority: priority
             )
         )
         save()
     }
 
-    func update(_ task: TaskItem, title: String, notes: String?, priority: TaskPriority) {
+    func update(_ task: TaskItem, title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
 
         task.title = cleanTitle
         task.notes = cleanedNotes(notes)
         task.priority = priority
+        task.scheduledAt = scheduledAt
         save()
     }
 
