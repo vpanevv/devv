@@ -6,6 +6,7 @@ import UIKit
 struct TaskListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    private let reminderManager = ReminderManager.shared
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = true
     @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
@@ -48,8 +49,14 @@ struct TaskListView: View {
 
     private var xpSyncSignature: [String] {
         tasks
-            .map { "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue)" }
+            .map {
+                "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue):\($0.scheduledAt?.timeIntervalSince1970 ?? 0):\($0.title):\($0.notes ?? "")"
+            }
             .sorted()
+    }
+
+    private var reminderSnapshots: [ReminderTaskSnapshot] {
+        tasks.map(ReminderTaskSnapshot.init(task:))
     }
 
     var body: some View {
@@ -101,19 +108,28 @@ struct TaskListView: View {
         .onAppear {
             resetDailyXPIfNeeded()
             synchronizeXPState()
+            synchronizeReminders()
         }
         .onChange(of: xpSyncSignature) { _, _ in
             resetDailyXPIfNeeded()
             synchronizeXPState()
+            synchronizeReminders()
         }
         .sheet(isPresented: $isAddingTask) {
-            TaskEditorSheet(mode: .add) { title, notes, priority in
-                store.addTask(title: title, notes: notes, priority: priority)
+            TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt in
+                store.addTask(title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
             }
         }
         .sheet(item: $taskToEdit) { task in
-            TaskEditorSheet(mode: .edit(title: task.title, notes: task.notes, priority: task.priority)) { title, notes, priority in
-                store.update(task, title: title, notes: notes, priority: priority)
+            TaskEditorSheet(
+                mode: .edit(
+                    title: task.title,
+                    notes: task.notes,
+                    priority: task.priority,
+                    scheduledAt: task.scheduledAt
+                )
+            ) { title, notes, priority, scheduledAt in
+                store.update(task, title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
             }
         }
         .sheet(isPresented: $isXPStatsPresented) {
@@ -370,9 +386,21 @@ struct TaskListView: View {
                             .truncationMode(.tail)
                     }
 
-                    HStack(spacing: 10) {
-                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                            .labelStyle(.titleAndIcon)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 10) {
+                            Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
+                                .labelStyle(.titleAndIcon)
+                                .lineLimit(1)
+
+                            if let scheduledAt = task.scheduledAt {
+                                Label(
+                                    scheduledAt.formatted(date: .abbreviated, time: .shortened),
+                                    systemImage: "bell.fill"
+                                )
+                                .labelStyle(.titleAndIcon)
+                                .lineLimit(1)
+                            }
+                        }
 
                         HStack(spacing: 5) {
                             Circle()
@@ -514,6 +542,13 @@ struct TaskListView: View {
                     )
                 )
             }
+        }
+    }
+
+    private func synchronizeReminders() {
+        let snapshots = reminderSnapshots
+        Task {
+            await reminderManager.synchronize(tasks: snapshots)
         }
     }
 

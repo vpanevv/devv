@@ -16,6 +16,7 @@
 		7A4B10162BD80C1B00A0F001 /* TaskEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10152BD80C1B00A0F001 /* TaskEditorSheet.swift */; };
 		7A4B10182BD80C1B00A0F001 /* LiquidBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10172BD80C1B00A0F001 /* LiquidBackground.swift */; };
 		7A4B101A2BD80C1B00A0F001 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10192BD80C1B00A0F001 /* GlassCard.swift */; };
+		7A4B10342BD80C1B00A0F001 /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10332BD80C1B00A0F001 /* ReminderManager.swift */; };
 		7A4B10302BD80C1B00A0F001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7A4B102F2BD80C1B00A0F001 /* Assets.xcassets */; };
 		7A4B10322BD80C1B00A0F001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7A4B10312BD80C1B00A0F001 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -31,6 +32,7 @@
 		7A4B10152BD80C1B00A0F001 /* TaskEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditorSheet.swift; sourceTree = "<group>"; };
 		7A4B10172BD80C1B00A0F001 /* LiquidBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidBackground.swift; sourceTree = "<group>"; };
 		7A4B10192BD80C1B00A0F001 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassCard.swift; sourceTree = "<group>"; };
+		7A4B10332BD80C1B00A0F001 /* ReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderManager.swift; sourceTree = "<group>"; };
 		7A4B102F2BD80C1B00A0F001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7A4B10312BD80C1B00A0F001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -70,6 +72,7 @@
 				7A4B10312BD80C1B00A0F001 /* PrivacyInfo.xcprivacy */,
 				7A4B101B2BD80C1B00A0F001 /* Models */,
 				7A4B101C2BD80C1B00A0F001 /* Storage */,
+				7A4B10352BD80C1B00A0F001 /* Services */,
 				7A4B101D2BD80C1B00A0F001 /* Views */,
 				7A4B101E2BD80C1B00A0F001 /* Components */,
 			);
@@ -101,6 +104,14 @@
 				7A4B10152BD80C1B00A0F001 /* TaskEditorSheet.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7A4B10352BD80C1B00A0F001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				7A4B10332BD80C1B00A0F001 /* ReminderManager.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		7A4B101E2BD80C1B00A0F001 /* Components */ = {
@@ -192,6 +203,7 @@
 				7A4B10162BD80C1B00A0F001 /* TaskEditorSheet.swift in Sources */,
 				7A4B10182BD80C1B00A0F001 /* LiquidBackground.swift in Sources */,
 				7A4B101A2BD80C1B00A0F001 /* GlassCard.swift in Sources */,
+				7A4B10342BD80C1B00A0F001 /* ReminderManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
