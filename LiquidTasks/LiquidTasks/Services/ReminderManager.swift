@@ -76,7 +76,7 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     func synchronize(tasks: [ReminderTaskSnapshot]) async {
         let state = await authorizationState()
         let desiredIdentifiers = Set(tasks.compactMap { snapshot in
-            shouldSchedule(snapshot) ? identifier(for: snapshot.id) : nil
+            shouldKeepReminder(snapshot) ? identifier(for: snapshot.id) : nil
         })
 
         let pendingIdentifiers = await pendingNotificationIdentifiers()
@@ -139,6 +139,10 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     private func shouldSchedule(_ snapshot: ReminderTaskSnapshot) -> Bool {
         guard !snapshot.isCompleted, let scheduledAt = snapshot.scheduledAt else { return false }
         return scheduledAt > Date()
+    }
+
+    private func shouldKeepReminder(_ snapshot: ReminderTaskSnapshot) -> Bool {
+        !snapshot.isCompleted && snapshot.scheduledAt != nil
     }
 
     private func makeRequest(for snapshot: ReminderTaskSnapshot) -> UNNotificationRequest? {
