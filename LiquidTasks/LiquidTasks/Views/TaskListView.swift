@@ -226,20 +226,22 @@ struct TaskListView: View {
             .padding(.horizontal, 20)
             .frame(height: 54)
             .background {
-                ZStack {
-                    Capsule(style: .continuous)
-                        .fill(.ultraThinMaterial)
-
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.62, green: 0.38, blue: 1.00),
-                            Color(red: 0.45, green: 0.24, blue: 0.96)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .opacity(0.92)
-                }
+                Capsule(style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        Capsule(style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.62, green: 0.38, blue: 1.00),
+                                        Color(red: 0.45, green: 0.24, blue: 0.96)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .opacity(0.92)
+                    }
             }
             .overlay(
                 Capsule(style: .continuous)
@@ -387,19 +389,19 @@ struct TaskListView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 10) {
-                            Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                                .labelStyle(.titleAndIcon)
-                                .lineLimit(1)
+                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
+                            .labelStyle(.titleAndIcon)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.88)
 
-                            if let scheduledAt = task.scheduledAt {
-                                Label(
-                                    scheduledAt.formatted(date: .abbreviated, time: .shortened),
-                                    systemImage: "bell.fill"
-                                )
-                                .labelStyle(.titleAndIcon)
-                                .lineLimit(1)
-                            }
+                        if let scheduledAt = task.scheduledAt {
+                            Label(
+                                scheduledAt.formatted(date: .abbreviated, time: .shortened),
+                                systemImage: "bell.fill"
+                            )
+                            .labelStyle(.titleAndIcon)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.88)
                         }
 
                         HStack(spacing: 5) {
@@ -503,8 +505,20 @@ struct TaskListView: View {
     }
 
     private func playCompletionFeedback() {
+        triggerSuccessHaptic()
+        playSystemSound(1025)
+    }
+
+    private func triggerSuccessHaptic() {
+#if !targetEnvironment(simulator)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        AudioServicesPlaySystemSound(1025)
+#endif
+    }
+
+    private func playSystemSound(_ soundID: SystemSoundID) {
+#if !targetEnvironment(simulator)
+        AudioServicesPlaySystemSound(soundID)
+#endif
     }
 
     private func synchronizeXPState(previousXP: Int? = nil, rewardXP: Int? = nil) {
@@ -531,8 +545,8 @@ struct TaskListView: View {
         Swift.Task {
             try? await Swift.Task.sleep(for: .milliseconds(720))
             await MainActor.run {
-                AudioServicesPlaySystemSound(1026)
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                playSystemSound(1026)
+                triggerSuccessHaptic()
                 showAchievement(
                     AchievementPopupData(
                         title: "Daily Target Hit",
@@ -775,8 +789,18 @@ private struct XPStatsSheet: View {
         return min(Double(todayXP) / Double(targetXP), 1)
     }
 
+    private var remainingXP: Int {
+        max(targetXP - todayXP, 0)
+    }
+
+    private var progressPercent: Int {
+        Int((progress * 100).rounded())
+    }
+
     var body: some View {
         ZStack {
+            backgroundGlow
+
             LinearGradient(
                 colors: sheetColors,
                 startPoint: .topLeading,
@@ -784,93 +808,381 @@ private struct XPStatsSheet: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 22) {
+            VStack(spacing: 20) {
                 Capsule()
-                    .fill(.white.opacity(0.26))
+                    .fill(.white.opacity(0.30))
                     .frame(width: 42, height: 5)
                     .padding(.top, 10)
 
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("Daily XP")
-                                .font(.system(.largeTitle, design: .rounded, weight: .semibold))
-                                .foregroundStyle(primaryText)
-
-                            Text("Low tasks add 2 XP, medium 5, and high priority 8.")
-                                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                                .foregroundStyle(secondaryText)
-                        }
-
-                        Spacer()
-
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(primaryText)
-                                .frame(width: 44, height: 44)
-                                .background(.white.opacity(0.16), in: Circle())
-                        }
-                        .buttonStyle(.plain)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
+                        header
+                        heroCard
+                        secondaryStats
+                        progressPanel
+                        targetPanel
                     }
-
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            statTile(title: "Today", value: "\(todayXP)")
-                            statTile(title: "Record", value: "\(recordXP)")
-                            statTile(title: "Target", value: "\(targetXP)")
-                        }
-
-                        ProgressView(value: progress)
-                            .tint(.cyan)
-                            .scaleEffect(y: 1.4)
-                            .padding(.vertical, 8)
-
-                        Stepper(value: $targetXP, in: 5...500, step: 5) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Daily target")
-                                    .font(.system(.headline, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(primaryText)
-
-                                Text("\(max(targetXP - todayXP, 0)) XP left today")
-                                    .font(.system(.caption, design: .rounded, weight: .semibold))
-                                    .foregroundStyle(secondaryText)
-                            }
-                        }
-                        .padding(16)
-                        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.24), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    }
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 24)
                 }
-                .padding(.horizontal, 22)
-
-                Spacer()
             }
         }
-        .presentationDetents([.height(390)])
+        .presentationDetents([.height(520)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(34)
     }
 
-    private func statTile(title: String, value: String) -> some View {
-        VStack(spacing: 5) {
-            Text(value)
-                .font(.system(.title3, design: .rounded, weight: .bold))
-                .foregroundStyle(primaryText)
-                .monospacedDigit()
+    private var header: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Daily XP")
+                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText)
 
-            Text(title)
-                .font(.system(.caption, design: .rounded, weight: .bold))
-                .foregroundStyle(secondaryText)
+                Text("Low tasks add 2 XP, medium 5, and high priority 8.")
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(primaryText)
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(colorScheme == .dark ? 0.14 : 0.30), in: Circle())
+                    .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close Daily XP")
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 76)
-        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.25), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private var heroCard: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(.white.opacity(colorScheme == .dark ? 0.10 : 0.26))
+
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: heroGradientColors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .opacity(colorScheme == .dark ? 0.96 : 0.86)
+
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .stroke(.white.opacity(0.22), lineWidth: 1)
+
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(.white.opacity(0.16))
+                            .frame(width: 64, height: 64)
+
+                        Circle()
+                            .fill(.cyan.opacity(0.22))
+                            .frame(width: 74, height: 74)
+                            .blur(radius: 16)
+
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Today")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.78))
+
+                        Text("\(todayXP) XP")
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .monospacedDigit()
+                    }
+
+                    Spacer(minLength: 0)
+
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text(progress >= 1 ? "Target reached" : "\(remainingXP) XP left")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.76))
+
+                        Text("\(progressPercent)%")
+                            .font(.system(.title3, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white)
+                            .monospacedDigit()
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Progress")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.74))
+
+                        Spacer()
+
+                        Text("\(todayXP) / \(targetXP)")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.88))
+                            .monospacedDigit()
+                    }
+
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(.white.opacity(0.16))
+
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.cyan, .blue, .purple, .pink],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: max(proxy.size.width * progress, 18))
+                                .shadow(color: .cyan.opacity(0.40), radius: 16, y: 6)
+                        }
+                    }
+                    .frame(height: 14)
+                }
+            }
+            .padding(22)
+        }
+        .frame(minHeight: 186)
+        .shadow(color: .purple.opacity(colorScheme == .dark ? 0.24 : 0.14), radius: 22, y: 12)
+    }
+
+    private var secondaryStats: some View {
+        HStack(spacing: 12) {
+            statTile(
+                title: "Record",
+                value: "\(recordXP)",
+                subtitle: "Best day",
+                colors: [.blue.opacity(0.82), .indigo.opacity(0.90)],
+                icon: "trophy.fill"
+            )
+
+            statTile(
+                title: "Target",
+                value: "\(targetXP)",
+                subtitle: "Today",
+                colors: [.purple.opacity(0.88), .pink.opacity(0.74)],
+                icon: "scope"
+            )
+        }
+    }
+
+    private var progressPanel: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Momentum")
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText)
+
+                Spacer()
+
+                Text(progress >= 1 ? "Goal unlocked" : "Keep going")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(.cyan)
+            }
+
+            HStack(spacing: 12) {
+                circleBadge(
+                    text: "\(progressPercent)",
+                    caption: "%"
+                )
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(progress >= 1 ? "You’ve cleared the daily target." : "You’re building a strong day.")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        .foregroundStyle(primaryText)
+
+                    Text(progress >= 1 ? "Everything past this point is extra lift." : "\(remainingXP) XP to reach the next milestone.")
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                        .foregroundStyle(secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(18)
+        .background(panelFill, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .stroke(.white.opacity(0.18), lineWidth: 1)
         )
+    }
+
+    private var targetPanel: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Daily target")
+                .font(.system(.headline, design: .rounded, weight: .bold))
+                .foregroundStyle(primaryText)
+
+            HStack(spacing: 14) {
+                targetAdjustButton(systemImage: "minus", disabled: targetXP <= 5) {
+                    adjustTarget(by: -5)
+                }
+
+                VStack(spacing: 4) {
+                    Text("\(targetXP) XP")
+                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+                        .monospacedDigit()
+
+                    Text("Move in 5 XP steps")
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                        .foregroundStyle(secondaryText)
+                }
+                .frame(maxWidth: .infinity)
+
+                targetAdjustButton(systemImage: "plus", disabled: targetXP >= 500) {
+                    adjustTarget(by: 5)
+                }
+            }
+        }
+        .padding(18)
+        .background(panelFill, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+    }
+
+    private func statTile(title: String, value: String, subtitle: String, colors: [Color], icon: String) -> some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: colors,
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .opacity(colorScheme == .dark ? 0.95 : 0.84)
+
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.92))
+
+                Spacer(minLength: 0)
+
+                Text(value)
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(.caption, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.88))
+
+                    Text(subtitle)
+                        .font(.system(.caption2, design: .rounded, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.72))
+                }
+            }
+            .padding(16)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 132)
+        .shadow(color: colors.first?.opacity(0.22) ?? .clear, radius: 18, y: 10)
+    }
+
+    private func circleBadge(text: String, caption: String) -> some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [.cyan.opacity(0.92), .blue.opacity(0.88), .purple.opacity(0.84)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            Circle()
+                .stroke(.white.opacity(0.24), lineWidth: 1)
+
+            VStack(spacing: 0) {
+                Text(text)
+                    .font(.system(.title3, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white)
+                    .monospacedDigit()
+
+                Text(caption)
+                    .font(.system(.caption2, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.78))
+            }
+        }
+        .frame(width: 72, height: 72)
+        .shadow(color: .cyan.opacity(0.26), radius: 18, y: 8)
+    }
+
+    private func targetAdjustButton(systemImage: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(disabled ? secondaryText.opacity(0.6) : primaryText)
+                .frame(width: 52, height: 52)
+                .background(.white.opacity(colorScheme == .dark ? 0.14 : 0.30), in: Circle())
+                .overlay(Circle().stroke(.white.opacity(0.18), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .accessibilityLabel(systemImage == "minus" ? "Decrease daily target" : "Increase daily target")
+    }
+
+    private func adjustTarget(by amount: Int) {
+        targetXP = min(max(targetXP + amount, 5), 500)
+    }
+
+    private var backgroundGlow: some View {
+        ZStack {
+            Circle()
+                .fill(.cyan.opacity(colorScheme == .dark ? 0.22 : 0.14))
+                .frame(width: 260, height: 260)
+                .blur(radius: 34)
+                .offset(x: -120, y: -180)
+
+            Circle()
+                .fill(.purple.opacity(colorScheme == .dark ? 0.24 : 0.14))
+                .frame(width: 320, height: 320)
+                .blur(radius: 42)
+                .offset(x: 140, y: 220)
+
+            Circle()
+                .fill(.pink.opacity(colorScheme == .dark ? 0.14 : 0.08))
+                .frame(width: 180, height: 180)
+                .blur(radius: 28)
+                .offset(x: 120, y: -110)
+        }
+        .ignoresSafeArea()
+    }
+
+    private var heroGradientColors: [Color] {
+        [
+            Color(red: 0.12, green: 0.72, blue: 0.98),
+            Color(red: 0.18, green: 0.42, blue: 1.00),
+            Color(red: 0.42, green: 0.28, blue: 0.98),
+            Color(red: 0.88, green: 0.36, blue: 0.82)
+        ]
+    }
+
+    private var panelFill: Color {
+        colorScheme == .dark ? .white.opacity(0.10) : .white.opacity(0.34)
     }
 
     private var primaryText: Color {
@@ -886,13 +1198,15 @@ private struct XPStatsSheet: View {
             [
                 Color(red: 0.02, green: 0.05, blue: 0.13),
                 Color(red: 0.05, green: 0.08, blue: 0.22),
-                Color(red: 0.02, green: 0.16, blue: 0.20)
+                Color(red: 0.07, green: 0.11, blue: 0.28),
+                Color(red: 0.06, green: 0.18, blue: 0.24)
             ]
         } else {
             [
-                Color(red: 0.80, green: 0.95, blue: 1.00),
-                Color(red: 0.70, green: 0.82, blue: 0.98),
-                Color(red: 0.58, green: 0.86, blue: 0.92)
+                Color(red: 0.84, green: 0.95, blue: 1.00),
+                Color(red: 0.76, green: 0.88, blue: 1.00),
+                Color(red: 0.74, green: 0.86, blue: 0.98),
+                Color(red: 0.78, green: 0.90, blue: 0.96)
             ]
         }
     }
