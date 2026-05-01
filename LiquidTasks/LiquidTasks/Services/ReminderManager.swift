@@ -178,19 +178,38 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     }
 
     private func scheduleSnooze(for request: UNNotificationRequest, interval: TimeInterval) async {
-        guard let content = request.content.mutableCopy() as? UNMutableNotificationContent else { return }
-
+        let content = UNMutableNotificationContent()
+        content.title = request.content.title
+        content.subtitle = request.content.subtitle
+        content.body = request.content.body
         content.sound = .default
         content.categoryIdentifier = categoryIdentifier
 
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
+        var userInfo = request.content.userInfo
+        userInfo["liquidtasks.snoozedAt"] = Date().timeIntervalSince1970
+        userInfo["liquidtasks.snoozeInterval"] = interval
+        content.userInfo = userInfo
+
+        center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
+        center.removePendingNotificationRequests(withIdentifiers: [request.identifier])
+
+        let snoozedDate = Date().addingTimeInterval(interval)
+        let triggerDate = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: snoozedDate
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
         let snoozedRequest = UNNotificationRequest(
             identifier: request.identifier,
             content: content,
             trigger: trigger
         )
 
-        try? await add(snoozedRequest)
+        do {
+            try await add(snoozedRequest)
+        } catch {
+            assertionFailure("Unable to schedule snoozed reminder: \(error.localizedDescription)")
+        }
     }
 
     private func requestAuthorization(options: UNAuthorizationOptions) async -> Bool {

@@ -79,7 +79,6 @@ struct TaskEditorSheet: View {
         }
     }
 
-    @FocusState private var isFocused: Bool
     @State private var title: String
     @State private var notes: String
     @State private var priority: TaskPriority
@@ -158,7 +157,6 @@ struct TaskEditorSheet: View {
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .stroke(.white.opacity(0.22), lineWidth: 1)
                         )
-                        .focused($isFocused)
 
                     TextField("Add notes, if useful", text: $notes, axis: .vertical)
                         .font(.system(.body, design: .rounded, weight: .medium))
@@ -218,7 +216,6 @@ struct TaskEditorSheet: View {
             )
         }
         .onAppear {
-            isFocused = true
             Task {
                 reminderPermissionState = await reminderManager.authorizationState()
             }
