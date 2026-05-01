@@ -1,61 +1,272 @@
+/* ---------- Splash ---------- */
 .splashOverlay {
     position: fixed;
     inset: 0;
-    background: linear-gradient(135deg, #0b0f1f, #1a1033, #2b124f);
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(255, 40, 130, 0.35), transparent 55%),
+        radial-gradient(1000px 600px at 80% 90%, rgba(0, 255, 135, 0.18), transparent 60%),
+        linear-gradient(135deg, #0b0014, #1f0033 50%, #0b0014);
+    animation: fadeOut 0.5s ease 1.7s forwards;
+}
+
+.splashPitch {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
-    animation: fadeOut 1s ease forwards;
-    animation-delay: 3s;
+    width: min(560px, 92vw);
+    padding: 40px 24px;
+}
+
+.splashLines {
+    position: absolute;
+    inset: 0;
+    border-radius: 32px;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.35;
+    background:
+        repeating-linear-gradient(90deg,
+            transparent 0,
+            transparent 60px,
+            rgba(0, 255, 135, 0.05) 60px,
+            rgba(0, 255, 135, 0.05) 61px);
 }
 
 .splashCard {
-    background: rgba(20, 20, 30, 0.85);
-    border-radius: 20px;
-    padding: 48px 64px;
+    position: relative;
+    width: 100%;
+    padding: 36px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+        rgba(23, 0, 40, 0.7);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(20px);
+    animation: zoomIn 0.7s cubic-bezier(0.2, 0.9, 0.2, 1) both;
     text-align: center;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
 
-    animation: zoomIn 1.5s ease forwards;
+.splashLogo {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.splashCrest {
+    display: grid;
+    place-items: center;
+    filter: drop-shadow(0 8px 24px rgba(0, 255, 135, 0.35));
+}
+
+.splashBrand { text-align: left; }
+
+.splashEyebrow {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.65);
+    font-weight: 700;
 }
 
 .splashTitle {
-    font-size: 38px;
-    font-weight: 800;
-    color: white;
-    margin-bottom: 12px;
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff, #00ff87);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .splashSub {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
     color: rgba(255, 255, 255, 0.7);
-    font-size: 16px;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
 }
 
-/* Blur effect for app */
+.splashDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00ff87;
+    box-shadow: 0 0 14px #00ff87;
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
 .appShell.isBlur {
-    filter: blur(14px);
+    filter: blur(10px);
     pointer-events: none;
 }
 
-/* Animations */
-
-@keyframes zoomIn {
-    from {
-        opacity: 0;
-        transform: scale(0.6);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+/* ---------- Top Navigation ---------- */
+.topNav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        linear-gradient(180deg, rgba(11, 0, 20, 0.85), rgba(11, 0, 20, 0.65));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
-@keyframes fadeOut {
-    to {
-        opacity: 0;
-        visibility: hidden;
-    }
+.topNavInner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 12px 22px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 28px;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 6px 6px;
+    border-radius: 14px;
+    transition: background 0.15s ease;
+}
+.brand:hover { background: rgba(255, 255, 255, 0.04); }
+
+.brandCrest {
+    display: grid;
+    place-items: center;
+    filter: drop-shadow(0 4px 12px rgba(0, 255, 135, 0.35));
+}
+
+.brandText { display: flex; flex-direction: column; line-height: 1; }
+
+.brandEyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.brandName {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #fff 0%, #00ff87 110%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-top: 2px;
+}
+
+.topNavLinks {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-self: center;
+}
+
+.navLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    color: var(--text-dim);
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: color 0.15s ease, background 0.15s ease;
+    cursor: pointer;
+}
+.navLink:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+
+.navLink.active {
+    color: #fff;
+    background: linear-gradient(135deg, rgba(255, 40, 130, 0.18), rgba(0, 255, 135, 0.10));
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.navIcon {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+.topNavRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gwChip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 255, 135, 0.3);
+    background: linear-gradient(135deg, rgba(0, 255, 135, 0.16), rgba(5, 240, 255, 0.06));
+    color: #fff;
+}
+.gwLabel {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #00ff87;
+    font-weight: 800;
+}
+.gwValue {
+    font-size: 16px;
+    font-weight: 900;
+    color: #fff;
+}
+
+.userChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px 6px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+.userChip:hover { background: rgba(255, 255, 255, 0.08); }
+
+.userAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--grad-ai);
+    color: #fff;
+    font-weight: 900;
+    font-size: 14px;
+    box-shadow: 0 4px 14px rgba(160, 32, 240, 0.35);
+}
+
+.userMeta { display: flex; flex-direction: column; line-height: 1.15; }
+.userName { font-size: 13px; font-weight: 700; color: var(--text); }
+.userRank {
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+}
+
+@media (max-width: 860px) {
+    .topNavLinks { display: none; }
+    .userMeta { display: none; }
+    .topNavInner { grid-template-columns: auto 1fr; }
+    .topNavRight { justify-self: end; }
 }

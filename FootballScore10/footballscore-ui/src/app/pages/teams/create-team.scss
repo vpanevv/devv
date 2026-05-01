@@ -1,91 +1,118 @@
+.formPage { animation: slideUp 0.45s ease both; }
+
 .pageHead {
-    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 14px;
+    margin-bottom: 22px;
 }
 
 .h1 {
-    margin: 0;
-    font-size: 34px;
-    line-height: 1.1;
+    margin: 2px 0 0;
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    background: linear-gradient(135deg, #fff, #00ff87);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .sub {
-    margin: 6px 0 0;
-    opacity: .75;
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 14.5px;
+}
+
+.cardEyebrow {
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.cardEyebrow.gradient-ai {
+    background: var(--grad-ai);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 .formCard {
-    max-width: 920px;
+    max-width: 720px;
+    padding: 28px;
 }
 
 .actions {
-    margin-top: 16px;
+    margin-top: 18px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
 }
 
-/* Modal */
+/* ---------- Modal (shared styling with standings) ---------- */
 .modalOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, .55);
+    z-index: 1000;
     display: grid;
     place-items: center;
     padding: 18px;
-    z-index: 1000;
+    background: rgba(5, 0, 10, 0.7);
+    backdrop-filter: blur(10px);
 }
 
 .modalCard {
-    width: min(560px, 94vw);
-    border-radius: 18px;
-    border: 1px solid var(--border);
-    background: linear-gradient(180deg, var(--panel), var(--panel-2));
-    box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+    width: min(520px, 94vw);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+        rgba(23, 0, 40, 0.9);
+    box-shadow: var(--shadow-lg);
     overflow: hidden;
+    animation: zoomIn 0.22s cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
-.modalHeader {
+.modalHead {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-}
-
-.modalBadge {
-    font-size: 12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, .06);
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .modalTitle {
+    font-size: 18px;
     font-weight: 800;
-    font-size: 16px;
-    flex: 1;
+    color: #fff;
+    margin-top: 4px;
 }
 
 .modalClose {
-    border: 0;
-    background: transparent;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
     color: var(--text);
     cursor: pointer;
-    font-size: 16px;
-    opacity: .8;
 }
+.modalClose:hover { background: rgba(255, 255, 255, 0.1); }
 
 .modalBody {
-    padding: 14px 16px;
-}
-
-.modalText {
-    opacity: .9;
+    padding: 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.55;
 }
 
 .modalActions {
-    padding: 14px 16px;
     display: flex;
     justify-content: flex-end;
-    border-top: 1px solid var(--border);
+    padding: 14px 20px 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }

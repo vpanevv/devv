@@ -1,136 +1,398 @@
-<div class="container">
+<div class="container dashboard">
 
-    <!-- Header -->
-    <div class="hero">
-        <div class="heroTitle">League table standing</div>
+    <!-- Hero -->
+    <section class="hero">
+        <div class="heroGlow"></div>
+        <div class="heroBody">
+            <div class="heroLeft">
+                <div class="heroPills">
+                    <span class="pill pill-live">Live Matchweek</span>
+                    <span class="pill pill-ai">✦ AI Insights active</span>
+                </div>
+                <h1 class="heroTitle">
+                    Gameweek <span class="heroGw">28</span>
+                    <span class="heroTitleAccent">is on fire</span>
+                </h1>
+                <p class="heroSub">
+                    Track the title race, generate AI match predictions, and keep tabs on your fantasy movers —
+                    all from one dashboard.
+                </p>
 
-        <div class="heroActions">
-            <a class="btn btn-primary" routerLink="/teams/create">+ Add Team</a>
+                <div class="heroStats">
+                    <div class="heroStat">
+                        <div class="heroStatLabel">Top of the table</div>
+                        <div class="heroStatValue" *ngIf="topScorer">{{ topScorer.name }}</div>
+                        <div class="heroStatValue" *ngIf="!topScorer">—</div>
+                        <div class="heroStatMeta" *ngIf="topScorer">{{ topScorer.points }} pts</div>
+                    </div>
+                    <div class="heroStat">
+                        <div class="heroStatLabel">Matches played</div>
+                        <div class="heroStatValue">{{ totalMatches }}</div>
+                        <div class="heroStatMeta">across the league</div>
+                    </div>
+                    <div class="heroStat">
+                        <div class="heroStatLabel">Points gap (top 2)</div>
+                        <div class="heroStatValue">{{ tightestGap }}</div>
+                        <div class="heroStatMeta">pts</div>
+                    </div>
+                    <div class="heroStat">
+                        <div class="heroStatLabel">Teams</div>
+                        <div class="heroStatValue">{{ items.length }}</div>
+                        <div class="heroStatMeta">in the league</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="heroRight">
+                <a class="btn btn-primary btn-lg" routerLink="/teams/create">
+                    <span>＋</span> Add team
+                </a>
+                <a class="btn btn-ai btn-lg" href="#aiPredictor">
+                    <span>✦</span> Run AI predictor
+                </a>
+            </div>
         </div>
+    </section>
+
+    <!-- Error state -->
+    <div *ngIf="error" class="alert error" style="margin-top: 16px;">{{ error }}</div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+        <!-- Left: Standings table -->
+        <section class="col-main">
+            <div class="card tableCard">
+                <div class="cardHead">
+                    <div>
+                        <div class="cardEyebrow">Premier League — Table</div>
+                        <div class="cardTitle">Standings</div>
+                    </div>
+                    <div class="legend">
+                        <span class="legendDot legend-cl"></span><span class="legendLabel">Champions</span>
+                        <span class="legendDot legend-el"></span><span class="legendLabel">Europa</span>
+                        <span class="legendDot legend-rel"></span><span class="legendLabel">Relegation</span>
+                    </div>
+                </div>
+
+                <div class="tableWrap">
+                    <table class="pltable">
+                        <thead>
+                            <tr>
+                                <th class="col-pos">#</th>
+                                <th class="col-team">Team</th>
+                                <th class="num">P</th>
+                                <th class="num">W</th>
+                                <th class="num">D</th>
+                                <th class="num">L</th>
+                                <th class="num">GD</th>
+                                <th class="col-form">Form</th>
+                                <th class="num">Pts</th>
+                                <th class="col-actions"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngIf="isLoading">
+                                <td class="loadingRow" colspan="10">
+                                    <span class="spinner"></span>
+                                    Loading live standings…
+                                </td>
+                            </tr>
+                            <tr *ngFor="let x of items; let i = index" class="teamRow"
+                                [ngClass]="zoneFor(x.position, items.length)">
+                                <td class="col-pos">
+                                    <div class="posCell">
+                                        <span class="posZone"></span>
+                                        <b>{{ x.position }}</b>
+                                        <span class="posDelta"
+                                              [class.up]="positionDelta(x) > 0"
+                                              [class.down]="positionDelta(x) < 0"
+                                              [class.flat]="positionDelta(x) === 0">
+                                            <ng-container *ngIf="positionDelta(x) > 0">▲{{ positionDelta(x) }}</ng-container>
+                                            <ng-container *ngIf="positionDelta(x) < 0">▼{{ -positionDelta(x) }}</ng-container>
+                                            <ng-container *ngIf="positionDelta(x) === 0">—</ng-container>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="col-team">
+                                    <div class="teamCell">
+                                        <span class="crest"
+                                              [style.background]="'linear-gradient(135deg, ' + crestColors(x)[0] + ', ' + crestColors(x)[1] + ')'">
+                                            {{ initials(x.name) }}
+                                        </span>
+                                        <span class="teamName">{{ x.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="num">{{ x.played }}</td>
+                                <td class="num">{{ x.wins }}</td>
+                                <td class="num">{{ x.draws }}</td>
+                                <td class="num">{{ x.loses }}</td>
+                                <td class="num" [ngClass]="gdClass(x.goalDifference)">{{ gdLabel(x.goalDifference) }}</td>
+                                <td class="col-form">
+                                    <div class="formStrip">
+                                        <span *ngFor="let r of formFor(x)" class="formChip"
+                                              [ngClass]="'r-' + r">{{ r }}</span>
+                                    </div>
+                                </td>
+                                <td class="num pts"><b>{{ x.points }}</b></td>
+                                <td class="col-actions">
+                                    <div class="rowActions">
+                                        <a class="btn btn-sm btn-ghost" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
+                                        <button class="btn btn-sm btn-danger" type="button"
+                                            (click)="openDelete(x.teamId, x.name); $event.stopPropagation()"
+                                            [disabled]="confirmOpen || isDeleting">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr *ngIf="!isLoading && !items.length">
+                                <td class="emptyRow" colspan="10">No teams yet — add your first club to get started.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Match builder -->
+            <div class="card matchCard">
+                <div class="cardHead">
+                    <div>
+                        <div class="cardEyebrow">Scoreboard</div>
+                        <div class="cardTitle">Log a match result</div>
+                        <div class="cardSub">Pick clubs, enter the score, and the table recalculates live.</div>
+                    </div>
+                </div>
+
+                <div *ngIf="matchError" class="alert error" style="margin-bottom: 12px;">{{ matchError }}</div>
+
+                <form class="matchGrid" [formGroup]="matchForm" (ngSubmit)="createMatch()">
+                    <div class="field">
+                        <label class="label">Home team</label>
+                        <select class="select" formControlName="homeTeamId">
+                            <option [ngValue]="null" disabled>Select team…</option>
+                            <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Away team</label>
+                        <select class="select" formControlName="awayTeamId">
+                            <option [ngValue]="null" disabled>Select team…</option>
+                            <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Home goals</label>
+                        <input class="input" type="number" min="0" formControlName="homeGoals" />
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Away goals</label>
+                        <input class="input" type="number" min="0" formControlName="awayGoals" />
+                    </div>
+
+                    <div class="field">
+                        <label class="label">Date played</label>
+                        <input class="input" type="date" formControlName="datePlayed" />
+                    </div>
+
+                    <div class="matchActions">
+                        <button type="button" class="btn btn-ghost" (click)="swapTeams()">⇄ Swap</button>
+                        <button class="btn btn-primary" type="submit" [disabled]="isCreatingMatch">
+                            {{ isCreatingMatch ? 'Saving…' : 'Save result' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Right: AI sidebar -->
+        <aside class="col-side">
+
+            <!-- AI Insights -->
+            <div class="card aiCard">
+                <div class="aiOrb"></div>
+                <div class="cardHead compact">
+                    <div>
+                        <div class="cardEyebrow gradient-ai">✦ AI Insights</div>
+                        <div class="cardTitle sm">Tactical read</div>
+                    </div>
+                    <span class="pill pill-ai">Live</span>
+                </div>
+                <div class="aiInsight" [attr.data-key]="insightIndex">
+                    <div class="aiInsightText">{{ currentInsight }}</div>
+                </div>
+                <div class="aiMeta">
+                    <span class="aiMetaDot"></span>
+                    Updated every few seconds — based on live league data.
+                </div>
+            </div>
+
+            <!-- AI Predictor -->
+            <div class="card aiPredictor" id="aiPredictor">
+                <div class="cardHead compact">
+                    <div>
+                        <div class="cardEyebrow gradient-ai">✦ AI Match Predictor</div>
+                        <div class="cardTitle sm">Simulate a fixture</div>
+                    </div>
+                </div>
+
+                <div class="predictorForm">
+                    <div class="field">
+                        <label class="label">Home</label>
+                        <select class="select" [(ngModel)]="predictHomeId" [ngModelOptions]="{standalone: true}">
+                            <option [ngValue]="null" disabled>Select team…</option>
+                            <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
+                        </select>
+                    </div>
+
+                    <button class="swapBtn" type="button" (click)="swapPredictorTeams()" title="Swap">⇅</button>
+
+                    <div class="field">
+                        <label class="label">Away</label>
+                        <select class="select" [(ngModel)]="predictAwayId" [ngModelOptions]="{standalone: true}">
+                            <option [ngValue]="null" disabled>Select team…</option>
+                            <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-ai btn-lg runBtn" type="button"
+                        (click)="runPrediction()"
+                        [disabled]="predictThinking || !items.length">
+                    <span *ngIf="!predictThinking">✦ Predict outcome</span>
+                    <span *ngIf="predictThinking">Analyzing…</span>
+                </button>
+
+                <div class="thinking" *ngIf="predictThinking">
+                    <div class="thinkingDots"><span></span><span></span><span></span></div>
+                    <div class="thinkingText">Running 10 000 Monte Carlo simulations…</div>
+                </div>
+
+                <div class="predictionResult" *ngIf="prediction && !predictThinking">
+                    <div class="predScore">
+                        <span>{{ prediction.homeName }}</span>
+                        <b class="predScoreValue">{{ prediction.score }}</b>
+                        <span>{{ prediction.awayName }}</span>
+                    </div>
+
+                    <div class="predBar">
+                        <div class="predSeg seg-home" [style.width.%]="prediction.homeWin"
+                             [title]="'Home win ' + prediction.homeWin + '%'">
+                            <span *ngIf="prediction.homeWin > 12">{{ prediction.homeWin }}%</span>
+                        </div>
+                        <div class="predSeg seg-draw" [style.width.%]="prediction.draw"
+                             [title]="'Draw ' + prediction.draw + '%'">
+                            <span *ngIf="prediction.draw > 12">{{ prediction.draw }}%</span>
+                        </div>
+                        <div class="predSeg seg-away" [style.width.%]="prediction.awayWin"
+                             [title]="'Away win ' + prediction.awayWin + '%'">
+                            <span *ngIf="prediction.awayWin > 12">{{ prediction.awayWin }}%</span>
+                        </div>
+                    </div>
+
+                    <div class="predLegend">
+                        <span><i class="dot seg-home"></i> Home</span>
+                        <span><i class="dot seg-draw"></i> Draw</span>
+                        <span><i class="dot seg-away"></i> Away</span>
+                    </div>
+
+                    <div class="predVerdict">
+                        <span class="predVerdictIcon">✦</span>
+                        {{ prediction.verdict }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Captain picks (static mock) -->
+            <div class="card captainsCard">
+                <div class="cardHead compact">
+                    <div>
+                        <div class="cardEyebrow">Gameweek tips</div>
+                        <div class="cardTitle sm">Captain picks</div>
+                    </div>
+                    <span class="pill">Top 3</span>
+                </div>
+                <ul class="captainsList">
+                    <li>
+                        <div class="captainRank">1</div>
+                        <div class="captainBody">
+                            <div class="captainName">E. Haaland</div>
+                            <div class="captainSub">Man City · FWD · xG 0.94</div>
+                        </div>
+                        <div class="captainBadge hot">Hot</div>
+                    </li>
+                    <li>
+                        <div class="captainRank">2</div>
+                        <div class="captainBody">
+                            <div class="captainName">M. Salah</div>
+                            <div class="captainSub">Liverpool · MID · xA 0.6</div>
+                        </div>
+                        <div class="captainBadge">Safe</div>
+                    </li>
+                    <li>
+                        <div class="captainRank">3</div>
+                        <div class="captainBody">
+                            <div class="captainName">B. Saka</div>
+                            <div class="captainSub">Arsenal · MID · Form 7.4</div>
+                        </div>
+                        <div class="captainBadge diff">Diff</div>
+                    </li>
+                </ul>
+            </div>
+        </aside>
     </div>
 
-    <!-- Match form -->
-    <div class="card matchCard">
-        <div class="cardTitle">Create match</div>
-        <div class="cardSub">Pick teams, enter score, save — standings will update.</div>
-
-        <div *ngIf="matchError" class="alert error">{{ matchError }}</div>
-
-        <form class="matchGrid" [formGroup]="matchForm" (ngSubmit)="createMatch()">
-            <div class="field">
-                <label class="label">Home team</label>
-                <select class="select" formControlName="homeTeamId">
-                    <option [ngValue]="null" disabled>Select team…</option>
-                    <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
-                </select>
+    <!-- Delete confirm modal -->
+    <div *ngIf="confirmOpen && pendingDelete" class="modalOverlay" (click)="closeDelete()">
+        <div class="modalCard" (click)="$event.stopPropagation()">
+            <div class="modalHead">
+                <div>
+                    <div class="cardEyebrow">Danger zone</div>
+                    <div class="modalTitle">Delete team</div>
+                </div>
+                <button class="modalClose" type="button" (click)="closeDelete()" [disabled]="isDeleting">✕</button>
             </div>
-
-            <div class="field">
-                <label class="label">Away team</label>
-                <select class="select" formControlName="awayTeamId">
-                    <option [ngValue]="null" disabled>Select team…</option>
-                    <option *ngFor="let t of items" [ngValue]="t.teamId">{{ t.name }}</option>
-                </select>
+            <div class="modalBody">
+                Are you sure you want to delete <b>{{ pendingDelete.name }}</b>? This cannot be undone.
             </div>
-
-            <div class="field">
-                <label class="label">Home goals</label>
-                <input class="input" type="number" min="0" formControlName="homeGoals" />
-            </div>
-
-            <div class="field">
-                <label class="label">Away goals</label>
-                <input class="input" type="number" min="0" formControlName="awayGoals" />
-            </div>
-
-            <div class="field">
-                <label class="label">Date played</label>
-                <input class="input" type="date" formControlName="datePlayed" />
-            </div>
-
-            <div class="matchActions">
-                <button type="button" class="btn" (click)="swapTeams()">Swap</button>
-                <button class="btn btn-primary" type="submit" [disabled]="isCreatingMatch">
-                    {{ isCreatingMatch ? 'Saving…' : 'Create match' }}
+            <div class="modalActions">
+                <button class="btn btn-ghost" type="button" (click)="closeDelete()" [disabled]="isDeleting">Cancel</button>
+                <button class="btn btn-danger" type="button"
+                    (click)="confirmDelete(); $event.stopPropagation()" [disabled]="isDeleting">
+                    {{ isDeleting ? 'Deleting…' : 'Delete team' }}
                 </button>
             </div>
-        </form>
+        </div>
     </div>
 
-    <!-- States -->
-    <div *ngIf="isLoading" class="state">Loading…</div>
-    <div *ngIf="error" class="alert error">{{ error }}</div>
-
-    <!-- Table -->
-    <div *ngIf="!isLoading && !error" class="card tableCard">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th class="num">#</th>
-                    <th>Team</th>
-                    <th class="num">P</th>
-                    <th class="num">W</th>
-                    <th class="num">D</th>
-                    <th class="num">L</th>
-                    <th class="num">GD</th>
-                    <th class="num">Pts</th>
-                    <th class="num">Actions</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <tr *ngFor="let x of items">
-                    <td class="num"><b>{{ x.position }}</b></td>
-
-                    <td class="team">
-                        <span class="dot"></span>
-                        {{ x.name }}
-                    </td>
-
-                    <td class="num">{{ x.played }}</td>
-                    <td class="num">{{ x.wins }}</td>
-                    <td class="num">{{ x.draws }}</td>
-                    <td class="num">{{ x.loses }}</td>
-                    <td class="num" [ngClass]="gdClass(x.goalDifference)">{{ gdLabel(x.goalDifference) }}</td>
-                    <td class="num pts"><b>{{ x.points }}</b></td>
-
-                    <td class="num">
-                        <div class="rowActions">
-                            <a class="btn btn-sm" [routerLink]="['/teams', x.teamId, 'edit']">Edit</a>
-                            <button class="btn btn-sm btn-danger" type="button"
-                                (click)="openDelete(x.teamId, x.name); $event.stopPropagation()"
-                                [disabled]="confirmOpen || isDeleting">
-                                Delete
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-
-        <!-- confirm delete -->
-        <!-- Delete confirm modal -->
-        <div *ngIf="confirmOpen && pendingDelete" class="modalOverlay" (click)="closeDelete()">
-            <div class="modal" (click)="$event.stopPropagation()">
-                <div class="modalHead">
-                    <div class="modalTitle">Delete team</div>
-                    <button class="modalClose" type="button" (click)="closeDelete()" [disabled]="isDeleting">✕</button>
+    <!-- Match success modal -->
+    <div *ngIf="matchSuccessOpen && lastMatch" class="modalOverlay" (click)="closeMatchSuccess()">
+        <div class="modalCard matchSuccessCard" (click)="$event.stopPropagation()">
+            <div class="modalHead">
+                <div>
+                    <div class="cardEyebrow gradient-ai">✓ Result saved</div>
+                    <div class="modalTitle">Standings updated</div>
                 </div>
-
-                <div class="modalText">
-                    Are you sure you want to delete <b>{{ pendingDelete.name }}</b>? This cannot be undone.
+                <button class="modalClose" type="button" (click)="closeMatchSuccess()">✕</button>
+            </div>
+            <div class="matchSummary">
+                <div class="teamBlock">
+                    <span class="teamName">{{ lastMatch.homeTeam }}</span>
                 </div>
-
-                <div class="modalActions">
-                    <button class="btn btn-sm" type="button" (click)="closeDelete()"
-                        [disabled]="isDeleting">Cancel</button>
-                    <button class="btn btn-sm btn-danger" type="button"
-                        (click)="confirmDelete(); $event.stopPropagation()" [disabled]="isDeleting">
-                        {{ isDeleting ? 'Deleting…' : 'Delete' }}
-                    </button>
+                <div class="scoreBlock">
+                    <div class="score">{{ lastMatch.homeGoals }} – {{ lastMatch.awayGoals }}</div>
+                    <div class="meta">{{ lastMatch.datePlayed }}</div>
+                </div>
+                <div class="teamBlock right">
+                    <span class="teamName">{{ lastMatch.awayTeam }}</span>
                 </div>
             </div>
+            <div class="modalActions">
+                <button class="btn btn-primary" type="button" (click)="closeMatchSuccess()">Done</button>
+            </div>
         </div>
-
     </div>
 </div>

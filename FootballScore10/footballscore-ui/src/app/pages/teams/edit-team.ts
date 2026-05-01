@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TeamsService } from '../../api/team.service';
 import { finalize } from 'rxjs/operators';
 import { ChangeDetectorRef } from '@angular/core';
@@ -9,7 +9,7 @@ import { ChangeDetectorRef } from '@angular/core';
 @Component({
     selector: 'app-edit-team',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule],
+    imports: [CommonModule, ReactiveFormsModule, RouterLink],
     templateUrl: './edit-team.html',
     styleUrls: ['./edit-team.scss'],
 })
