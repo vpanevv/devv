@@ -204,22 +204,41 @@ struct TaskEditorSheet: View {
 
                 Spacer()
             }
+            .blur(radius: isReminderSchedulerPresented ? 10 : 0)
+            .scaleEffect(isReminderSchedulerPresented ? 0.985 : 1)
+            .allowsHitTesting(!isReminderSchedulerPresented)
+
+            if isReminderSchedulerPresented {
+                Color.black.opacity(colorScheme == .dark ? 0.34 : 0.18)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .onTapGesture {
+                        cancelReminderScheduling()
+                    }
+
+                ReminderSchedulerPopup(
+                    reminderDate: $pendingReminderDate,
+                    onClose: cancelReminderScheduling,
+                    onCancel: cancelReminderScheduling,
+                    onSave: confirmReminderScheduling
+                )
+                .padding(.horizontal, 20)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.92).combined(with: .opacity),
+                    removal: .scale(scale: 0.98).combined(with: .opacity)
+                ))
+                .zIndex(2)
+            }
         }
         .presentationDetents([.height(620)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(34)
-        .sheet(isPresented: $isReminderSchedulerPresented) {
-            ReminderSchedulerSheet(
-                reminderDate: $pendingReminderDate,
-                onCancel: cancelReminderScheduling,
-                onSave: confirmReminderScheduling
-            )
-        }
         .onAppear {
             Task {
                 reminderPermissionState = await reminderManager.authorizationState()
             }
         }
+        .animation(.spring(response: 0.34, dampingFraction: 0.84), value: isReminderSchedulerPresented)
     }
 
     private var priorityPicker: some View {
@@ -466,110 +485,126 @@ struct TaskEditorSheet: View {
     }
 }
 
-private struct ReminderSchedulerSheet: View {
-    @Environment(\.dismiss) private var dismiss
+private struct ReminderSchedulerPopup: View {
     @Environment(\.colorScheme) private var colorScheme
     @Binding var reminderDate: Date
 
+    let onClose: () -> Void
     let onCancel: () -> Void
     let onSave: () -> Void
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: sheetColors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(.white.opacity(0.14))
+                        .frame(width: 56, height: 56)
 
-            VStack(spacing: 18) {
-                Capsule()
-                    .fill(.white.opacity(0.30))
-                    .frame(width: 42, height: 5)
-                    .padding(.top, 18)
+                    Circle()
+                        .fill(.cyan.opacity(0.20))
+                        .frame(width: 74, height: 74)
+                        .blur(radius: 18)
 
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle()
-                                .fill(.white.opacity(0.14))
-                                .frame(width: 56, height: 56)
-
-                            Circle()
-                                .fill(.cyan.opacity(0.20))
-                                .frame(width: 70, height: 70)
-                                .blur(radius: 16)
-
-                            Image(systemName: "bell.badge.fill")
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Schedule Reminder")
-                                .font(.system(.title2, design: .rounded, weight: .bold))
-                                .foregroundStyle(primaryText)
-
-                            Text("Choose a date and time for this task.")
-                                .font(.system(.subheadline, design: .rounded, weight: .medium))
-                                .foregroundStyle(secondaryText)
-                        }
-                    }
-
-                    reminderPreview
-                    quickScheduleRow
-                    dateRow
-                    timeRow
-
-                    HStack(spacing: 12) {
-                        Button {
-                            onCancel()
-                            dismiss()
-                        } label: {
-                            Text("Cancel")
-                                .font(.system(.headline, design: .rounded, weight: .bold))
-                                .foregroundStyle(primaryText)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                        .stroke(.white.opacity(0.18), lineWidth: 1)
-                                )
-                        }
-                        .buttonStyle(.plain)
-
-                        Button {
-                            onSave()
-                            dismiss()
-                        } label: {
-                            Text("Save")
-                                .font(.system(.headline, design: .rounded, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 52)
-                                .background(
-                                    LinearGradient(
-                                        colors: [.cyan, .blue, .indigo],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    Image(systemName: "bell.badge.fill")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundStyle(.white)
                 }
-                .padding(.horizontal, 22)
 
-                Spacer()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Schedule Reminder")
+                        .font(.system(.title2, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+
+                    Text("Choose a date and time for this task.")
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(secondaryText)
+                }
+
+                Spacer(minLength: 0)
+
+                Button {
+                    onClose()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(primaryText)
+                        .frame(width: 40, height: 40)
+                        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(.white.opacity(0.18), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close reminder scheduling")
+            }
+
+            reminderPreview
+            quickScheduleRow
+            dateRow
+            timeRow
+
+            HStack(spacing: 12) {
+                Button {
+                    onCancel()
+                } label: {
+                    Text("Cancel")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .stroke(.white.opacity(0.18), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    onSave()
+                } label: {
+                    Text("Save")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            LinearGradient(
+                                colors: [.cyan, .blue, .indigo],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
             }
         }
-        .presentationDetents([.height(430)])
-        .presentationDragIndicator(.hidden)
-        .presentationCornerRadius(34)
-        .interactiveDismissDisabled()
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
+        .frame(maxWidth: 430)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                    .fill(.ultraThinMaterial)
+
+                LinearGradient(
+                    colors: sheetColors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .opacity(colorScheme == .dark ? 0.94 : 0.82)
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.32 : 0.18), radius: 26, y: 16)
+        .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.12 : 0.08), radius: 18, y: 0)
     }
 
     private var quickScheduleRow: some View {
