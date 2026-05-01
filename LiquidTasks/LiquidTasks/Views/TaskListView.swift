@@ -6,10 +6,13 @@ import UIKit
 struct TaskListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     private let reminderManager = ReminderManager.shared
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = true
     @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
+    @AppStorage(LiquidTasksRuntime.launchActionKey) private var pendingLaunchAction = LiquidTasksLaunchAction.none.rawValue
     @AppStorage("liquidTasksXPDate") private var xpDateKey = ""
     @AppStorage("liquidTasksTodayXP") private var todayXP = 0
     @AppStorage("liquidTasksRecordXP") private var recordXP = 0
@@ -21,6 +24,7 @@ struct TaskListView: View {
     @State private var completionBurstID: UUID?
     @State private var achievementPopup: AchievementPopupData?
     @State private var taskPendingDeletion: TaskItem?
+    @State private var xpGlowVisible = false
 
     private var store: TaskStore {
         TaskStore(context: modelContext)
@@ -66,6 +70,24 @@ struct TaskListView: View {
 
     private var reminderSnapshots: [ReminderTaskSnapshot] {
         tasks.map(ReminderTaskSnapshot.init(task:))
+    }
+
+    private var highPriorityActiveCount: Int {
+        activeTasks.filter { $0.priority == .high }.count
+    }
+
+    private var remindersLaterTodayCount: Int {
+        let calendar = Calendar.current
+        return activeTasks.filter { task in
+            guard let scheduledAt = task.scheduledAt else { return false }
+            return calendar.isDateInToday(scheduledAt) && scheduledAt > .now
+        }.count
+    }
+
+    private var listAnimation: Animation {
+        accessibilityReduceMotion
+            ? .easeOut(duration: 0.18)
+            : .spring(response: 0.46, dampingFraction: 0.84, blendDuration: 0.14)
     }
 
     var body: some View {
@@ -146,11 +168,19 @@ struct TaskListView: View {
             resetDailyXPIfNeeded()
             synchronizeXPState()
             synchronizeReminders()
+            processPendingLaunchAction()
         }
         .onChange(of: xpSyncSignature) { _, _ in
             resetDailyXPIfNeeded()
             synchronizeXPState()
             synchronizeReminders()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            processPendingLaunchAction()
+        }
+        .onChange(of: pendingLaunchAction) { _, _ in
+            processPendingLaunchAction()
         }
         .sheet(isPresented: $isAddingTask) {
             TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt in
@@ -196,6 +226,8 @@ struct TaskListView: View {
             Text("This task will be removed from Liquid Tasks.")
         }
         .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isXPStatsPresented)
+        .animation(listAnimation, value: activeTasks.map(\.id))
+        .animation(listAnimation, value: completedTasks.map(\.id))
     }
 
     private var header: some View {
@@ -219,25 +251,27 @@ struct TaskListView: View {
 
                 Spacer()
 
-                XPStatusPill(points: todayXP) {
+                XPStatusPill(points: todayXP, isGlowing: xpGlowVisible) {
                     isXPStatsPresented = true
                 }
 
                 AppearanceToggle(mode: appearanceBinding)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(spacing: 10) {
+                Text(dashboardGreeting)
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(greetingText)
+                    .textCase(.uppercase)
+
                 completionProgressBar
 
-                Text("Liquid Tasks")
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
-                    .foregroundStyle(primaryText)
-                    .shadow(color: textShadow, radius: 12, y: 4)
-
-                Text(summaryText)
-                    .font(.system(.subheadline, design: .rounded, weight: .medium))
-                    .foregroundStyle(secondaryText)
+                Text(dashboardStatusText)
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                    .foregroundStyle(statusText)
+                    .multilineTextAlignment(.center)
             }
+            .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 22)
         .padding(.top, 54)
@@ -284,6 +318,7 @@ struct TaskListView: View {
             }
             .frame(height: 10)
         }
+        .frame(maxWidth: .infinity)
         .padding(.bottom, 6)
     }
 
@@ -358,6 +393,7 @@ struct TaskListView: View {
                 Section {
                     ForEach(activeTasks) { task in
                         taskRow(task, isCompletedSection: false)
+                            .transition(taskRowTransition(forCompletedSection: false))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18))
@@ -384,6 +420,7 @@ struct TaskListView: View {
                 Section {
                     ForEach(completedTasks) { task in
                         taskRow(task, isCompletedSection: true)
+                            .transition(taskRowTransition(forCompletedSection: true))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18))
@@ -452,6 +489,7 @@ struct TaskListView: View {
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(task.isCompleted ? .cyan : priorityColor(for: task.priority).opacity(0.92))
                     .frame(width: 42, height: 42)
+                    .contentTransition(.symbolEffect(.replace))
 
                 VStack(alignment: .leading, spacing: 7) {
                     Text(task.title)
@@ -502,9 +540,9 @@ struct TaskListView: View {
                 } label: {
                     Image(systemName: "pencil")
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.78))
+                        .foregroundStyle(editIconTint)
                         .frame(width: 44, height: 44)
-                        .background(.white.opacity(0.10), in: Circle())
+                        .background(editButtonFill, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Edit task")
@@ -528,6 +566,7 @@ struct TaskListView: View {
             }
         }
         .opacity(isCompletedSection ? 0.82 : 1)
+        .contentTransition(.interpolate)
     }
 
     private var inlineEmptyState: some View {
@@ -617,6 +656,7 @@ struct TaskListView: View {
                 isMajor: false
             )
         )
+        triggerXPGlow()
 
         let reachedTarget = resolvedPreviousXP < dailyTargetXP && resolvedXP >= dailyTargetXP
         guard reachedTarget, lastTargetHitDate != currentDayKey else { return }
@@ -643,6 +683,21 @@ struct TaskListView: View {
         let snapshots = reminderSnapshots
         Task {
             await reminderManager.synchronize(tasks: snapshots)
+        }
+    }
+
+    private func triggerXPGlow() {
+        withAnimation(.easeOut(duration: 0.18)) {
+            xpGlowVisible = true
+        }
+
+        Swift.Task {
+            try? await Swift.Task.sleep(for: .milliseconds(accessibilityReduceMotion ? 420 : 880))
+            await MainActor.run {
+                withAnimation(.easeOut(duration: accessibilityReduceMotion ? 0.18 : 0.56)) {
+                    xpGlowVisible = false
+                }
+            }
         }
     }
 
@@ -735,9 +790,40 @@ struct TaskListView: View {
         .tint(.purple)
     }
 
-    private var summaryText: String {
-        let openCount = activeTasks.count
-        return openCount == 1 ? "1 signal waiting" : "\(openCount) signals waiting"
+    private var dashboardGreeting: String {
+        let hour = Calendar.current.component(.hour, from: .now)
+        return switch hour {
+        case 5..<12:
+            "Good morning"
+        case 12..<18:
+            "Good afternoon"
+        default:
+            "Good evening"
+        }
+    }
+
+    private var dashboardStatusText: String {
+        if highPriorityActiveCount > 0 {
+            return highPriorityActiveCount == 1
+                ? "1 high priority task needs attention"
+                : "\(highPriorityActiveCount) high priority tasks need attention"
+        }
+
+        if remindersLaterTodayCount > 0 {
+            return remindersLaterTodayCount == 1
+                ? "1 reminder is scheduled later today"
+                : "\(remindersLaterTodayCount) reminders are scheduled later today"
+        }
+
+        if tasks.isEmpty {
+            return "You're clear for the moment"
+        }
+
+        if activeTasks.isEmpty {
+            return "Everything is done for now"
+        }
+
+        return activeTasks.count == 1 ? "1 task is ready when you are" : "\(activeTasks.count) tasks are waiting quietly"
     }
 
     private var emptyStateCopy: EmptyStateCopy {
@@ -763,6 +849,16 @@ struct TaskListView: View {
         Self.dayFormatter.string(from: .now)
     }
 
+    private func processPendingLaunchAction() {
+        let action = LiquidTasksLaunchAction(rawValue: pendingLaunchAction) ?? .none
+        guard action != .none else { return }
+
+        pendingLaunchAction = LiquidTasksLaunchAction.none.rawValue
+
+        guard action == .addTask else { return }
+        isAddingTask = true
+    }
+
     private var primaryText: Color {
         colorScheme == .dark ? .white : Color(red: 0.04, green: 0.10, blue: 0.22)
     }
@@ -771,12 +867,28 @@ struct TaskListView: View {
         colorScheme == .dark ? .white.opacity(0.68) : Color(red: 0.07, green: 0.14, blue: 0.28).opacity(0.78)
     }
 
+    private var greetingText: Color {
+        colorScheme == .dark ? .cyan : Color.black.opacity(0.88)
+    }
+
+    private var statusText: Color {
+        colorScheme == .dark ? secondaryText : Color.black.opacity(0.82)
+    }
+
     private var completedText: Color {
         colorScheme == .dark ? .white.opacity(0.46) : Color(red: 0.10, green: 0.18, blue: 0.32).opacity(0.52)
     }
 
     private var iconText: Color {
         colorScheme == .dark ? .white.opacity(0.76) : Color(red: 0.08, green: 0.16, blue: 0.32).opacity(0.72)
+    }
+
+    private var editIconTint: Color {
+        colorScheme == .dark ? .white.opacity(0.78) : Color.black.opacity(0.78)
+    }
+
+    private var editButtonFill: Color {
+        colorScheme == .dark ? .white.opacity(0.10) : .white.opacity(0.46)
     }
 
     private var controlText: Color {
@@ -810,6 +922,14 @@ struct TaskListView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    private func taskRowTransition(forCompletedSection isCompletedSection: Bool) -> AnyTransition {
+        let moveEdge: Edge = isCompletedSection ? .bottom : .top
+        return .asymmetric(
+            insertion: .move(edge: moveEdge).combined(with: .opacity).combined(with: .scale(scale: 0.98)),
+            removal: .opacity.combined(with: .scale(scale: 0.98))
+        )
+    }
 }
 
 private struct EmptyStateCopy {
@@ -821,6 +941,7 @@ private struct XPStatusPill: View {
     @Environment(\.colorScheme) private var colorScheme
 
     let points: Int
+    let isGlowing: Bool
     let action: () -> Void
 
     var body: some View {
@@ -843,6 +964,30 @@ private struct XPStatusPill: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .background(
+            ZStack {
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [.cyan.opacity(0.30), .blue.opacity(0.24), .purple.opacity(0.22)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .blur(radius: isGlowing ? 22 : 8)
+                    .scaleEffect(isGlowing ? 1.18 : 0.94)
+                    .opacity(isGlowing ? 0.92 : 0)
+
+                Capsule()
+                    .fill(.white.opacity(0.22))
+                    .blur(radius: isGlowing ? 12 : 4)
+                    .scaleEffect(isGlowing ? 1.08 : 0.96)
+                    .opacity(isGlowing ? 0.34 : 0)
+            }
+            .padding(.horizontal, -8)
+            .padding(.vertical, -8)
+        )
+        .animation(.easeOut(duration: 0.45), value: isGlowing)
         .accessibilityLabel("Daily XP")
         .accessibilityValue("\(points) points")
     }

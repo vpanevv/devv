@@ -31,6 +31,7 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     private let categoryIdentifier = "liquidtasks.reminder"
     private let snooze15Identifier = "liquidtasks.snooze.15"
     private let snooze60Identifier = "liquidtasks.snooze.60"
+    private let completeIdentifier = "liquidtasks.complete"
     private let managedPrefix = "liquidtasks.task."
     private let taskIDKey = "taskID"
     private let taskTitleKey = "taskTitle"
@@ -113,6 +114,8 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
             await scheduleSnooze(for: response.notification.request, interval: 15 * 60)
         case snooze60Identifier:
             await scheduleSnooze(for: response.notification.request, interval: 60 * 60)
+        case completeIdentifier:
+            await completeTask(for: response.notification.request)
         default:
             break
         }
@@ -129,6 +132,10 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
                 UNNotificationAction(
                     identifier: snooze60Identifier,
                     title: "Snooze 1 hour"
+                ),
+                UNNotificationAction(
+                    identifier: completeIdentifier,
+                    title: "Complete task"
                 )
             ],
             intentIdentifiers: [],
@@ -210,6 +217,16 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         } catch {
             assertionFailure("Unable to schedule snoozed reminder: \(error.localizedDescription)")
         }
+    }
+
+    private func completeTask(for request: UNNotificationRequest) async {
+        center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
+        center.removePendingNotificationRequests(withIdentifiers: [request.identifier])
+
+        guard let taskIDString = request.content.userInfo[taskIDKey] as? String,
+              let taskID = UUID(uuidString: taskIDString) else { return }
+
+        await LiquidTasksRuntime.completeTask(id: taskID)
     }
 
     private func requestAuthorization(options: UNAuthorizationOptions) async -> Bool {

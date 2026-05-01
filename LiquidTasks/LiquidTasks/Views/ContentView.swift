@@ -71,8 +71,10 @@ struct AppearanceToggle: View {
 }
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = false
     @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
+    @AppStorage(LiquidTasksRuntime.launchActionKey) private var pendingLaunchAction = LiquidTasksLaunchAction.none.rawValue
 
     private var appearance: AppearanceMode {
         AppearanceMode(rawValue: appearanceRawValue) ?? .dark
@@ -93,6 +95,23 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(appearance.colorScheme)
+        .onAppear {
+            unlockDashboardForShortcutIfNeeded()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            unlockDashboardForShortcutIfNeeded()
+        }
+        .onChange(of: pendingLaunchAction) { _, _ in
+            unlockDashboardForShortcutIfNeeded()
+        }
+    }
+
+    private func unlockDashboardForShortcutIfNeeded() {
+        let launchAction = LiquidTasksLaunchAction(rawValue: pendingLaunchAction) ?? .none
+        guard launchAction != .none else { return }
+        guard !hasStarted else { return }
+        hasStarted = true
     }
 }
 

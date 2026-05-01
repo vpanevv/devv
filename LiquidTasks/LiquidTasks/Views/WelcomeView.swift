@@ -56,13 +56,13 @@ struct WelcomeView: View {
                         }
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    .frame(height: 356)
+                    .frame(height: 418)
 
                     pageDots
 
                     Button(action: onStart) {
                         HStack(spacing: 10) {
-                            Text(selectedPage == cards.indices.last ? "Get Started" : "Start")
+                            Text(selectedPage == cards.indices.last ? "Open Liquid Tasks" : "Start")
                                 .font(.system(.headline, design: .rounded, weight: .bold))
 
                             Image(systemName: "sparkles")
@@ -85,7 +85,7 @@ struct WelcomeView: View {
                         )
                         .shadow(color: .cyan.opacity(glowPulse ? 0.30 : 0.18), radius: glowPulse ? 34 : 20, y: 12)
                         .shadow(color: .purple.opacity(glowPulse ? 0.26 : 0.14), radius: glowPulse ? 28 : 14, y: 8)
-                        .scaleEffect(glowPulse ? 1.015 : 1.0)
+                        .scaleEffect(glowPulse ? (selectedPage == cards.indices.last ? 1.022 : 1.015) : 1.0)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 22)
@@ -104,83 +104,104 @@ struct WelcomeView: View {
     private func onboardingCard(_ card: OnboardingCard, index: Int) -> some View {
         let isSelected = selectedPage == index
 
-        return ZStack {
-            RoundedRectangle(cornerRadius: 38, style: .continuous)
-                .fill(.white.opacity(colorScheme == .dark ? 0.08 : 0.22))
+        return GeometryReader { proxy in
+            let minX = proxy.frame(in: .global).minX
+            let normalizedOffset = (minX - 22) / 320
 
-            RoundedRectangle(cornerRadius: 38, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: card.gradient,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .opacity(isSelected ? 0.92 : 0.76)
+            ZStack {
+                RoundedRectangle(cornerRadius: 38, style: .continuous)
+                    .fill(.white.opacity(colorScheme == .dark ? 0.08 : 0.22))
 
-            RoundedRectangle(cornerRadius: 38, style: .continuous)
-                .fill(.ultraThinMaterial.opacity(colorScheme == .dark ? 0.28 : 0.42))
-
-            RoundedRectangle(cornerRadius: 38, style: .continuous)
-                .stroke(.white.opacity(isSelected ? 0.28 : 0.18), lineWidth: 1)
-
-            cardAccentOrbs(card: card, isSelected: isSelected)
-
-            VStack(spacing: 26) {
-                ZStack {
-                    Circle()
-                        .fill(card.glow.opacity(isSelected ? 0.26 : 0.14))
-                        .frame(width: 132, height: 132)
-                        .blur(radius: 22)
-
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [card.glow.opacity(0.40), .white.opacity(colorScheme == .dark ? 0.12 : 0.34)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                RoundedRectangle(cornerRadius: 38, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: card.gradient,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(width: 96, height: 96)
-                        .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
+                    )
+                    .opacity(isSelected ? 0.94 : 0.76)
 
-                    Image(systemName: card.icon)
-                        .font(.system(size: 34, weight: .bold))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.20), radius: 10, y: 4)
-                }
+                RoundedRectangle(cornerRadius: 38, style: .continuous)
+                    .fill(.ultraThinMaterial.opacity(colorScheme == .dark ? 0.28 : 0.42))
 
-                VStack(spacing: 10) {
-                    Text(card.title)
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(primaryText)
-                        .multilineTextAlignment(.center)
+                RoundedRectangle(cornerRadius: 38, style: .continuous)
+                    .stroke(.white.opacity(isSelected ? 0.28 : 0.18), lineWidth: 1)
 
-                    Text(card.subtitle)
-                        .font(.system(.body, design: .rounded, weight: .medium))
-                        .foregroundStyle(secondaryText)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(3)
-                }
+                cardAccentOrbs(card: card, isSelected: isSelected)
+                    .offset(x: -normalizedOffset * 26)
 
-                HStack(spacing: 8) {
-                    ForEach(0..<3, id: \.self) { marker in
-                        Capsule()
-                            .fill(marker == 1 ? .white.opacity(0.82) : .white.opacity(0.28))
-                            .frame(width: marker == 1 ? 30 : 8, height: 8)
+                VStack(spacing: card.isFinale ? 18 : 26) {
+                    ZStack {
+                        Circle()
+                            .fill(card.glow.opacity(isSelected ? 0.26 : 0.14))
+                            .frame(width: card.isFinale ? 132 : 132, height: card.isFinale ? 132 : 132)
+                            .blur(radius: card.isFinale ? 24 : 22)
+
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [card.glow.opacity(0.40), .white.opacity(colorScheme == .dark ? 0.12 : 0.34)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: card.isFinale ? 96 : 96, height: card.isFinale ? 96 : 96)
+                            .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
+
+                        Image(systemName: card.icon)
+                            .font(.system(size: card.isFinale ? 34 : 34, weight: .bold))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.20), radius: 10, y: 4)
+                    }
+                    .offset(x: -normalizedOffset * 18)
+
+                    VStack(spacing: card.isFinale ? 10 : 10) {
+                        Text(card.title)
+                            .font(.system(card.isFinale ? .title : .title2, design: .rounded, weight: .bold))
+                            .foregroundStyle(primaryText)
+                            .multilineTextAlignment(.center)
+
+                        Text(card.subtitle)
+                            .font(.system(.body, design: .rounded, weight: .medium))
+                            .foregroundStyle(secondaryText)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(3)
+                            .lineLimit(card.isFinale ? 5 : 3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .offset(x: normalizedOffset * 10)
+
+                    if card.isFinale {
+                        Text("Tasks, reminders, and momentum all in one calm place.")
+                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(primaryText.opacity(0.84))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .offset(x: -normalizedOffset * 12)
+                    } else {
+                        HStack(spacing: 8) {
+                            ForEach(0..<3, id: \.self) { marker in
+                                Capsule()
+                                    .fill(marker == 1 ? .white.opacity(0.82) : .white.opacity(0.28))
+                                    .frame(width: marker == 1 ? 30 : 8, height: 8)
+                            }
+                        }
+                        .opacity(isSelected ? 1 : 0.55)
                     }
                 }
-                .opacity(isSelected ? 1 : 0.55)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 28)
+                .padding(.vertical, card.isFinale ? 28 : 30)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 28)
-            .padding(.vertical, 30)
+            .rotation3DEffect(.degrees(Double(normalizedOffset) * -8), axis: (x: 0, y: 1, z: 0))
+            .shadow(color: card.glow.opacity(isSelected ? 0.24 : 0.10), radius: isSelected ? 28 : 14, y: 14)
+            .scaleEffect(isSelected ? 1 : 0.94)
+            .offset(y: isSelected ? 0 : 10)
+            .animation(.smooth(duration: 0.36), value: selectedPage)
         }
-        .shadow(color: card.glow.opacity(isSelected ? 0.24 : 0.10), radius: isSelected ? 28 : 14, y: 14)
-        .scaleEffect(isSelected ? 1 : 0.94)
-        .offset(y: isSelected ? 0 : 10)
-        .animation(.smooth(duration: 0.36), value: selectedPage)
     }
 
     private func cardAccentOrbs(card: OnboardingCard, isSelected: Bool) -> some View {
@@ -231,7 +252,7 @@ struct WelcomeView: View {
                 .offset(x: 140, y: 180)
 
             Circle()
-                .fill(.pink.opacity(colorScheme == .dark ? 0.12 : 0.08))
+                .fill(.pink.opacity(colorScheme == .dark ? 0.12 : 0.03))
                 .frame(width: 180, height: 180)
                 .blur(radius: 26)
                 .offset(x: 120, y: -80)
@@ -259,6 +280,7 @@ private struct OnboardingCard {
     let glow: Color
     let secondaryGlow: Color
     let gradient: [Color]
+    let isFinale: Bool
 
     static let cards = [
         OnboardingCard(
@@ -271,7 +293,8 @@ private struct OnboardingCard {
                 Color(red: 0.10, green: 0.68, blue: 0.94),
                 Color(red: 0.16, green: 0.38, blue: 0.98),
                 Color(red: 0.34, green: 0.24, blue: 0.92)
-            ]
+            ],
+            isFinale: false
         ),
         OnboardingCard(
             icon: "checkmark.circle.fill",
@@ -283,7 +306,8 @@ private struct OnboardingCard {
                 Color(red: 0.08, green: 0.46, blue: 0.96),
                 Color(red: 0.20, green: 0.28, blue: 0.94),
                 Color(red: 0.52, green: 0.24, blue: 0.88)
-            ]
+            ],
+            isFinale: false
         ),
         OnboardingCard(
             icon: "bolt.badge.checkmark.fill",
@@ -295,19 +319,21 @@ private struct OnboardingCard {
                 Color(red: 0.08, green: 0.70, blue: 0.82),
                 Color(red: 0.18, green: 0.40, blue: 0.92),
                 Color(red: 0.78, green: 0.32, blue: 0.78)
-            ]
+            ],
+            isFinale: false
         ),
         OnboardingCard(
-            icon: "sparkles",
-            title: "Stay organized",
-            subtitle: "Active and completed work settle into their own quiet spaces.",
+            icon: "arrow.forward.circle.fill",
+            title: "Step into flow",
+            subtitle: "Enter Liquid Tasks with a clear dashboard, reminders, and XP ready to move with you.",
             glow: .purple,
             secondaryGlow: .cyan,
             gradient: [
                 Color(red: 0.26, green: 0.26, blue: 0.90),
                 Color(red: 0.42, green: 0.24, blue: 0.94),
-                Color(red: 0.80, green: 0.34, blue: 0.74)
-            ]
+                Color(red: 0.48, green: 0.46, blue: 0.96)
+            ],
+            isFinale: true
         )
     ]
 }
