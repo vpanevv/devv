@@ -1,0 +1,65 @@
+import Foundation
+import SwiftData
+
+enum TaskPriority: String, CaseIterable, Identifiable, Codable {
+    case low
+    case medium
+    case high
+
+    var id: String { rawValue }
+
+    var xpValue: Int {
+        switch self {
+        case .low: 2
+        case .medium: 5
+        case .high: 8
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .low: "Low"
+        case .medium: "Medium"
+        case .high: "High"
+        }
+    }
+}
+
+@Model
+final class TaskItem {
+    @Attribute(.unique) var id: UUID
+    var title: String
+    var notes: String?
+    var isCompleted: Bool
+    var createdAt: Date
+    var scheduledAt: Date?
+    var priorityRawValue: String?
+
+    var priority: TaskPriority {
+        get {
+            guard let priorityRawValue else { return .medium }
+            return TaskPriority(rawValue: priorityRawValue) ?? .medium
+        }
+        set {
+            priorityRawValue = newValue.rawValue
+        }
+    }
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        notes: String? = nil,
+        isCompleted: Bool = false,
+        createdAt: Date = .now,
+        scheduledAt: Date? = nil,
+        priority: TaskPriority = .medium
+    ) {
+        self.id = id
+        self.title = title
+        self.notes = notes
+        self.isCompleted = isCompleted
+        self.createdAt = createdAt
+        self.scheduledAt = scheduledAt
+        self.priorityRawValue = priority.rawValue
+    }
+}
