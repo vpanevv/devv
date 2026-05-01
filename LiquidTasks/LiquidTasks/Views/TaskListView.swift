@@ -47,6 +47,15 @@ struct TaskListView: View {
         }
     }
 
+    private var completionProgress: Double {
+        guard !tasks.isEmpty else { return 0 }
+        return Double(completedTasks.count) / Double(tasks.count)
+    }
+
+    private var completionProgressPercent: Int {
+        Int((completionProgress * 100).rounded())
+    }
+
     private var xpSyncSignature: [String] {
         tasks
             .map {
@@ -104,6 +113,34 @@ struct TaskListView: View {
                     .zIndex(4)
                     .allowsHitTesting(false)
             }
+
+            if isXPStatsPresented {
+                Color.black.opacity(colorScheme == .dark ? 0.30 : 0.16)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            isXPStatsPresented = false
+                        }
+                    }
+
+                XPStatsSheet(
+                    todayXP: todayXP,
+                    recordXP: recordXP,
+                    targetXP: $dailyTargetXP,
+                    onClose: {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            isXPStatsPresented = false
+                        }
+                    }
+                )
+                .padding(.horizontal, 20)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.92).combined(with: .opacity),
+                    removal: .scale(scale: 0.98).combined(with: .opacity)
+                ))
+                .zIndex(5)
+            }
         }
         .onAppear {
             resetDailyXPIfNeeded()
@@ -132,9 +169,6 @@ struct TaskListView: View {
                 store.update(task, title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
             }
         }
-        .sheet(isPresented: $isXPStatsPresented) {
-            XPStatsSheet(todayXP: todayXP, recordXP: recordXP, targetXP: $dailyTargetXP)
-        }
         .confirmationDialog(
             "Delete task?",
             isPresented: Binding(
@@ -161,6 +195,7 @@ struct TaskListView: View {
         } message: {
             Text("This task will be removed from Liquid Tasks.")
         }
+        .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isXPStatsPresented)
     }
 
     private var header: some View {
@@ -192,6 +227,8 @@ struct TaskListView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
+                completionProgressBar
+
                 Text("Liquid Tasks")
                     .font(.system(size: 34, weight: .semibold, design: .rounded))
                     .foregroundStyle(primaryText)
@@ -205,6 +242,49 @@ struct TaskListView: View {
         .padding(.horizontal, 22)
         .padding(.top, 54)
         .padding(.bottom, 22)
+    }
+
+    private var completionProgressBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text("Completed")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(secondaryText)
+                    .textCase(.uppercase)
+
+                Text("\(completedTasks.count)/\(tasks.count)")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText.opacity(0.88))
+                    .monospacedDigit()
+
+                Spacer(minLength: 0)
+
+                Text("\(completionProgressPercent)%")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(.cyan)
+                    .monospacedDigit()
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.white.opacity(colorScheme == .dark ? 0.14 : 0.26))
+
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [.cyan, .blue, .indigo, .purple],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(proxy.size.width * completionProgress, tasks.isEmpty ? 0 : 14))
+                        .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.28 : 0.16), radius: 12, y: 4)
+                }
+            }
+            .frame(height: 10)
+        }
+        .padding(.bottom, 6)
     }
 
     private var bottomCreateTaskButton: some View {
@@ -777,12 +857,12 @@ private struct XPStatusPill: View {
 }
 
 private struct XPStatsSheet: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
     let todayXP: Int
     let recordXP: Int
     @Binding var targetXP: Int
+    let onClose: () -> Void
 
     private var progress: Double {
         guard targetXP > 0 else { return 0 }
@@ -798,38 +878,37 @@ private struct XPStatsSheet: View {
     }
 
     var body: some View {
-        ZStack {
-            backgroundGlow
-
-            LinearGradient(
-                colors: sheetColors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 20) {
-                Capsule()
-                    .fill(.white.opacity(0.30))
-                    .frame(width: 42, height: 5)
-                    .padding(.top, 10)
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
-                        header
-                        heroCard
-                        secondaryStats
-                        progressPanel
-                        targetPanel
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.bottom, 24)
-                }
-            }
+        VStack(alignment: .leading, spacing: 18) {
+            header
+            heroCard
+            secondaryStats
+            progressPanel
+            targetPanel
         }
-        .presentationDetents([.height(520)])
-        .presentationDragIndicator(.hidden)
-        .presentationCornerRadius(34)
+        .padding(20)
+        .frame(maxWidth: 430)
+        .background(
+            ZStack {
+                backgroundGlow
+
+                RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    .fill(.ultraThinMaterial)
+
+                LinearGradient(
+                    colors: sheetColors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .opacity(colorScheme == .dark ? 0.94 : 0.84)
+                .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.28 : 0.16), radius: 28, y: 16)
+        .shadow(color: .purple.opacity(colorScheme == .dark ? 0.14 : 0.08), radius: 18, y: 6)
     }
 
     private var header: some View {
@@ -848,7 +927,7 @@ private struct XPStatsSheet: View {
             Spacer(minLength: 0)
 
             Button {
-                dismiss()
+                onClose()
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 15, weight: .bold))
@@ -1169,7 +1248,7 @@ private struct XPStatsSheet: View {
                 .blur(radius: 28)
                 .offset(x: 120, y: -110)
         }
-        .ignoresSafeArea()
+        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
     }
 
     private var heroGradientColors: [Color] {
