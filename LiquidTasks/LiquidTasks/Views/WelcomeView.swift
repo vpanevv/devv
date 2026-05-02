@@ -2,12 +2,9 @@ import SwiftUI
 
 struct WelcomeView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @State private var selectedPage = 0
-    @State private var glowPulse = false
+    @State private var ctaPulse = false
 
     let onStart: () -> Void
-
-    private let cards = OnboardingCard.cards
 
     var body: some View {
         ZStack {
@@ -15,325 +12,224 @@ struct WelcomeView: View {
             ambientGlow
 
             VStack(spacing: 0) {
-                Spacer().frame(height: 72)
+                Spacer(minLength: 0)
 
-                Spacer(minLength: 18)
+                VStack(spacing: 28) {
+                    appIcon
 
-                VStack(spacing: 24) {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 14) {
                         Text("Liquid Tasks")
-                            .font(.system(size: 46, weight: .bold, design: .rounded))
-                            .foregroundStyle(primaryText)
-                            .multilineTextAlignment(.center)
-                            .shadow(color: textShadow, radius: 18, y: 5)
+                            .font(.system(size: 18, weight: .semibold, design: .rounded))
+                            .foregroundStyle(secondaryText)
 
-                        Text("A calm AI-shaped space for the next thing that matters.")
+                        AnimatedHeadlineText(
+                            messages: [
+                                "Clear dashboard",
+                                "Smart suggestions based on daily tasks",
+                                "Build the habit"
+                            ],
+                            textColor: primaryText,
+                            accentColor: accentColor
+                        )
+
+                        Text("A focused place for what needs your attention today.")
                             .font(.system(.body, design: .rounded, weight: .medium))
                             .foregroundStyle(secondaryText)
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
-                            .padding(.horizontal, 28)
+                            .padding(.horizontal, 16)
                     }
+                }
+                .frame(maxWidth: 420)
+                .padding(.horizontal, 28)
 
-                    TabView(selection: $selectedPage) {
-                        ForEach(cards.indices, id: \.self) { index in
-                            onboardingCard(cards[index], index: index)
-                                .padding(.horizontal, 22)
-                                .tag(index)
-                        }
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .frame(height: 418)
+                Spacer(minLength: 0)
 
-                    pageDots
-
-                    Button(action: onStart) {
-                        HStack(spacing: 10) {
-                            Text(selectedPage == cards.indices.last ? "Open Liquid Tasks" : "Start")
-                                .font(.system(.headline, design: .rounded, weight: .bold))
-
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 17, weight: .bold))
-                        }
+                Button(action: onStart) {
+                    Text("Enter dashboard")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 64)
+                        .frame(height: 62)
                         .background(
                             LinearGradient(
-                                colors: [.cyan, .blue, .indigo, .purple, .pink],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                colors: buttonGradient,
+                                startPoint: .leading,
+                                endPoint: .trailing
                             ),
-                            in: RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                                .stroke(.white.opacity(0.28), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(.white.opacity(colorScheme == .dark ? 0.20 : 0.34), lineWidth: 1)
                         )
-                        .shadow(color: .cyan.opacity(glowPulse ? 0.30 : 0.18), radius: glowPulse ? 34 : 20, y: 12)
-                        .shadow(color: .purple.opacity(glowPulse ? 0.26 : 0.14), radius: glowPulse ? 28 : 14, y: 8)
-                        .scaleEffect(glowPulse ? (selectedPage == cards.indices.last ? 1.022 : 1.015) : 1.0)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 22)
-                    .animation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true), value: glowPulse)
+                        .shadow(color: .cyan.opacity(ctaPulse ? 0.18 : 0.10), radius: ctaPulse ? 26 : 18, y: 10)
+                        .shadow(color: .purple.opacity(ctaPulse ? 0.18 : 0.10), radius: ctaPulse ? 22 : 14, y: 8)
+                        .scaleEffect(ctaPulse ? 1.01 : 1.0)
                 }
-
-                Spacer()
-                Spacer().frame(height: 24)
+                .buttonStyle(.plain)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+                .safeAreaPadding(.bottom, 12)
+                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: ctaPulse)
             }
         }
         .onAppear {
-            glowPulse = true
+            ctaPulse = true
         }
     }
 
-    private func onboardingCard(_ card: OnboardingCard, index: Int) -> some View {
-        let isSelected = selectedPage == index
-
-        return GeometryReader { proxy in
-            let minX = proxy.frame(in: .global).minX
-            let normalizedOffset = (minX - 22) / 320
-
-            ZStack {
-                RoundedRectangle(cornerRadius: 38, style: .continuous)
-                    .fill(.white.opacity(colorScheme == .dark ? 0.08 : 0.22))
-
-                RoundedRectangle(cornerRadius: 38, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: card.gradient,
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .opacity(isSelected ? 0.94 : 0.76)
-
-                RoundedRectangle(cornerRadius: 38, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(colorScheme == .dark ? 0.28 : 0.42))
-
-                RoundedRectangle(cornerRadius: 38, style: .continuous)
-                    .stroke(.white.opacity(isSelected ? 0.28 : 0.18), lineWidth: 1)
-
-                cardAccentOrbs(card: card, isSelected: isSelected)
-                    .offset(x: -normalizedOffset * 26)
-
-                VStack(spacing: card.isFinale ? 18 : 26) {
-                    onboardingIcon(card: card, isSelected: isSelected)
-                    .offset(x: -normalizedOffset * 18)
-
-                    VStack(spacing: card.isFinale ? 10 : 10) {
-                        Text(card.title)
-                            .font(.system(card.isFinale ? .title : .title2, design: .rounded, weight: .bold))
-                            .foregroundStyle(primaryText)
-                            .multilineTextAlignment(.center)
-
-                        Text(card.subtitle)
-                            .font(.system(.body, design: .rounded, weight: .medium))
-                            .foregroundStyle(secondaryText)
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(3)
-                            .lineLimit(card.isFinale ? 5 : 3)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .offset(x: normalizedOffset * 10)
-
-                    if card.isFinale {
-                        Text("Tasks, reminders, and momentum all in one calm place.")
-                            .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(primaryText.opacity(0.84))
-                            .multilineTextAlignment(.center)
-                            .lineSpacing(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .offset(x: -normalizedOffset * 12)
-                    } else {
-                        HStack(spacing: 8) {
-                            ForEach(0..<3, id: \.self) { marker in
-                                Capsule()
-                                    .fill(marker == 1 ? .white.opacity(0.82) : .white.opacity(0.28))
-                                    .frame(width: marker == 1 ? 30 : 8, height: 8)
-                            }
-                        }
-                        .opacity(isSelected ? 1 : 0.55)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 28)
-                .padding(.vertical, card.isFinale ? 28 : 30)
-            }
-            .rotation3DEffect(.degrees(Double(normalizedOffset) * -8), axis: (x: 0, y: 1, z: 0))
-            .shadow(color: card.glow.opacity(isSelected ? 0.24 : 0.10), radius: isSelected ? 28 : 14, y: 14)
-            .scaleEffect(isSelected ? 1 : 0.94)
-            .offset(y: isSelected ? 0 : 10)
-            .animation(.smooth(duration: 0.36), value: selectedPage)
-        }
-    }
-
-    private func cardAccentOrbs(card: OnboardingCard, isSelected: Bool) -> some View {
+    private var appIcon: some View {
         ZStack {
-            Circle()
-                .fill(card.secondaryGlow.opacity(isSelected ? 0.22 : 0.10))
-                .frame(width: 160, height: 160)
-                .blur(radius: 28)
-                .offset(x: 122, y: -120)
-
-            Circle()
-                .fill(card.glow.opacity(isSelected ? 0.20 : 0.08))
-                .frame(width: 150, height: 150)
-                .blur(radius: 30)
-                .offset(x: -128, y: 112)
-        }
-    }
-
-    private func onboardingIcon(card: OnboardingCard, isSelected: Bool) -> some View {
-        ZStack(alignment: .bottomTrailing) {
-            Circle()
-                .fill(card.glow.opacity(isSelected ? 0.26 : 0.14))
-                .frame(width: 132, height: 132)
-                .blur(radius: card.isFinale ? 24 : 22)
+            RoundedRectangle(cornerRadius: 42, style: .continuous)
+                .fill(.white.opacity(colorScheme == .dark ? 0.08 : 0.34))
+                .frame(width: 190, height: 190)
+                .blur(radius: 22)
 
             Image("AppIconPreview")
                 .resizable()
                 .scaledToFill()
-                .frame(width: card.isFinale ? 92 : 84, height: card.isFinale ? 92 : 84)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .frame(width: 144, height: 144)
+                .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(.white.opacity(0.30), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 34, style: .continuous)
+                        .stroke(.white.opacity(colorScheme == .dark ? 0.22 : 0.52), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
-
-            ZStack {
-                Circle()
-                    .fill(card.glow.opacity(0.92))
-
-                Image(systemName: card.icon)
-                    .font(.system(size: 18, weight: .bold))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 34, height: 34)
-            .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
-            .offset(x: 8, y: 6)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.28 : 0.10), radius: 28, y: 14)
         }
-    }
-
-    private var pageDots: some View {
-        HStack(spacing: 10) {
-            ForEach(cards.indices, id: \.self) { index in
-                Capsule()
-                    .fill(index == selectedPage ? .white : .white.opacity(0.24))
-                    .frame(width: index == selectedPage ? 28 : 9, height: 9)
-                    .shadow(color: index == selectedPage ? .cyan.opacity(0.24) : .clear, radius: 12, y: 4)
-                    .animation(.smooth(duration: 0.25), value: selectedPage)
-            }
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 38)
-        .background(.white.opacity(colorScheme == .dark ? 0.08 : 0.20), in: Capsule())
-        .overlay(Capsule().stroke(.white.opacity(0.16), lineWidth: 1))
-        .accessibilityHidden(true)
+        .frame(height: 190)
     }
 
     private var ambientGlow: some View {
         ZStack {
             Circle()
-                .fill(.cyan.opacity(colorScheme == .dark ? 0.20 : 0.10))
+                .fill(.cyan.opacity(colorScheme == .dark ? 0.18 : 0.08))
+                .frame(width: 300, height: 300)
+                .blur(radius: 42)
+                .offset(x: -120, y: -180)
+
+            Circle()
+                .fill(.blue.opacity(colorScheme == .dark ? 0.14 : 0.06))
+                .frame(width: 260, height: 260)
+                .blur(radius: 36)
+                .offset(x: 130, y: -40)
+
+            Circle()
+                .fill(.purple.opacity(colorScheme == .dark ? 0.16 : 0.05))
                 .frame(width: 280, height: 280)
-                .blur(radius: 34)
-                .offset(x: -120, y: -200)
-
-            Circle()
-                .fill(.purple.opacity(colorScheme == .dark ? 0.22 : 0.10))
-                .frame(width: 320, height: 320)
-                .blur(radius: 40)
-                .offset(x: 140, y: 180)
-
-            Circle()
-                .fill(.pink.opacity(colorScheme == .dark ? 0.12 : 0.03))
-                .frame(width: 180, height: 180)
-                .blur(radius: 26)
-                .offset(x: 120, y: -80)
+                .blur(radius: 42)
+                .offset(x: 100, y: 220)
         }
         .ignoresSafeArea()
     }
 
     private var primaryText: Color {
-        colorScheme == .dark ? .white : Color(red: 0.04, green: 0.10, blue: 0.22)
+        colorScheme == .dark ? .white : Color(red: 0.05, green: 0.09, blue: 0.18)
     }
 
     private var secondaryText: Color {
-        colorScheme == .dark ? .white.opacity(0.76) : Color(red: 0.08, green: 0.15, blue: 0.30).opacity(0.84)
+        colorScheme == .dark
+            ? .white.opacity(0.62)
+            : Color(red: 0.15, green: 0.20, blue: 0.30).opacity(0.72)
     }
 
-    private var textShadow: Color {
-        colorScheme == .dark ? .black.opacity(0.24) : .white.opacity(0.32)
+    private var accentColor: Color {
+        colorScheme == .dark
+            ? Color(red: 0.49, green: 0.88, blue: 1.00)
+            : Color(red: 0.08, green: 0.58, blue: 0.94)
+    }
+
+    private var buttonGradient: [Color] {
+        [
+            Color(red: 0.10, green: 0.72, blue: 0.96),
+            Color(red: 0.24, green: 0.48, blue: 1.00),
+            Color(red: 0.52, green: 0.30, blue: 0.94)
+        ]
     }
 }
 
-private struct OnboardingCard {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let glow: Color
-    let secondaryGlow: Color
-    let gradient: [Color]
-    let isFinale: Bool
+private struct AnimatedHeadlineText: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let cards = [
-        OnboardingCard(
-            icon: "bolt.fill",
-            title: "Capture fast",
-            subtitle: "Drop the next task before momentum fades.",
-            glow: .cyan,
-            secondaryGlow: .blue,
-            gradient: [
-                Color(red: 0.10, green: 0.68, blue: 0.94),
-                Color(red: 0.16, green: 0.38, blue: 0.98),
-                Color(red: 0.34, green: 0.24, blue: 0.92)
-            ],
-            isFinale: false
-        ),
-        OnboardingCard(
-            icon: "checkmark.circle.fill",
-            title: "Tap to complete",
-            subtitle: "A single touch clears the signal with a calm response.",
-            glow: .blue,
-            secondaryGlow: .purple,
-            gradient: [
-                Color(red: 0.08, green: 0.46, blue: 0.96),
-                Color(red: 0.20, green: 0.28, blue: 0.94),
-                Color(red: 0.52, green: 0.24, blue: 0.88)
-            ],
-            isFinale: false
-        ),
-        OnboardingCard(
-            icon: "bolt.badge.checkmark.fill",
-            title: "Earn XP",
-            subtitle: "Low tasks give 2 XP, medium gives 5, and high-priority work earns 8.",
-            glow: .teal,
-            secondaryGlow: .pink,
-            gradient: [
-                Color(red: 0.08, green: 0.70, blue: 0.82),
-                Color(red: 0.18, green: 0.40, blue: 0.92),
-                Color(red: 0.78, green: 0.32, blue: 0.78)
-            ],
-            isFinale: false
-        ),
-        OnboardingCard(
-            icon: "arrow.forward.circle.fill",
-            title: "Step into flow",
-            subtitle: "Enter Liquid Tasks with a clear dashboard, reminders, and XP ready to move with you.",
-            glow: .purple,
-            secondaryGlow: .cyan,
-            gradient: [
-                Color(red: 0.26, green: 0.26, blue: 0.90),
-                Color(red: 0.42, green: 0.24, blue: 0.94),
-                Color(red: 0.48, green: 0.46, blue: 0.96)
-            ],
-            isFinale: true
-        )
-    ]
+    let messages: [String]
+    let textColor: Color
+    let accentColor: Color
+
+    @State private var currentIndex = 0
+    @State private var scheduledAdvance: Task<Void, Never>?
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                ForEach(Array(messages.enumerated()), id: \.offset) { index, message in
+                    headline(message)
+                        .opacity(index == currentIndex ? 1 : 0)
+                        .offset(y: index == currentIndex ? 0 : 8)
+                        .scaleEffect(index == currentIndex ? 1 : 0.985)
+                        .animation(animation, value: currentIndex)
+                        .accessibilityHidden(index != currentIndex)
+                }
+            }
+            .frame(height: 92)
+
+            Capsule()
+                .fill(accentColor.opacity(0.18))
+                .frame(width: 56, height: 4)
+                .overlay(
+                    Capsule()
+                        .fill(accentColor)
+                        .frame(width: 22, height: 4)
+                )
+                .accessibilityHidden(true)
+        }
+        .onAppear {
+            guard messages.count > 1 else { return }
+            startLoop()
+        }
+        .onDisappear {
+            scheduledAdvance?.cancel()
+            scheduledAdvance = nil
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(messages[safe: currentIndex] ?? "")
+    }
+
+    private func headline(_ message: String) -> some View {
+        Text(message)
+            .font(.system(size: 34, weight: .bold, design: .rounded))
+            .foregroundStyle(textColor)
+            .multilineTextAlignment(.center)
+            .lineLimit(3)
+            .minimumScaleFactor(0.84)
+            .frame(maxWidth: 340)
+    }
+
+    private var animation: Animation {
+        reduceMotion
+            ? .easeOut(duration: 0.18)
+            : .spring(response: 0.48, dampingFraction: 0.86)
+    }
+
+    private func startLoop() {
+        scheduledAdvance?.cancel()
+        scheduledAdvance = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(reduceMotion ? 2.2 : 2.8))
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    withAnimation(animation) {
+                        currentIndex = (currentIndex + 1) % messages.count
+                    }
+                }
+            }
+        }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
 }
 
 #Preview {
