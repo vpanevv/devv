@@ -21,6 +21,7 @@ struct TaskListView: View {
     @State private var taskToEdit: TaskItem?
     @State private var isAddingTask = false
     @State private var isXPStatsPresented = false
+    @State private var isCompletedTasksPresented = false
     @State private var completionBurstID: UUID?
     @State private var achievementPopup: AchievementPopupData?
     @State private var taskPendingDeletion: TaskItem?
@@ -163,6 +164,50 @@ struct TaskListView: View {
                 ))
                 .zIndex(5)
             }
+
+            if isCompletedTasksPresented {
+                Color.black.opacity(colorScheme == .dark ? 0.30 : 0.16)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            isCompletedTasksPresented = false
+                        }
+                    }
+
+                CompletedTasksSheet(
+                    tasks: completedTasks,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    completedText: completedText,
+                    editIconTint: editIconTint,
+                    editButtonFill: editButtonFill,
+                    priorityColor: priorityColor(for:),
+                    onClose: {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            isCompletedTasksPresented = false
+                        }
+                    },
+                    onClear: {
+                        withAnimation(.smooth(duration: 0.30)) {
+                            store.deleteCompleted(completedTasks)
+                            isCompletedTasksPresented = false
+                        }
+                    },
+                    onSelectTask: { task in
+                        toggle(task)
+                    },
+                    onEditTask: { task in
+                        taskToEdit = task
+                    }
+                )
+                .padding(.horizontal, 20)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.92).combined(with: .opacity),
+                    removal: .scale(scale: 0.98).combined(with: .opacity)
+                ))
+                .zIndex(5)
+            }
         }
         .onAppear {
             resetDailyXPIfNeeded()
@@ -226,6 +271,7 @@ struct TaskListView: View {
             Text("This task will be removed from Liquid Tasks.")
         }
         .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isXPStatsPresented)
+        .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isCompletedTasksPresented)
         .animation(listAnimation, value: activeTasks.map(\.id))
         .animation(listAnimation, value: completedTasks.map(\.id))
     }
@@ -418,17 +464,10 @@ struct TaskListView: View {
 
             if !completedTasks.isEmpty {
                 Section {
-                    ForEach(completedTasks) { task in
-                        taskRow(task, isCompletedSection: true)
-                            .transition(taskRowTransition(forCompletedSection: true))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                deleteButton(for: task)
-                                editButton(for: task)
-                            }
-                    }
+                    completedSummaryButton
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18))
                 } header: {
                     completedSectionHeader
                 }
@@ -742,34 +781,67 @@ struct TaskListView: View {
     }
 
     private var completedSectionHeader: some View {
-        HStack(spacing: 10) {
-            sectionHeader("Completed", count: completedTasks.count)
-
-            Spacer()
-
-            Button(role: .destructive) {
-                withAnimation(.smooth(duration: 0.30)) {
-                    store.deleteCompleted(completedTasks)
-                }
-            } label: {
-                Text("Clear")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .frame(height: 32)
-                    .background(
-                        LinearGradient(
-                            colors: [.purple, .indigo],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        in: Capsule()
-                    )
+        Button {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                isCompletedTasksPresented = true
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Delete all completed tasks")
+        } label: {
+            HStack(spacing: 10) {
+                sectionHeader("Completed", count: completedTasks.count)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(secondaryText.opacity(0.82))
+            }
+            .padding(.trailing, 18)
+            .contentShape(Rectangle())
         }
-        .padding(.trailing, 18)
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open completed tasks")
+    }
+
+    private var completedSummaryButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                isCompletedTasksPresented = true
+            }
+        } label: {
+            GlassCard(cornerRadius: 26) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(.cyan.opacity(0.15))
+                            .frame(width: 52, height: 52)
+                            .blur(radius: 10)
+
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(.cyan)
+                    }
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("\(completedTasks.count) completed \(completedTasks.count == 1 ? "task" : "tasks")")
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(primaryText)
+
+                        Text("Tap to view or clear finished tasks.")
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(secondaryText)
+                            .lineLimit(2)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(secondaryText.opacity(0.82))
+                }
+                .padding(20)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private func editButton(for task: TaskItem) -> some View {
@@ -1415,6 +1487,242 @@ private struct XPStatsSheet: View {
 
     private var secondaryText: Color {
         colorScheme == .dark ? .white.opacity(0.70) : Color(red: 0.08, green: 0.15, blue: 0.30).opacity(0.82)
+    }
+
+    private var sheetColors: [Color] {
+        if colorScheme == .dark {
+            [
+                Color(red: 0.02, green: 0.05, blue: 0.13),
+                Color(red: 0.05, green: 0.08, blue: 0.22),
+                Color(red: 0.07, green: 0.11, blue: 0.28),
+                Color(red: 0.06, green: 0.18, blue: 0.24)
+            ]
+        } else {
+            [
+                Color(red: 0.84, green: 0.95, blue: 1.00),
+                Color(red: 0.76, green: 0.88, blue: 1.00),
+                Color(red: 0.74, green: 0.86, blue: 0.98),
+                Color(red: 0.78, green: 0.90, blue: 0.96)
+            ]
+        }
+    }
+}
+
+private struct CompletedTasksSheet: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let tasks: [TaskItem]
+    let primaryText: Color
+    let secondaryText: Color
+    let completedText: Color
+    let editIconTint: Color
+    let editButtonFill: Color
+    let priorityColor: (TaskPriority) -> Color
+    let onClose: () -> Void
+    let onClear: () -> Void
+    let onSelectTask: (TaskItem) -> Void
+    let onEditTask: (TaskItem) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Completed")
+                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+
+                    Text("\(tasks.count) finished \(tasks.count == 1 ? "task" : "tasks")")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        .foregroundStyle(secondaryText)
+                }
+
+                Spacer(minLength: 0)
+
+                Button {
+                    onClose()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(primaryText)
+                        .frame(width: 44, height: 44)
+                        .background(.white.opacity(colorScheme == .dark ? 0.14 : 0.30), in: Circle())
+                        .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close completed tasks")
+            }
+
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(tasks) { task in
+                        completedTaskRow(task)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            .frame(maxHeight: 360)
+
+            HStack(spacing: 12) {
+                Button {
+                    onClear()
+                } label: {
+                    Text("Clear completed")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            LinearGradient(
+                                colors: [.purple, .indigo],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    onClose()
+                } label: {
+                    Text("Done")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.28), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .stroke(.white.opacity(0.18), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: 430)
+        .background(
+            ZStack {
+                backgroundGlow
+
+                RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    .fill(.ultraThinMaterial)
+
+                LinearGradient(
+                    colors: sheetColors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .opacity(colorScheme == .dark ? 0.94 : 0.84)
+                .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.28 : 0.16), radius: 28, y: 16)
+        .shadow(color: .purple.opacity(colorScheme == .dark ? 0.14 : 0.08), radius: 18, y: 6)
+    }
+
+    private func completedTaskRow(_ task: TaskItem) -> some View {
+        GlassCard(cornerRadius: 24) {
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 99, style: .continuous)
+                    .fill(priorityColor(task.priority))
+                    .frame(width: 4)
+                    .frame(maxHeight: .infinity)
+                    .opacity(0.50)
+
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 25, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.cyan)
+                    .frame(width: 42, height: 42)
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(task.title)
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .foregroundStyle(completedText)
+                        .strikethrough(true, color: completedText)
+                        .lineLimit(3)
+
+                    if let notes = task.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(completedText)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
+                            .labelStyle(.titleAndIcon)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.88)
+
+                        if let scheduledAt = task.scheduledAt {
+                            Label(
+                                scheduledAt.formatted(date: .abbreviated, time: .shortened),
+                                systemImage: "bell.fill"
+                            )
+                            .labelStyle(.titleAndIcon)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.88)
+                        }
+
+                        HStack(spacing: 5) {
+                            Circle()
+                                .fill(priorityColor(task.priority))
+                                .frame(width: 6, height: 6)
+
+                            Text(task.priority.title)
+                        }
+                    }
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(completedText)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    onEditTask(task)
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(editIconTint)
+                        .frame(width: 44, height: 44)
+                        .background(editButtonFill, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Edit completed task")
+            }
+            .padding(.vertical, 13)
+            .padding(.leading, 12)
+            .padding(.trailing, 12)
+            .frame(minHeight: task.notes?.isEmpty == false ? 102 : 78)
+            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .onTapGesture {
+                onSelectTask(task)
+            }
+        }
+        .opacity(0.88)
+    }
+
+    private var backgroundGlow: some View {
+        ZStack {
+            Circle()
+                .fill(.cyan.opacity(colorScheme == .dark ? 0.22 : 0.14))
+                .frame(width: 260, height: 260)
+                .blur(radius: 34)
+                .offset(x: -120, y: -180)
+
+            Circle()
+                .fill(.purple.opacity(colorScheme == .dark ? 0.24 : 0.14))
+                .frame(width: 320, height: 320)
+                .blur(radius: 42)
+                .offset(x: 140, y: 220)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
     }
 
     private var sheetColors: [Color] {

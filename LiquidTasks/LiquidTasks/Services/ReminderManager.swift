@@ -86,6 +86,7 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     private let actionTracker = ReminderActionTracker()
     private let categoryIdentifier = "liquidtasks.reminder"
     private let snooze15Identifier = "liquidtasks.snooze.15"
+    private let snooze30Identifier = "liquidtasks.snooze.30"
     private let snooze60Identifier = "liquidtasks.snooze.60"
     private let completeIdentifier = "liquidtasks.complete"
     private let managedPrefix = "liquidtasks.task."
@@ -195,6 +196,10 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
                     title: "Snooze 15 min"
                 ),
                 UNNotificationAction(
+                    identifier: snooze30Identifier,
+                    title: "Snooze 30 min"
+                ),
+                UNNotificationAction(
                     identifier: snooze60Identifier,
                     title: "Snooze 1 hour"
                 ),
@@ -237,6 +242,8 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         switch action {
         case snooze15Identifier:
             await scheduleSnooze(for: context, interval: 15 * 60)
+        case snooze30Identifier:
+            await scheduleSnooze(for: context, interval: 30 * 60)
         case snooze60Identifier:
             await scheduleSnooze(for: context, interval: 60 * 60)
         case completeIdentifier:
