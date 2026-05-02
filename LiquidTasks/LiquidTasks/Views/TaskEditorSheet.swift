@@ -238,6 +238,10 @@ struct TaskEditorSheet: View {
                 reminderPermissionState = await reminderManager.authorizationState()
             }
         }
+        .onDisappear {
+            reminderPermissionTask?.cancel()
+            reminderPermissionTask = nil
+        }
         .animation(.spring(response: 0.34, dampingFraction: 0.84), value: isReminderSchedulerPresented)
     }
 
