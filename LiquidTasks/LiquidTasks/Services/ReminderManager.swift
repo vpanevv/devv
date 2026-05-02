@@ -71,6 +71,13 @@ private struct ReminderPayload: Sendable {
     }
 }
 
+private struct ReminderResponseContext: Sendable {
+    let actionIdentifier: String
+    let requestIdentifier: String
+    let taskID: UUID?
+    let deliveryTime: Int
+}
+
 final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     static let shared = ReminderManager()
 
@@ -160,48 +167,23 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
         logger.notice("Foreground reminder delivery for \(notification.request.identifier, privacy: .public)")
-        return [.banner, .list, .sound]
+        completionHandler([.banner, .list, .sound])
     }
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        let key = actionKey(for: response)
-        let shouldProcess = await actionTracker.beginProcessing(key: key)
-        guard shouldProcess else {
-            logger.debug("Ignoring duplicate reminder action \(response.actionIdentifier, privacy: .public) for \(response.notification.request.identifier, privacy: .public)")
-            return
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let context = responseContext(for: response)
+        Task(priority: .userInitiated) {
+            await self.handleNotificationResponse(context)
         }
-
-        defer {
-            Task {
-                await self.actionTracker.finishProcessing(key: key)
-            }
-        }
-
-        let request = response.notification.request
-        let action = response.actionIdentifier
-        logger.notice("Received reminder action \(action, privacy: .public) for \(request.identifier, privacy: .public)")
-
-        switch response.actionIdentifier {
-        case snooze15Identifier:
-            await scheduleSnooze(for: request, interval: 15 * 60)
-        case snooze60Identifier:
-            await scheduleSnooze(for: request, interval: 60 * 60)
-        case completeIdentifier:
-            await completeTask(for: request)
-        case UNNotificationDefaultActionIdentifier:
-            logger.debug("Opened app from reminder body for \(request.identifier, privacy: .public)")
-        case UNNotificationDismissActionIdentifier:
-            logger.debug("Dismissed reminder \(request.identifier, privacy: .public)")
-        default:
-            logger.warning("Unhandled reminder action \(action, privacy: .public) for \(request.identifier, privacy: .public)")
-            break
-        }
+        completionHandler()
     }
 
     private var reminderCategory: UNNotificationCategory {
@@ -235,52 +217,85 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         !snapshot.isCompleted && snapshot.scheduledAt != nil
     }
 
+    private func handleNotificationResponse(_ context: ReminderResponseContext) async {
+        let key = actionKey(for: context)
+        let shouldProcess = await actionTracker.beginProcessing(key: key)
+        guard shouldProcess else {
+            logger.debug("Ignoring duplicate reminder action \(context.actionIdentifier, privacy: .public) for \(context.requestIdentifier, privacy: .public)")
+            return
+        }
+
+        defer {
+            Task {
+                await self.actionTracker.finishProcessing(key: key)
+            }
+        }
+
+        let action = context.actionIdentifier
+        logger.notice("Received reminder action \(action, privacy: .public) for \(context.requestIdentifier, privacy: .public)")
+
+        switch action {
+        case snooze15Identifier:
+            await scheduleSnooze(for: context, interval: 15 * 60)
+        case snooze60Identifier:
+            await scheduleSnooze(for: context, interval: 60 * 60)
+        case completeIdentifier:
+            await completeTask(for: context)
+        case UNNotificationDefaultActionIdentifier:
+            logger.debug("Opened app from reminder body for \(context.requestIdentifier, privacy: .public)")
+        case UNNotificationDismissActionIdentifier:
+            logger.debug("Dismissed reminder \(context.requestIdentifier, privacy: .public)")
+        default:
+            logger.warning("Unhandled reminder action \(action, privacy: .public) for \(context.requestIdentifier, privacy: .public)")
+        }
+    }
+
     private func identifier(for taskID: UUID) -> String {
         managedPrefix + taskID.uuidString
     }
 
-    private func scheduleSnooze(for request: UNNotificationRequest, interval: TimeInterval) async {
+    private func scheduleSnooze(for context: ReminderResponseContext, interval: TimeInterval) async {
         let snoozedDate = Date().addingTimeInterval(interval)
-        guard let payload = ReminderPayload(request: request) else {
-            logger.warning("Skipping snooze for malformed reminder payload \(request.identifier, privacy: .public)")
-            removeNotifications(for: request.identifier)
+        guard let taskID = context.taskID else {
+            logger.warning("Skipping snooze for malformed reminder payload \(context.requestIdentifier, privacy: .public)")
+            removeNotifications(for: context.requestIdentifier)
             return
         }
 
-        removeNotifications(for: request.identifier)
+        removeNotifications(for: context.requestIdentifier)
 
         guard let snapshot = await LiquidTasksRuntime.snoozeTask(
-            id: payload.taskID,
+            id: taskID,
             until: snoozedDate,
             source: "notification-snooze"
         ) else {
-            logger.warning("Skipping snooze because task is stale or missing for \(request.identifier, privacy: .public)")
+            logger.warning("Skipping snooze because task is stale or missing for \(context.requestIdentifier, privacy: .public)")
             return
         }
 
-        guard let snoozedRequest = makeRequest(for: snapshot, requestIdentifierOverride: request.identifier, snoozeInterval: interval) else {
-            logger.warning("Unable to rebuild snoozed reminder request for \(request.identifier, privacy: .public)")
+        guard let snoozedRequest = makeRequest(for: snapshot, requestIdentifierOverride: context.requestIdentifier, snoozeInterval: interval) else {
+            logger.warning("Unable to rebuild snoozed reminder request for \(context.requestIdentifier, privacy: .public)")
             return
         }
 
         do {
             try await add(snoozedRequest)
-            logger.notice("Snoozed reminder \(request.identifier, privacy: .public) for \(interval, privacy: .public) seconds")
+            logger.notice("Snoozed reminder \(context.requestIdentifier, privacy: .public) for \(interval, privacy: .public) seconds")
         } catch {
-            logger.error("Unable to schedule snoozed reminder \(request.identifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            logger.error("Unable to schedule snoozed reminder \(context.requestIdentifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
-    private func completeTask(for request: UNNotificationRequest) async {
-        guard let payload = ReminderPayload(request: request) else {
-            logger.warning("Skipping complete action for malformed reminder payload \(request.identifier, privacy: .public)")
-            removeNotifications(for: request.identifier)
+    private func completeTask(for context: ReminderResponseContext) async {
+        guard let taskID = context.taskID else {
+            logger.warning("Skipping complete action for malformed reminder payload \(context.requestIdentifier, privacy: .public)")
+            removeNotifications(for: context.requestIdentifier)
             return
         }
 
-        removeNotifications(for: request.identifier)
-        let didComplete = await LiquidTasksRuntime.completeTask(id: payload.taskID, source: "notification-complete")
-        logger.notice("Complete reminder action finished for \(request.identifier, privacy: .public). Completed: \(didComplete, privacy: .public)")
+        removeNotifications(for: context.requestIdentifier)
+        let didComplete = await LiquidTasksRuntime.completeTask(id: taskID, source: "notification-complete")
+        logger.notice("Complete reminder action finished for \(context.requestIdentifier, privacy: .public). Completed: \(didComplete, privacy: .public)")
     }
 
     private func removeNotifications(for identifier: String) {
@@ -321,11 +336,20 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         }
     }
 
-    private func actionKey(for response: UNNotificationResponse) -> String {
+    private func responseContext(for response: UNNotificationResponse) -> ReminderResponseContext {
         let request = response.notification.request
-        let deliveryTime = Int(response.notification.date.timeIntervalSince1970)
-        let taskID = (request.content.userInfo[taskIDKey] as? String) ?? "unknown"
-        return "\(request.identifier)|\(response.actionIdentifier)|\(taskID)|\(deliveryTime)"
+        let taskIDString = request.content.userInfo[taskIDKey] as? String
+        return ReminderResponseContext(
+            actionIdentifier: response.actionIdentifier,
+            requestIdentifier: request.identifier,
+            taskID: taskIDString.flatMap(UUID.init(uuidString:)),
+            deliveryTime: Int(response.notification.date.timeIntervalSince1970)
+        )
+    }
+
+    private func actionKey(for context: ReminderResponseContext) -> String {
+        let taskID = context.taskID?.uuidString ?? "unknown"
+        return "\(context.requestIdentifier)|\(context.actionIdentifier)|\(taskID)|\(context.deliveryTime)"
     }
 
     private func makeRequest(
