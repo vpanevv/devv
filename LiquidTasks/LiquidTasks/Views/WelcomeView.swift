@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct WelcomeView: View {
-    @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedPage = 0
     @State private var glowPulse = false
@@ -10,25 +9,13 @@ struct WelcomeView: View {
 
     private let cards = OnboardingCard.cards
 
-    private var appearanceBinding: Binding<AppearanceMode> {
-        Binding(
-            get: { AppearanceMode(rawValue: appearanceRawValue) ?? .dark },
-            set: { appearanceRawValue = $0.rawValue }
-        )
-    }
-
     var body: some View {
         ZStack {
             LiquidBackground()
             ambientGlow
 
             VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    AppearanceToggle(mode: appearanceBinding)
-                }
-                .padding(.horizontal, 22)
-                .padding(.top, 58)
+                Spacer().frame(height: 72)
 
                 Spacer(minLength: 18)
 
@@ -132,29 +119,7 @@ struct WelcomeView: View {
                     .offset(x: -normalizedOffset * 26)
 
                 VStack(spacing: card.isFinale ? 18 : 26) {
-                    ZStack {
-                        Circle()
-                            .fill(card.glow.opacity(isSelected ? 0.26 : 0.14))
-                            .frame(width: card.isFinale ? 132 : 132, height: card.isFinale ? 132 : 132)
-                            .blur(radius: card.isFinale ? 24 : 22)
-
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [card.glow.opacity(0.40), .white.opacity(colorScheme == .dark ? 0.12 : 0.34)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: card.isFinale ? 96 : 96, height: card.isFinale ? 96 : 96)
-                            .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
-
-                        Image(systemName: card.icon)
-                            .font(.system(size: card.isFinale ? 34 : 34, weight: .bold))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.20), radius: 10, y: 4)
-                    }
+                    onboardingIcon(card: card, isSelected: isSelected)
                     .offset(x: -normalizedOffset * 18)
 
                     VStack(spacing: card.isFinale ? 10 : 10) {
@@ -217,6 +182,39 @@ struct WelcomeView: View {
                 .frame(width: 150, height: 150)
                 .blur(radius: 30)
                 .offset(x: -128, y: 112)
+        }
+    }
+
+    private func onboardingIcon(card: OnboardingCard, isSelected: Bool) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            Circle()
+                .fill(card.glow.opacity(isSelected ? 0.26 : 0.14))
+                .frame(width: 132, height: 132)
+                .blur(radius: card.isFinale ? 24 : 22)
+
+            Image("AppIconPreview")
+                .resizable()
+                .scaledToFill()
+                .frame(width: card.isFinale ? 92 : 84, height: card.isFinale ? 92 : 84)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(.white.opacity(0.30), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.18), radius: 16, y: 8)
+
+            ZStack {
+                Circle()
+                    .fill(card.glow.opacity(0.92))
+
+                Image(systemName: card.icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 34, height: 34)
+            .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
+            .offset(x: 8, y: 6)
         }
     }
 
