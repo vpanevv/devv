@@ -1,4 +1,5 @@
 import AppIntents
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -9,6 +10,7 @@ enum LiquidTasksLaunchAction: String {
 }
 
 enum LiquidTasksRuntime {
+    private static let logger = Logger(subsystem: "com.vpanevv.LiquidTasks", category: "LiquidTasksRuntime")
     static let launchActionKey = "liquidTasksPendingLaunchAction"
     static let xpDateKey = "liquidTasksXPDate"
     static let todayXPKey = "liquidTasksTodayXP"
@@ -25,6 +27,7 @@ enum LiquidTasksRuntime {
     }()
 
     static func queueLaunchAction(_ action: LiquidTasksLaunchAction) {
+        logger.debug("Queueing launch action: \(action.rawValue, privacy: .public)")
         UserDefaults.standard.set(action.rawValue, forKey: launchActionKey)
     }
 
@@ -35,31 +38,64 @@ enum LiquidTasksRuntime {
     static func consumeLaunchAction() -> LiquidTasksLaunchAction {
         let action = peekLaunchAction()
         UserDefaults.standard.set(LiquidTasksLaunchAction.none.rawValue, forKey: launchActionKey)
+        logger.debug("Consuming launch action: \(action.rawValue, privacy: .public)")
         return action
     }
 
     @MainActor
-    static func completeTask(id: UUID) async {
+    static func completeTask(id: UUID, source: String = "notification") async -> Bool {
         let context = ModelContext(modelContainer)
-        let descriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate<TaskItem> { $0.id == id }
-        )
+        guard let task = fetchTask(id: id, context: context) else {
+            logger.warning("Complete task skipped. Missing task \(id.uuidString, privacy: .public) from \(source, privacy: .public)")
+            return false
+        }
 
-        let matchingTasks = (try? context.fetch(descriptor)) ?? []
-        guard let task = matchingTasks.first, !task.isCompleted else { return }
+        guard !task.isCompleted else {
+            logger.debug("Complete task skipped. Task \(id.uuidString, privacy: .public) already completed from \(source, privacy: .public)")
+            return false
+        }
 
         task.isCompleted = true
+        task.scheduledAt = nil
 
         do {
             try context.save()
         } catch {
-            assertionFailure("Unable to complete task from notification: \(error.localizedDescription)")
-            return
+            logger.error("Unable to complete task \(id.uuidString, privacy: .public) from \(source, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
 
-        let allTasks = (try? context.fetch(FetchDescriptor<TaskItem>())) ?? []
+        let allTasks = fetchAllTasks(context: context)
         synchronizeXPState(tasks: allTasks)
         await ReminderManager.shared.synchronize(tasks: allTasks.map(ReminderTaskSnapshot.init(task:)))
+        logger.notice("Completed task \(id.uuidString, privacy: .public) from \(source, privacy: .public)")
+        return true
+    }
+
+    @MainActor
+    static func snoozeTask(id: UUID, until scheduledAt: Date, source: String = "notification") async -> ReminderTaskSnapshot? {
+        let context = ModelContext(modelContainer)
+        guard let task = fetchTask(id: id, context: context) else {
+            logger.warning("Snooze skipped. Missing task \(id.uuidString, privacy: .public) from \(source, privacy: .public)")
+            return nil
+        }
+
+        guard !task.isCompleted else {
+            logger.debug("Snooze skipped. Task \(id.uuidString, privacy: .public) already completed from \(source, privacy: .public)")
+            return nil
+        }
+
+        task.scheduledAt = scheduledAt
+
+        do {
+            try context.save()
+        } catch {
+            logger.error("Unable to snooze task \(id.uuidString, privacy: .public) until \(scheduledAt.formatted(date: .abbreviated, time: .shortened), privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
+
+        logger.notice("Snoozed task \(id.uuidString, privacy: .public) until \(scheduledAt.formatted(date: .abbreviated, time: .shortened), privacy: .public)")
+        return ReminderTaskSnapshot(task: task)
     }
 
     @MainActor
@@ -79,11 +115,26 @@ enum LiquidTasksRuntime {
 
         defaults.set(totalXP, forKey: todayXPKey)
         defaults.set(max(defaults.integer(forKey: recordXPKey), totalXP), forKey: recordXPKey)
+        logger.debug("Synchronized XP state. Completed tasks: \(tasks.filter(\.isCompleted).count, privacy: .public), total XP: \(totalXP, privacy: .public)")
 
         let target = defaults.integer(forKey: dailyTargetXPKey)
         if totalXP >= target, target > 0 {
             defaults.set(currentDayKey, forKey: lastTargetHitDateKey)
         }
+    }
+
+    @MainActor
+    private static func fetchTask(id: UUID, context: ModelContext) -> TaskItem? {
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate<TaskItem> { $0.id == id }
+        )
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    @MainActor
+    private static func fetchAllTasks(context: ModelContext) -> [TaskItem] {
+        (try? context.fetch(FetchDescriptor<TaskItem>())) ?? []
     }
 
     static func currentDayKey() -> String {

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import UserNotifications
 
 struct ReminderTaskSnapshot: Sendable {
@@ -24,10 +25,58 @@ enum ReminderPermissionState {
     case authorized
 }
 
+private actor ReminderActionTracker {
+    private var activeActionKeys = Set<String>()
+    private var recentlyProcessed = [String: Date]()
+    private let recencyWindow: TimeInterval = 8
+
+    func beginProcessing(key: String, now: Date = .now) -> Bool {
+        prune(now: now)
+
+        guard !activeActionKeys.contains(key), recentlyProcessed[key] == nil else {
+            return false
+        }
+
+        activeActionKeys.insert(key)
+        return true
+    }
+
+    func finishProcessing(key: String, now: Date = .now) {
+        activeActionKeys.remove(key)
+        recentlyProcessed[key] = now
+        prune(now: now)
+    }
+
+    private func prune(now: Date) {
+        recentlyProcessed = recentlyProcessed.filter { now.timeIntervalSince($0.value) < recencyWindow }
+    }
+}
+
+private struct ReminderPayload: Sendable {
+    let taskID: UUID
+    let title: String
+    let notes: String?
+    let requestIdentifier: String
+
+    init?(request: UNNotificationRequest) {
+        guard let taskIDString = request.content.userInfo["taskID"] as? String,
+              let taskID = UUID(uuidString: taskIDString) else {
+            return nil
+        }
+
+        self.taskID = taskID
+        self.title = request.content.title
+        self.notes = request.content.body.isEmpty ? nil : request.content.body
+        self.requestIdentifier = request.identifier
+    }
+}
+
 final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     static let shared = ReminderManager()
 
+    private let logger = Logger(subsystem: "com.vpanevv.LiquidTasks", category: "ReminderManager")
     private let center = UNUserNotificationCenter.current()
+    private let actionTracker = ReminderActionTracker()
     private let categoryIdentifier = "liquidtasks.reminder"
     private let snooze15Identifier = "liquidtasks.snooze.15"
     private let snooze60Identifier = "liquidtasks.snooze.60"
@@ -44,6 +93,7 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     func configure() {
         center.delegate = self
         center.setNotificationCategories([reminderCategory])
+        logger.notice("Configured reminder notification categories and delegate")
     }
 
     func authorizationState() async -> ReminderPermissionState {
@@ -71,6 +121,7 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         guard state == .notDetermined else { return state }
 
         let granted = await requestAuthorization(options: [.alert, .badge, .sound])
+        logger.notice("Notification authorization requested. Granted: \(granted, privacy: .public)")
         return granted ? .authorized : .denied
     }
 
@@ -88,13 +139,22 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         if !identifiersToRemove.isEmpty {
             center.removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
             center.removeDeliveredNotifications(withIdentifiers: identifiersToRemove)
+            logger.debug("Removed \(identifiersToRemove.count, privacy: .public) stale reminder notifications")
         }
 
-        guard state == .authorized else { return }
+        guard state == .authorized else {
+            logger.debug("Skipping reminder scheduling. Authorization state: \(self.authorizationDescription(for: state), privacy: .public)")
+            return
+        }
 
         for snapshot in tasks where shouldSchedule(snapshot) {
             guard let request = makeRequest(for: snapshot) else { continue }
-            try? await add(request)
+            do {
+                try await add(request)
+                logger.debug("Scheduled reminder \(request.identifier, privacy: .public) for \(snapshot.scheduledAt?.formatted(date: .abbreviated, time: .shortened) ?? "unknown", privacy: .public)")
+            } catch {
+                logger.error("Failed to schedule reminder \(request.identifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 
@@ -102,21 +162,44 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        logger.notice("Foreground reminder delivery for \(notification.request.identifier, privacy: .public)")
+        return [.banner, .list, .sound]
     }
 
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
+        let key = actionKey(for: response)
+        let shouldProcess = await actionTracker.beginProcessing(key: key)
+        guard shouldProcess else {
+            logger.debug("Ignoring duplicate reminder action \(response.actionIdentifier, privacy: .public) for \(response.notification.request.identifier, privacy: .public)")
+            return
+        }
+
+        defer {
+            Task {
+                await self.actionTracker.finishProcessing(key: key)
+            }
+        }
+
+        let request = response.notification.request
+        let action = response.actionIdentifier
+        logger.notice("Received reminder action \(action, privacy: .public) for \(request.identifier, privacy: .public)")
+
         switch response.actionIdentifier {
         case snooze15Identifier:
-            await scheduleSnooze(for: response.notification.request, interval: 15 * 60)
+            await scheduleSnooze(for: request, interval: 15 * 60)
         case snooze60Identifier:
-            await scheduleSnooze(for: response.notification.request, interval: 60 * 60)
+            await scheduleSnooze(for: request, interval: 60 * 60)
         case completeIdentifier:
-            await completeTask(for: response.notification.request)
+            await completeTask(for: request)
+        case UNNotificationDefaultActionIdentifier:
+            logger.debug("Opened app from reminder body for \(request.identifier, privacy: .public)")
+        case UNNotificationDismissActionIdentifier:
+            logger.debug("Dismissed reminder \(request.identifier, privacy: .public)")
         default:
+            logger.warning("Unhandled reminder action \(action, privacy: .public) for \(request.identifier, privacy: .public)")
             break
         }
     }
@@ -152,81 +235,58 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         !snapshot.isCompleted && snapshot.scheduledAt != nil
     }
 
-    private func makeRequest(for snapshot: ReminderTaskSnapshot) -> UNNotificationRequest? {
-        guard let scheduledAt = snapshot.scheduledAt else { return nil }
-
-        let content = UNMutableNotificationContent()
-        content.title = snapshot.title
-        if let notes = snapshot.notes, !notes.isEmpty {
-            content.body = notes
-        }
-        content.sound = .default
-        content.categoryIdentifier = categoryIdentifier
-        content.userInfo = [
-            taskIDKey: snapshot.id.uuidString,
-            taskTitleKey: snapshot.title,
-            taskNotesKey: snapshot.notes ?? ""
-        ]
-
-        let triggerDate = Calendar.current.dateComponents(
-            [.year, .month, .day, .hour, .minute],
-            from: scheduledAt
-        )
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-        return UNNotificationRequest(
-            identifier: identifier(for: snapshot.id),
-            content: content,
-            trigger: trigger
-        )
-    }
-
     private func identifier(for taskID: UUID) -> String {
         managedPrefix + taskID.uuidString
     }
 
     private func scheduleSnooze(for request: UNNotificationRequest, interval: TimeInterval) async {
-        let content = UNMutableNotificationContent()
-        content.title = request.content.title
-        content.subtitle = request.content.subtitle
-        content.body = request.content.body
-        content.sound = .default
-        content.categoryIdentifier = categoryIdentifier
-
-        var userInfo = request.content.userInfo
-        userInfo["liquidtasks.snoozedAt"] = Date().timeIntervalSince1970
-        userInfo["liquidtasks.snoozeInterval"] = interval
-        content.userInfo = userInfo
-
-        center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
-        center.removePendingNotificationRequests(withIdentifiers: [request.identifier])
-
         let snoozedDate = Date().addingTimeInterval(interval)
-        let triggerDate = Calendar.current.dateComponents(
-            [.year, .month, .day, .hour, .minute, .second],
-            from: snoozedDate
-        )
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-        let snoozedRequest = UNNotificationRequest(
-            identifier: request.identifier,
-            content: content,
-            trigger: trigger
-        )
+        guard let payload = ReminderPayload(request: request) else {
+            logger.warning("Skipping snooze for malformed reminder payload \(request.identifier, privacy: .public)")
+            removeNotifications(for: request.identifier)
+            return
+        }
+
+        removeNotifications(for: request.identifier)
+
+        guard let snapshot = await LiquidTasksRuntime.snoozeTask(
+            id: payload.taskID,
+            until: snoozedDate,
+            source: "notification-snooze"
+        ) else {
+            logger.warning("Skipping snooze because task is stale or missing for \(request.identifier, privacy: .public)")
+            return
+        }
+
+        guard let snoozedRequest = makeRequest(for: snapshot, requestIdentifierOverride: request.identifier, snoozeInterval: interval) else {
+            logger.warning("Unable to rebuild snoozed reminder request for \(request.identifier, privacy: .public)")
+            return
+        }
 
         do {
             try await add(snoozedRequest)
+            logger.notice("Snoozed reminder \(request.identifier, privacy: .public) for \(interval, privacy: .public) seconds")
         } catch {
-            assertionFailure("Unable to schedule snoozed reminder: \(error.localizedDescription)")
+            logger.error("Unable to schedule snoozed reminder \(request.identifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
     private func completeTask(for request: UNNotificationRequest) async {
-        center.removeDeliveredNotifications(withIdentifiers: [request.identifier])
-        center.removePendingNotificationRequests(withIdentifiers: [request.identifier])
+        guard let payload = ReminderPayload(request: request) else {
+            logger.warning("Skipping complete action for malformed reminder payload \(request.identifier, privacy: .public)")
+            removeNotifications(for: request.identifier)
+            return
+        }
 
-        guard let taskIDString = request.content.userInfo[taskIDKey] as? String,
-              let taskID = UUID(uuidString: taskIDString) else { return }
+        removeNotifications(for: request.identifier)
+        let didComplete = await LiquidTasksRuntime.completeTask(id: payload.taskID, source: "notification-complete")
+        logger.notice("Complete reminder action finished for \(request.identifier, privacy: .public). Completed: \(didComplete, privacy: .public)")
+    }
 
-        await LiquidTasksRuntime.completeTask(id: taskID)
+    private func removeNotifications(for identifier: String) {
+        guard identifier.hasPrefix(managedPrefix) else { return }
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
     private func requestAuthorization(options: UNAuthorizationOptions) async -> Bool {
@@ -258,6 +318,66 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
                         .filter { $0.hasPrefix(self.managedPrefix) }
                 )
             }
+        }
+    }
+
+    private func actionKey(for response: UNNotificationResponse) -> String {
+        let request = response.notification.request
+        let deliveryTime = Int(response.notification.date.timeIntervalSince1970)
+        let taskID = (request.content.userInfo[taskIDKey] as? String) ?? "unknown"
+        return "\(request.identifier)|\(response.actionIdentifier)|\(taskID)|\(deliveryTime)"
+    }
+
+    private func makeRequest(
+        for snapshot: ReminderTaskSnapshot,
+        requestIdentifierOverride: String? = nil,
+        snoozeInterval: TimeInterval? = nil
+    ) -> UNNotificationRequest? {
+        guard let scheduledAt = snapshot.scheduledAt else { return nil }
+
+        let content = UNMutableNotificationContent()
+        content.title = snapshot.title
+        if let notes = snapshot.notes, !notes.isEmpty {
+            content.body = notes
+        }
+        content.sound = .default
+        content.categoryIdentifier = categoryIdentifier
+
+        var userInfo: [String: Any] = [
+            taskIDKey: snapshot.id.uuidString,
+            taskTitleKey: snapshot.title,
+            taskNotesKey: snapshot.notes ?? ""
+        ]
+
+        if let snoozeInterval {
+            userInfo["liquidtasks.snoozedAt"] = Date().timeIntervalSince1970
+            userInfo["liquidtasks.snoozeInterval"] = snoozeInterval
+        }
+
+        content.userInfo = userInfo
+
+        let triggerDate = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: scheduledAt
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        return UNNotificationRequest(
+            identifier: requestIdentifierOverride ?? identifier(for: snapshot.id),
+            content: content,
+            trigger: trigger
+        )
+    }
+
+    private func authorizationDescription(for state: ReminderPermissionState) -> String {
+        switch state {
+        case .unknown:
+            "unknown"
+        case .notDetermined:
+            "notDetermined"
+        case .denied:
+            "denied"
+        case .authorized:
+            "authorized"
         }
     }
 
