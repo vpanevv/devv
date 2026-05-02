@@ -24,9 +24,9 @@ struct WelcomeView: View {
 
                         AnimatedHeadlineText(
                             messages: [
-                                "Clear dashboard",
-                                "Smart suggestions based on daily tasks",
-                                "Build the habit"
+                                "Less noice",
+                                "Better focus",
+                                "Track your habits"
                             ],
                             textColor: primaryText,
                             accentColor: accentColor
@@ -46,7 +46,7 @@ struct WelcomeView: View {
                 Spacer(minLength: 0)
 
                 Button(action: onStart) {
-                    Text("Enter dashboard")
+                    Text("GET STARTED")
                         .font(.system(.headline, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
