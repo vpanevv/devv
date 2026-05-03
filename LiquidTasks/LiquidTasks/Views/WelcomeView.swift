@@ -96,11 +96,12 @@ struct WelcomeView: View {
     }
 
     private var nameFieldSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("What should we call you?")
-                .font(.system(.footnote, design: .rounded, weight: .semibold))
-                .foregroundStyle(secondaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 12) {
+            Text("Enter your name")
+                .font(.system(.title3, design: .rounded, weight: .bold))
+                .foregroundStyle(primaryText)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
 
             TextField("Your name", text: $nameInput)
                 .textInputAutocapitalization(.words)
