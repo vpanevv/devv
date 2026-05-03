@@ -475,7 +475,7 @@ struct TaskListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .contentMargins(.bottom, 28, for: .scrollContent)
+        .contentMargins(.bottom, 160, for: .scrollContent)
         .scrollIndicators(.hidden)
     }
 
@@ -664,7 +664,7 @@ struct TaskListView: View {
 
     private func playCompletionFeedback() {
         triggerSuccessHaptic()
-        playSystemSound(1025)
+        playSystemSound(Self.completionSoundID)
     }
 
     private func triggerSuccessHaptic() {
@@ -994,6 +994,8 @@ struct TaskListView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    private static let completionSoundID: SystemSoundID = 1117
 
     private func taskRowTransition(forCompletedSection isCompletedSection: Bool) -> AnyTransition {
         let moveEdge: Edge = isCompletedSection ? .bottom : .top
