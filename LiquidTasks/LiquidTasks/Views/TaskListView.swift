@@ -46,6 +46,56 @@ struct TaskListView: View {
         profileTasks.filter(\.isCompleted)
     }
 
+    private var sortedActiveTasks: [TaskItem] {
+        activeTasks.sorted { lhs, rhs in
+            let lhsDate = lhs.scheduledAt ?? lhs.createdAt
+            let rhsDate = rhs.scheduledAt ?? rhs.createdAt
+
+            if lhsDate == rhsDate {
+                return lhs.createdAt < rhs.createdAt
+            }
+
+            return lhsDate < rhsDate
+        }
+    }
+
+    private var nextUpTask: TaskItem? {
+        let futureScheduledTask = sortedActiveTasks.first { task in
+            guard let scheduledAt = task.scheduledAt else { return false }
+            return scheduledAt >= .now
+        }
+
+        return futureScheduledTask ?? sortedActiveTasks.first
+    }
+
+    private var todayTasks: [TaskItem] {
+        let calendar = Calendar.current
+
+        return sortedActiveTasks.filter { task in
+            guard task.id != nextUpTask?.id else { return false }
+            guard let scheduledAt = task.scheduledAt else { return true }
+            return calendar.isDateInToday(scheduledAt) || scheduledAt < .now
+        }
+    }
+
+    private var laterTasks: [TaskItem] {
+        let calendar = Calendar.current
+
+        return sortedActiveTasks.filter { task in
+            guard task.id != nextUpTask?.id else { return false }
+            guard let scheduledAt = task.scheduledAt else { return false }
+            return !calendar.isDateInToday(scheduledAt) && scheduledAt > .now
+        }
+    }
+
+    private var totalXP: Int {
+        currentXPFromTasks
+    }
+
+    private var currentLevel: Int {
+        max(1, (totalXP / 40) + 1)
+    }
+
     private var appearanceBinding: Binding<AppearanceMode> {
         Binding(
             get: { AppearanceMode(rawValue: appearanceRawValue) ?? .dark },
@@ -112,27 +162,12 @@ struct TaskListView: View {
 
             VStack(spacing: 0) {
                 header
-
-                Group {
-                    if profileTasks.isEmpty {
-                        emptyState
-                            .transition(.scale(scale: 0.96).combined(with: .opacity))
-                    } else {
-                        taskList
-                            .transition(.opacity)
-                    }
-                }
-                .animation(.smooth(duration: 0.34), value: profileTasks.count)
+                taskList
+                    .transition(.opacity)
+                    .animation(.smooth(duration: 0.34), value: profileTasks.count)
 
                 Spacer(minLength: 0)
             }
-
-            VStack {
-                Spacer()
-                bottomCreateTaskButton
-            }
-            .padding(.horizontal, 22)
-            .padding(.bottom, 18)
 
             if let completionBurstID {
                 CompletionBurstView(id: completionBurstID)
@@ -299,206 +334,126 @@ struct TaskListView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .center, spacing: 12) {
-                Button {
-                    withAnimation(.smooth(duration: 0.52)) {
-                        hasStarted = false
-                    }
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(controlText)
-                        .frame(width: 52, height: 52)
-                        .background(controlFill, in: Circle())
-                        .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Back to onboarding")
+        HStack(alignment: .top, spacing: 18) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("\(dashboardGreeting) 👋")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(primaryText)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.86)
 
-                Spacer()
+                Text("Let’s make it a productive day.")
+                    .font(.system(.title3, design: .rounded, weight: .medium))
+                    .foregroundStyle(statusText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-                XPStatusPill(points: todayXP, isGlowing: xpGlowVisible) {
+            VStack(alignment: .trailing, spacing: 10) {
+                DashboardXPSummaryPill(
+                    xp: totalXP,
+                    level: currentLevel,
+                    isGlowing: xpGlowVisible
+                ) {
                     isXPStatsPresented = true
                 }
 
-                AppearanceToggle(mode: appearanceBinding)
+                HStack(spacing: 10) {
+                    compactToolbarButton(
+                        systemImage: appearanceBinding.wrappedValue.icon,
+                        accessibilityLabel: "Toggle appearance"
+                    ) {
+                        withAnimation(.smooth(duration: 0.28)) {
+                            appearanceBinding.wrappedValue.toggle()
+                        }
+                    }
+
+                    compactToolbarButton(
+                        systemImage: "person.crop.circle",
+                        accessibilityLabel: "Switch profile"
+                    ) {
+                        withAnimation(.smooth(duration: 0.52)) {
+                            hasStarted = false
+                        }
+                    }
+                }
             }
-
-            VStack(spacing: 10) {
-                Text(dashboardGreeting)
-                    .font(.system(.headline, design: .rounded, weight: .bold))
-                    .foregroundStyle(greetingText)
-                    .multilineTextAlignment(.center)
-
-                completionProgressBar
-
-                Text(dashboardStatusText)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(statusText)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 22)
         .padding(.top, 54)
         .padding(.bottom, 22)
     }
 
-    private var completionProgressBar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Text("Completed")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
-                    .foregroundStyle(secondaryText)
-                    .textCase(.uppercase)
-
-                Text("\(completedTasks.count)/\(profileTasks.count)")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
-                    .foregroundStyle(primaryText.opacity(0.88))
-                    .monospacedDigit()
-
-                Spacer(minLength: 0)
-
-                Text("\(completionProgressPercent)%")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
-                    .foregroundStyle(.cyan)
-                    .monospacedDigit()
-            }
-
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(.white.opacity(colorScheme == .dark ? 0.14 : 0.26))
-
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [.cyan, .blue, .indigo, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: max(proxy.size.width * completionProgress, profileTasks.isEmpty ? 0 : 14))
-                        .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.28 : 0.16), radius: 12, y: 4)
-                }
-            }
-            .frame(height: 10)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 6)
-    }
-
-    private var bottomCreateTaskButton: some View {
-        Button {
-            isAddingTask = true
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .bold))
-
-                Text("Create Task")
-                    .font(.system(.headline, design: .rounded, weight: .bold))
-
-                Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .bold))
-                    .opacity(0.92)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 20)
-            .frame(height: 54)
-            .background {
-                Capsule(style: .continuous)
-                    .fill(.ultraThinMaterial)
-                    .overlay {
-                        Capsule(style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.62, green: 0.38, blue: 1.00),
-                                        Color(red: 0.45, green: 0.24, blue: 0.96)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .opacity(0.92)
-                    }
-            }
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(.white.opacity(0.26), lineWidth: 1)
-            )
-            .shadow(color: Color.purple.opacity(0.28), radius: 24, y: 12)
-            .shadow(color: Color(red: 0.70, green: 0.52, blue: 1.00).opacity(0.22), radius: 10, y: 0)
-            .contentShape(Capsule(style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: 220)
-        .frame(maxWidth: .infinity, alignment: .center)
-        .background(
-            ZStack {
-                Capsule()
-                    .fill(Color(red: 0.62, green: 0.38, blue: 1.00).opacity(colorScheme == .dark ? 0.42 : 0.30))
-                    .blur(radius: 28)
-                    .scaleEffect(1.18)
-
-                Capsule()
-                    .fill(Color(red: 0.80, green: 0.68, blue: 1.00).opacity(colorScheme == .dark ? 0.20 : 0.14))
-                    .blur(radius: 14)
-                    .scaleEffect(1.06)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, -8)
-        )
-        .accessibilityLabel("Create task")
-    }
-
     private var taskList: some View {
-        List {
-            if !activeTasks.isEmpty {
-                Section {
-                    ForEach(activeTasks) { task in
-                        taskRow(task, isCompletedSection: false)
-                            .transition(taskRowTransition(forCompletedSection: false))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18))
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                deleteButton(for: task)
-                                editButton(for: task)
-                            }
-                    }
-                } header: {
-                    sectionHeader("Active", count: activeTasks.count)
-                }
-            } else if !completedTasks.isEmpty {
-                Section {
-                    inlineEmptyState
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 8, leading: 18, bottom: 12, trailing: 18))
-                } header: {
-                    sectionHeader("Active", count: 0)
-                }
-            }
+        ScrollView(showsIndicators: false) {
+            LazyVStack(alignment: .leading, spacing: 24) {
+                NextUpCardView(
+                    task: nextUpTask,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    onTap: {
+                        if let nextUpTask {
+                            taskToEdit = nextUpTask
+                        } else {
+                            isAddingTask = true
+                        }
+                    },
+                    subtitle: nextUpTask.map { task in
+                        scheduledLabel(for: task.scheduledAt ?? task.createdAt)
+                    } ?? "Nothing scheduled next"
+                )
 
-            if !completedTasks.isEmpty {
-                Section {
-                    completedSummaryButton
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 7, leading: 18, bottom: 7, trailing: 18))
-                } header: {
-                    completedSectionHeader
+                VStack(alignment: .leading, spacing: 14) {
+                    DashboardSectionHeader(
+                        title: "Today",
+                        count: todayTasks.count,
+                        primaryText: primaryText,
+                        secondaryText: secondaryText,
+                        showsAddButton: true,
+                        onAdd: { isAddingTask = true }
+                    )
+
+                    if todayTasks.isEmpty {
+                        sectionEmptyState("Everything is done for now")
+                    } else {
+                        ForEach(todayTasks) { task in
+                            taskRow(task, isCompletedSection: false)
+                                .transition(taskRowTransition(forCompletedSection: false))
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 14) {
+                    DashboardSectionHeader(
+                        title: "Later",
+                        count: laterTasks.count,
+                        primaryText: primaryText,
+                        secondaryText: secondaryText,
+                        showsAddButton: false,
+                        onAdd: nil
+                    )
+
+                    if laterTasks.isEmpty {
+                        sectionEmptyState("No tasks for later")
+                    } else {
+                        ForEach(laterTasks) { task in
+                            taskRow(task, isCompletedSection: false)
+                                .transition(taskRowTransition(forCompletedSection: false))
+                        }
+                    }
+                }
+
+                if !completedTasks.isEmpty {
+                    VStack(alignment: .leading, spacing: 14) {
+                        completedSectionHeader
+                        completedSummaryButton
+                    }
                 }
             }
+            .padding(.horizontal, 22)
+            .padding(.bottom, 44)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .contentMargins(.bottom, 160, for: .scrollContent)
-        .scrollIndicators(.hidden)
     }
 
     private var emptyState: some View {
@@ -536,98 +491,29 @@ struct TaskListView: View {
     }
 
     private func taskRow(_ task: TaskItem, isCompletedSection: Bool) -> some View {
-        GlassCard(cornerRadius: 26) {
-            HStack(spacing: 14) {
-                RoundedRectangle(cornerRadius: 99, style: .continuous)
-                    .fill(priorityColor(for: task.priority))
-                    .frame(width: 4)
-                    .frame(maxHeight: .infinity)
-                    .shadow(color: priorityColor(for: task.priority).opacity(task.isCompleted ? 0.10 : 0.42), radius: 10, x: 0, y: 0)
-                    .opacity(task.isCompleted ? 0.46 : 0.92)
-
-                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 25, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(task.isCompleted ? .cyan : priorityColor(for: task.priority).opacity(0.92))
-                    .frame(width: 42, height: 42)
-                    .contentTransition(.symbolEffect(.replace))
-
-                VStack(alignment: .leading, spacing: 7) {
-                    Text(task.title)
-                        .font(.system(.body, design: .rounded, weight: .semibold))
-                        .foregroundStyle(task.isCompleted ? completedText : primaryText)
-                        .strikethrough(task.isCompleted, color: completedText)
-                        .lineLimit(3)
-
-                    if let notes = task.notes, !notes.isEmpty {
-                        Text(notes)
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
-                            .foregroundStyle(task.isCompleted ? completedText : secondaryText)
-                            .lineLimit(2)
-                            .truncationMode(.tail)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                            .labelStyle(.titleAndIcon)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.88)
-
-                        if let scheduledAt = task.scheduledAt {
-                            Label(
-                                scheduledAt.formatted(date: .abbreviated, time: .shortened),
-                                systemImage: "bell.fill"
-                            )
-                            .labelStyle(.titleAndIcon)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.88)
-                        }
-
-                        HStack(spacing: 5) {
-                            Circle()
-                                .fill(priorityColor(for: task.priority))
-                                .frame(width: 6, height: 6)
-
-                            Text(task.priority.title)
-                        }
-                    }
-                    .font(.system(.caption, design: .rounded, weight: .semibold))
-                    .foregroundStyle(task.isCompleted ? completedText : secondaryText)
-                }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Button {
-                    taskToEdit = task
-                } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(editIconTint)
-                        .frame(width: 44, height: 44)
-                        .background(editButtonFill, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Edit task")
-            }
-            .padding(.vertical, 13)
-            .padding(.leading, 12)
-            .padding(.trailing, 12)
-            .frame(minHeight: task.notes?.isEmpty == false ? 102 : 78)
-            .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-            .onTapGesture {
-                toggle(task)
-            }
-            .contextMenu {
-                Button("Edit", systemImage: "pencil") {
-                    taskToEdit = task
-                }
-
-                Button("Delete", systemImage: "trash", role: .destructive) {
-                    taskPendingDeletion = task
-                }
-            }
-        }
+        DashboardTaskRow(
+            task: task,
+            primaryText: primaryText,
+            secondaryText: secondaryText,
+            completedText: completedText,
+            priorityColor: priorityColor(for: task.priority),
+            trailingIconTint: editIconTint,
+            trailingFill: editButtonFill,
+            scheduledLabel: scheduledLabel(for: task.scheduledAt ?? task.createdAt),
+            onToggle: { toggle(task) },
+            onEdit: { taskToEdit = task }
+        )
         .opacity(isCompletedSection ? 0.82 : 1)
         .contentTransition(.interpolate)
+        .contextMenu {
+            Button("Edit", systemImage: "pencil") {
+                taskToEdit = task
+            }
+
+            Button("Delete", systemImage: "trash", role: .destructive) {
+                taskPendingDeletion = task
+            }
+        }
     }
 
     private var inlineEmptyState: some View {
@@ -788,21 +674,15 @@ struct TaskListView: View {
         persistProfileXPState(todayXP: todayXP, recordXP: recordXP)
     }
 
-    private func sectionHeader(_ title: String, count: Int) -> some View {
-        HStack(spacing: 8) {
-            Text(title)
-                .font(.system(.subheadline, design: .rounded, weight: .bold))
-
-            Text("\(count)")
-                .font(.system(.caption, design: .rounded, weight: .bold))
-                .padding(.horizontal, 8)
-                .frame(height: 24)
-                .background(.white.opacity(0.14), in: Capsule())
+    private func sectionEmptyState(_ text: String) -> some View {
+        GlassCard(cornerRadius: 22) {
+            Text(text)
+                .font(.system(.subheadline, design: .rounded, weight: .medium))
+                .foregroundStyle(secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
         }
-        .foregroundStyle(secondaryText)
-        .textCase(nil)
-        .padding(.top, 4)
-        .padding(.bottom, 4)
     }
 
     private var completedSectionHeader: some View {
@@ -812,15 +692,23 @@ struct TaskListView: View {
             }
         } label: {
             HStack(spacing: 10) {
-                sectionHeader("Completed", count: completedTasks.count)
+                Text("Completed")
+                    .font(.system(.title3, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText)
+
+                Text("\(completedTasks.count)")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(secondaryText)
+                    .padding(.horizontal, 8)
+                    .frame(height: 24)
+                    .background(.white.opacity(0.10), in: Capsule())
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(secondaryText.opacity(0.82))
+                    .foregroundStyle(secondaryText.opacity(0.72))
             }
-            .padding(.trailing, 18)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -833,27 +721,23 @@ struct TaskListView: View {
                 isCompletedTasksPresented = true
             }
         } label: {
-            GlassCard(cornerRadius: 26) {
+            GlassCard(cornerRadius: 24) {
                 HStack(spacing: 14) {
                     ZStack {
-                        Circle()
-                            .fill(.cyan.opacity(0.15))
-                            .frame(width: 52, height: 52)
-                            .blur(radius: 10)
-
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(.cyan)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(.cyan.opacity(0.82))
                     }
+                    .frame(width: 32, height: 32)
 
                     VStack(alignment: .leading, spacing: 5) {
                         Text("\(completedTasks.count) completed \(completedTasks.count == 1 ? "task" : "tasks")")
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .font(.system(.headline, design: .rounded, weight: .medium))
                             .foregroundStyle(primaryText)
 
                         Text("Tap to view or clear finished tasks.")
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
-                            .foregroundStyle(secondaryText)
+                            .font(.system(.subheadline, design: .rounded, weight: .regular))
+                            .foregroundStyle(secondaryText.opacity(0.84))
                             .lineLimit(2)
                     }
 
@@ -861,9 +745,9 @@ struct TaskListView: View {
 
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(secondaryText.opacity(0.82))
+                        .foregroundStyle(secondaryText.opacity(0.72))
                 }
-                .padding(20)
+                .padding(18)
             }
         }
         .buttonStyle(.plain)
@@ -903,27 +787,27 @@ struct TaskListView: View {
     }
 
     private var dashboardStatusText: String {
+        if profileTasks.isEmpty {
+            return "A calmer space for the next thing that matters."
+        }
+
+        if activeTasks.isEmpty {
+            return "Everything is done for now."
+        }
+
         if highPriorityActiveCount > 0 {
             return highPriorityActiveCount == 1
-                ? "1 high priority task needs attention"
-                : "\(highPriorityActiveCount) high priority tasks need attention"
+                ? "You have one high priority task ready for attention."
+                : "You have \(highPriorityActiveCount) high priority tasks ready for attention."
         }
 
         if remindersLaterTodayCount > 0 {
             return remindersLaterTodayCount == 1
-                ? "1 reminder is scheduled later today"
-                : "\(remindersLaterTodayCount) reminders are scheduled later today"
+                ? "You have one reminder lined up later today."
+                : "You have \(remindersLaterTodayCount) reminders lined up later today."
         }
 
-        if profileTasks.isEmpty {
-            return "You're clear for the moment"
-        }
-
-        if activeTasks.isEmpty {
-            return "Everything is done for now"
-        }
-
-        return activeTasks.count == 1 ? "1 task is ready when you are" : "\(activeTasks.count) tasks are waiting quietly"
+        return "Let’s make it a productive day."
     }
 
     private var emptyStateCopy: EmptyStateCopy {
@@ -947,6 +831,37 @@ struct TaskListView: View {
 
     private var currentDayKey: String {
         Self.dayFormatter.string(from: .now)
+    }
+
+    private func compactToolbarButton(
+        systemImage: String,
+        accessibilityLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(controlText)
+                .frame(width: 42, height: 42)
+                .background(controlFill, in: Circle())
+                .overlay(Circle().stroke(.white.opacity(0.20), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private func scheduledLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+
+        if calendar.isDateInToday(date) {
+            return "Today, \(date.formatted(date: .omitted, time: .shortened))"
+        }
+
+        if calendar.isDateInTomorrow(date) {
+            return "Tomorrow, \(date.formatted(date: .omitted, time: .shortened))"
+        }
+
+        return date.formatted(date: .abbreviated, time: .shortened)
     }
 
     private func profileID(for task: TaskItem) -> String {
@@ -1069,6 +984,305 @@ struct TaskListView: View {
 private struct EmptyStateCopy {
     let title: String
     let subtitle: String
+}
+
+private struct DashboardXPSummaryPill: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let xp: Int
+    let level: Int
+    let isGlowing: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: "drop.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.cyan, .blue, .purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(xp) XP")
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+                        .monospacedDigit()
+
+                    Text("Level \(level)")
+                        .font(.system(.caption, design: .rounded, weight: .semibold))
+                        .foregroundStyle(secondaryText)
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 58)
+            .background(cardFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .shadow(color: .cyan.opacity(isGlowing ? 0.20 : 0.08), radius: isGlowing ? 18 : 10, y: 8)
+        .shadow(color: .purple.opacity(isGlowing ? 0.18 : 0.06), radius: isGlowing ? 16 : 8, y: 4)
+    }
+
+    private var primaryText: Color {
+        colorScheme == .dark ? .white : Color(red: 0.04, green: 0.10, blue: 0.22)
+    }
+
+    private var secondaryText: Color {
+        colorScheme == .dark ? .white.opacity(0.72) : Color(red: 0.08, green: 0.15, blue: 0.30).opacity(0.78)
+    }
+
+    private var cardFill: some ShapeStyle {
+        LinearGradient(
+            colors: colorScheme == .dark
+                ? [
+                    Color(red: 0.11, green: 0.21, blue: 0.42).opacity(0.78),
+                    Color(red: 0.20, green: 0.19, blue: 0.46).opacity(0.80)
+                ]
+                : [
+                    Color.white.opacity(0.72),
+                    Color(red: 0.85, green: 0.91, blue: 1.00).opacity(0.74)
+                ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+}
+
+private struct NextUpCardView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let task: TaskItem?
+    let primaryText: Color
+    let secondaryText: Color
+    let onTap: () -> Void
+    let subtitle: String
+
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: gradientColors,
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(.white.opacity(0.18), lineWidth: 1)
+
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Next up")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.74))
+
+                        HStack(spacing: 12) {
+                            Image(systemName: task == nil ? "sparkles" : "calendar")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.92))
+                                .frame(width: 26)
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(task?.title ?? "Nothing scheduled next")
+                                    .font(.system(.title3, design: .rounded, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                    .multilineTextAlignment(.leading)
+                                    .lineLimit(2)
+
+                                Text(subtitle)
+                                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.74))
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.cyan.opacity(0.90), .purple.opacity(0.92)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 60, height: 60)
+
+                        Image(systemName: task == nil ? "plus" : "arrow.right")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+                .padding(22)
+            }
+        }
+        .buttonStyle(.plain)
+        .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.12 : 0.06), radius: 24, y: 12)
+        .shadow(color: .purple.opacity(colorScheme == .dark ? 0.18 : 0.08), radius: 20, y: 8)
+    }
+
+    private var gradientColors: [Color] {
+        colorScheme == .dark
+            ? [
+                Color(red: 0.07, green: 0.25, blue: 0.44),
+                Color(red: 0.16, green: 0.22, blue: 0.56),
+                Color(red: 0.29, green: 0.18, blue: 0.70)
+            ]
+            : [
+                Color(red: 0.42, green: 0.70, blue: 0.96).opacity(0.82),
+                Color(red: 0.42, green: 0.52, blue: 0.94).opacity(0.80),
+                Color(red: 0.60, green: 0.44, blue: 0.92).opacity(0.84)
+            ]
+    }
+}
+
+private struct DashboardSectionHeader: View {
+    let title: String
+    let count: Int
+    let primaryText: Color
+    let secondaryText: Color
+    let showsAddButton: Bool
+    let onAdd: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.system(.title3, design: .rounded, weight: .bold))
+                .foregroundStyle(primaryText)
+
+            Text("\(count)")
+                .font(.system(.caption, design: .rounded, weight: .bold))
+                .foregroundStyle(secondaryText)
+                .padding(.horizontal, 8)
+                .frame(height: 24)
+                .background(.white.opacity(0.10), in: Capsule())
+
+            Spacer()
+
+            if showsAddButton, let onAdd {
+                Button(action: onAdd) {
+                    HStack(spacing: 7) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .bold))
+
+                        Text("Add Task")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
+                    .frame(height: 40)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.18, green: 0.74, blue: 1.00),
+                                Color(red: 0.54, green: 0.32, blue: 0.98)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: Capsule()
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(.white.opacity(0.22), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct DashboardTaskRow: View {
+    let task: TaskItem
+    let primaryText: Color
+    let secondaryText: Color
+    let completedText: Color
+    let priorityColor: Color
+    let trailingIconTint: Color
+    let trailingFill: Color
+    let scheduledLabel: String
+    let onToggle: () -> Void
+    let onEdit: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .stroke(.white.opacity(0.10), lineWidth: 1)
+
+                RoundedRectangle(cornerRadius: 99, style: .continuous)
+                    .fill(priorityAccent)
+                    .frame(width: 6)
+                    .padding(.vertical, 14)
+                    .padding(.leading, 10)
+
+                HStack(spacing: 14) {
+                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundStyle(task.isCompleted ? .cyan : priorityColor.opacity(0.96))
+                        .frame(width: 42, height: 42)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(task.title)
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(task.isCompleted ? completedText : primaryText)
+                            .strikethrough(task.isCompleted, color: completedText)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(2)
+
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 13, weight: .bold))
+
+                            Text(scheduledLabel)
+                                .lineLimit(1)
+                        }
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(task.isCompleted ? completedText : secondaryText)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Button(action: onEdit) {
+                        Image(systemName: task.scheduledAt == nil ? "ellipsis" : "bell")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(trailingIconTint)
+                            .frame(width: 42, height: 42)
+                            .background(trailingFill, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.leading, 24)
+                .padding(.trailing, 14)
+                .padding(.vertical, 18)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var priorityAccent: some ShapeStyle {
+        LinearGradient(
+            colors: [priorityColor.opacity(0.96), priorityColor.opacity(0.42)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 }
 
 private struct XPStatusPill: View {
