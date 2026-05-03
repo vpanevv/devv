@@ -12,11 +12,13 @@ enum LiquidTasksLaunchAction: String {
 enum LiquidTasksRuntime {
     private static let logger = Logger(subsystem: "com.vpanevv.LiquidTasks", category: "LiquidTasksRuntime")
     static let launchActionKey = "liquidTasksPendingLaunchAction"
-    static let xpDateKey = "liquidTasksXPDate"
-    static let todayXPKey = "liquidTasksTodayXP"
-    static let recordXPKey = "liquidTasksRecordXP"
+    static let currentProfileNameKey = LocalProfile.currentProfileNameKey
+    static let legacyUserNameKey = LocalProfile.legacyUserNameKey
+    static let xpDateKey = "liquidTasksXPDateByProfile"
+    static let todayXPKey = "liquidTasksTodayXPByProfile"
+    static let recordXPKey = "liquidTasksRecordXPByProfile"
     static let dailyTargetXPKey = "liquidTasksDailyTargetXP"
-    static let lastTargetHitDateKey = "liquidTasksLastTargetHitDate"
+    static let lastTargetHitDateKey = "liquidTasksLastTargetHitDateByProfile"
 
     static let modelContainer: ModelContainer = {
         do {
@@ -29,6 +31,26 @@ enum LiquidTasksRuntime {
     static func queueLaunchAction(_ action: LiquidTasksLaunchAction) {
         logger.debug("Queueing launch action: \(action.rawValue, privacy: .public)")
         UserDefaults.standard.set(action.rawValue, forKey: launchActionKey)
+    }
+
+    static func currentProfileName() -> String {
+        let defaults = UserDefaults.standard
+        let stored = defaults.string(forKey: currentProfileNameKey)
+            ?? defaults.string(forKey: legacyUserNameKey)
+            ?? ""
+        return LocalProfile.displayName(from: stored)
+    }
+
+    static func currentProfileID() -> String {
+        LocalProfile.normalizedID(from: currentProfileName())
+    }
+
+    static func setCurrentProfileName(_ rawName: String) {
+        let displayName = LocalProfile.displayName(from: rawName)
+        let defaults = UserDefaults.standard
+        defaults.set(displayName, forKey: currentProfileNameKey)
+        defaults.set(displayName, forKey: legacyUserNameKey)
+        logger.notice("Activated local profile \(profileLogName(for: displayName), privacy: .public)")
     }
 
     static func peekLaunchAction() -> LiquidTasksLaunchAction {
@@ -102,24 +124,90 @@ enum LiquidTasksRuntime {
     static func synchronizeXPState(tasks: [TaskItem]) {
         let defaults = UserDefaults.standard
         let currentDayKey = Self.currentDayKey()
-        let totalXP = tasks
-            .filter(\.isCompleted)
-            .reduce(into: 0) { result, task in
-                result += task.priority.xpValue
-            }
+        var todayXPByProfile = defaults.dictionary(forKey: todayXPKey) as? [String: Int] ?? [:]
+        var recordXPByProfile = defaults.dictionary(forKey: recordXPKey) as? [String: Int] ?? [:]
+        var xpDateByProfile = defaults.dictionary(forKey: xpDateKey) as? [String: String] ?? [:]
+        var lastTargetHitDateByProfile = defaults.dictionary(forKey: lastTargetHitDateKey) as? [String: String] ?? [:]
 
-        if defaults.string(forKey: xpDateKey) != currentDayKey {
-            defaults.set(currentDayKey, forKey: xpDateKey)
-            defaults.set("", forKey: lastTargetHitDateKey)
-        }
-
-        defaults.set(totalXP, forKey: todayXPKey)
-        defaults.set(max(defaults.integer(forKey: recordXPKey), totalXP), forKey: recordXPKey)
-        logger.debug("Synchronized XP state. Completed tasks: \(tasks.filter(\.isCompleted).count, privacy: .public), total XP: \(totalXP, privacy: .public)")
+        let allProfileIDs = Set(
+            tasks.map { normalizedOwnerName(for: $0.ownerName) }
+        ).union(todayXPByProfile.keys)
 
         let target = defaults.integer(forKey: dailyTargetXPKey)
-        if totalXP >= target, target > 0 {
-            defaults.set(currentDayKey, forKey: lastTargetHitDateKey)
+
+        for profileID in allProfileIDs {
+            let profileTasks = tasks.filter { normalizedOwnerName(for: $0.ownerName) == profileID }
+            let totalXP = profileTasks
+                .filter(\.isCompleted)
+                .reduce(into: 0) { result, task in
+                    result += task.priority.xpValue
+                }
+
+            if xpDateByProfile[profileID] != currentDayKey {
+                xpDateByProfile[profileID] = currentDayKey
+                lastTargetHitDateByProfile[profileID] = ""
+            }
+
+            todayXPByProfile[profileID] = totalXP
+            recordXPByProfile[profileID] = max(recordXPByProfile[profileID] ?? 0, totalXP)
+
+            if totalXP >= target, target > 0 {
+                lastTargetHitDateByProfile[profileID] = currentDayKey
+            }
+
+            logger.debug("Synchronized XP state for profile \(profileID, privacy: .public). Completed tasks: \(profileTasks.filter(\.isCompleted).count, privacy: .public), total XP: \(totalXP, privacy: .public)")
+        }
+
+        defaults.set(todayXPByProfile, forKey: todayXPKey)
+        defaults.set(recordXPByProfile, forKey: recordXPKey)
+        defaults.set(xpDateByProfile, forKey: xpDateKey)
+        defaults.set(lastTargetHitDateByProfile, forKey: lastTargetHitDateKey)
+    }
+
+    static func todayXP(for profileID: String) -> Int {
+        profileIntDictionaryValue(forKey: todayXPKey, profileID: profileID)
+    }
+
+    static func recordXP(for profileID: String) -> Int {
+        profileIntDictionaryValue(forKey: recordXPKey, profileID: profileID)
+    }
+
+    static func xpDate(for profileID: String) -> String {
+        profileStringDictionaryValue(forKey: xpDateKey, profileID: profileID)
+    }
+
+    static func lastTargetHitDate(for profileID: String) -> String {
+        profileStringDictionaryValue(forKey: lastTargetHitDateKey, profileID: profileID)
+    }
+
+    @MainActor
+    static func migrateLegacyTasksIfNeeded() {
+        let context = ModelContext(modelContainer)
+        let fallbackOwner = currentProfileID()
+        let allTasks = fetchAllTasks(context: context)
+        var didChange = false
+
+        for task in allTasks {
+            let normalizedOwner = normalizedOwnerName(for: task.ownerName)
+            if task.ownerName != normalizedOwner {
+                task.ownerName = normalizedOwner.isEmpty ? fallbackOwner : normalizedOwner
+                didChange = true
+            }
+        }
+
+        let currentDisplayName = currentProfileName()
+        if UserDefaults.standard.string(forKey: currentProfileNameKey) == nil,
+           !currentDisplayName.isEmpty {
+            setCurrentProfileName(currentDisplayName)
+        }
+
+        guard didChange else { return }
+
+        do {
+            try context.save()
+            logger.notice("Migrated legacy tasks to profile ownership")
+        } catch {
+            logger.error("Failed to migrate legacy tasks: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -144,6 +232,26 @@ enum LiquidTasksRuntime {
         formatter.timeZone = .current
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: .now)
+    }
+
+    private static func normalizedOwnerName(for rawOwnerName: String?) -> String {
+        let candidate = rawOwnerName ?? ""
+        let normalized = LocalProfile.normalizedID(from: candidate)
+        return normalized.isEmpty ? LocalProfile.guestProfileID : normalized
+    }
+
+    private static func profileIntDictionaryValue(forKey key: String, profileID: String) -> Int {
+        let dictionary = UserDefaults.standard.dictionary(forKey: key) as? [String: Int] ?? [:]
+        return dictionary[profileID] ?? 0
+    }
+
+    private static func profileStringDictionaryValue(forKey key: String, profileID: String) -> String {
+        let dictionary = UserDefaults.standard.dictionary(forKey: key) as? [String: String] ?? [:]
+        return dictionary[profileID] ?? ""
+    }
+
+    private static func profileLogName(for displayName: String) -> String {
+        displayName.isEmpty ? LocalProfile.guestProfileID : displayName
     }
 }
 
