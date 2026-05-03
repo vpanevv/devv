@@ -96,6 +96,9 @@ struct ContentView: View {
         }
         .preferredColorScheme(appearance.colorScheme)
         .onAppear {
+            Task { @MainActor in
+                LiquidTasksRuntime.migrateLegacyTasksIfNeeded()
+            }
             unlockDashboardForShortcutIfNeeded()
         }
         .onChange(of: scenePhase) { _, newPhase in

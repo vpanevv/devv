@@ -13,11 +13,12 @@ struct TaskListView: View {
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = true
     @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
     @AppStorage(LiquidTasksRuntime.launchActionKey) private var pendingLaunchAction = LiquidTasksLaunchAction.none.rawValue
-    @AppStorage("liquidTasksXPDate") private var xpDateKey = ""
-    @AppStorage("liquidTasksTodayXP") private var todayXP = 0
-    @AppStorage("liquidTasksRecordXP") private var recordXP = 0
+    @AppStorage(LiquidTasksRuntime.currentProfileNameKey) private var currentProfileName = ""
     @AppStorage("liquidTasksDailyTargetXP") private var dailyTargetXP = 50
-    @AppStorage("liquidTasksLastTargetHitDate") private var lastTargetHitDate = ""
+    @State private var todayXP = 0
+    @State private var recordXP = 0
+    @State private var xpDateKey = ""
+    @State private var lastTargetHitDate = ""
     @State private var taskToEdit: TaskItem?
     @State private var isAddingTask = false
     @State private var isXPStatsPresented = false
@@ -28,15 +29,21 @@ struct TaskListView: View {
     @State private var xpGlowVisible = false
 
     private var store: TaskStore {
-        TaskStore(context: modelContext)
+        TaskStore(context: modelContext, activeProfileID: activeProfileID)
+    }
+
+    private var profileTasks: [TaskItem] {
+        tasks.filter { task in
+            profileID(for: task) == activeProfileID
+        }
     }
 
     private var activeTasks: [TaskItem] {
-        tasks.filter { !$0.isCompleted }
+        profileTasks.filter { !$0.isCompleted }
     }
 
     private var completedTasks: [TaskItem] {
-        tasks.filter(\.isCompleted)
+        profileTasks.filter(\.isCompleted)
     }
 
     private var appearanceBinding: Binding<AppearanceMode> {
@@ -53,8 +60,8 @@ struct TaskListView: View {
     }
 
     private var completionProgress: Double {
-        guard !tasks.isEmpty else { return 0 }
-        return Double(completedTasks.count) / Double(tasks.count)
+        guard !profileTasks.isEmpty else { return 0 }
+        return Double(completedTasks.count) / Double(profileTasks.count)
     }
 
     private var completionProgressPercent: Int {
@@ -62,15 +69,23 @@ struct TaskListView: View {
     }
 
     private var xpSyncSignature: [String] {
-        tasks
+        profileTasks
             .map {
-                "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue):\($0.scheduledAt?.timeIntervalSince1970 ?? 0):\($0.title):\($0.notes ?? "")"
+                "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue):\($0.scheduledAt?.timeIntervalSince1970 ?? 0):\($0.title):\($0.notes ?? ""):\(profileID(for: $0))"
             }
             .sorted()
     }
 
     private var reminderSnapshots: [ReminderTaskSnapshot] {
         tasks.map(ReminderTaskSnapshot.init(task:))
+    }
+
+    private var activeProfileID: String {
+        LocalProfile.normalizedID(from: currentProfileName)
+    }
+
+    private var activeProfileDisplayName: String {
+        LocalProfile.displayName(from: currentProfileName)
     }
 
     private var highPriorityActiveCount: Int {
@@ -99,7 +114,7 @@ struct TaskListView: View {
                 header
 
                 Group {
-                    if tasks.isEmpty {
+                    if profileTasks.isEmpty {
                         emptyState
                             .transition(.scale(scale: 0.96).combined(with: .opacity))
                     } else {
@@ -107,7 +122,7 @@ struct TaskListView: View {
                             .transition(.opacity)
                     }
                 }
-                .animation(.smooth(duration: 0.34), value: tasks.count)
+                .animation(.smooth(duration: 0.34), value: profileTasks.count)
 
                 Spacer(minLength: 0)
             }
@@ -210,6 +225,8 @@ struct TaskListView: View {
             }
         }
         .onAppear {
+            LiquidTasksRuntime.migrateLegacyTasksIfNeeded()
+            loadProfileXPState()
             resetDailyXPIfNeeded()
             synchronizeXPState()
             synchronizeReminders()
@@ -226,6 +243,11 @@ struct TaskListView: View {
         }
         .onChange(of: pendingLaunchAction) { _, _ in
             processPendingLaunchAction()
+        }
+        .onChange(of: currentProfileName) { _, _ in
+            loadProfileXPState()
+            resetDailyXPIfNeeded()
+            synchronizeXPState()
         }
         .sheet(isPresented: $isAddingTask) {
             TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt in
@@ -308,7 +330,7 @@ struct TaskListView: View {
                 Text(dashboardGreeting)
                     .font(.system(.headline, design: .rounded, weight: .bold))
                     .foregroundStyle(greetingText)
-                    .textCase(.uppercase)
+                    .multilineTextAlignment(.center)
 
                 completionProgressBar
 
@@ -332,7 +354,7 @@ struct TaskListView: View {
                     .foregroundStyle(secondaryText)
                     .textCase(.uppercase)
 
-                Text("\(completedTasks.count)/\(tasks.count)")
+                Text("\(completedTasks.count)/\(profileTasks.count)")
                     .font(.system(.caption, design: .rounded, weight: .bold))
                     .foregroundStyle(primaryText.opacity(0.88))
                     .monospacedDigit()
@@ -358,7 +380,7 @@ struct TaskListView: View {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: max(proxy.size.width * completionProgress, tasks.isEmpty ? 0 : 14))
+                        .frame(width: max(proxy.size.width * completionProgress, profileTasks.isEmpty ? 0 : 14))
                         .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.28 : 0.16), radius: 12, y: 4)
                 }
             }
@@ -684,6 +706,7 @@ struct TaskListView: View {
         let resolvedXP = currentXPFromTasks
         todayXP = resolvedXP
         recordXP = max(recordXP, resolvedXP)
+        persistProfileXPState(todayXP: resolvedXP, recordXP: recordXP)
 
         guard let rewardXP else { return }
 
@@ -701,6 +724,7 @@ struct TaskListView: View {
         guard reachedTarget, lastTargetHitDate != currentDayKey else { return }
 
         lastTargetHitDate = currentDayKey
+        persistProfileXPState(todayXP: resolvedXP, recordXP: recordXP)
         Swift.Task {
             try? await Swift.Task.sleep(for: .milliseconds(720))
             await MainActor.run {
@@ -761,6 +785,7 @@ struct TaskListView: View {
         guard xpDateKey != key else { return }
         xpDateKey = key
         lastTargetHitDate = ""
+        persistProfileXPState(todayXP: todayXP, recordXP: recordXP)
     }
 
     private func sectionHeader(_ title: String, count: Int) -> some View {
@@ -864,7 +889,7 @@ struct TaskListView: View {
 
     private var dashboardGreeting: String {
         let hour = Calendar.current.component(.hour, from: .now)
-        return switch hour {
+        let baseGreeting = switch hour {
         case 5..<12:
             "Good morning"
         case 12..<18:
@@ -872,6 +897,9 @@ struct TaskListView: View {
         default:
             "Good evening"
         }
+
+        guard !activeProfileDisplayName.isEmpty else { return baseGreeting }
+        return "\(baseGreeting), \(activeProfileDisplayName)"
     }
 
     private var dashboardStatusText: String {
@@ -887,7 +915,7 @@ struct TaskListView: View {
                 : "\(remindersLaterTodayCount) reminders are scheduled later today"
         }
 
-        if tasks.isEmpty {
+        if profileTasks.isEmpty {
             return "You're clear for the moment"
         }
 
@@ -899,7 +927,7 @@ struct TaskListView: View {
     }
 
     private var emptyStateCopy: EmptyStateCopy {
-        if tasks.isEmpty {
+        if profileTasks.isEmpty {
             EmptyStateCopy(
                 title: "Your space is clear",
                 subtitle: "Capture the next useful thought when it arrives."
@@ -919,6 +947,38 @@ struct TaskListView: View {
 
     private var currentDayKey: String {
         Self.dayFormatter.string(from: .now)
+    }
+
+    private func profileID(for task: TaskItem) -> String {
+        LocalProfile.normalizedID(from: task.ownerName ?? "")
+    }
+
+    private func persistProfileXPState(todayXP: Int, recordXP: Int) {
+        let defaults = UserDefaults.standard
+        let profileID = activeProfileID
+
+        var todayXPByProfile = defaults.dictionary(forKey: LiquidTasksRuntime.todayXPKey) as? [String: Int] ?? [:]
+        var recordXPByProfile = defaults.dictionary(forKey: LiquidTasksRuntime.recordXPKey) as? [String: Int] ?? [:]
+        var xpDateByProfile = defaults.dictionary(forKey: LiquidTasksRuntime.xpDateKey) as? [String: String] ?? [:]
+        var lastTargetHitDateByProfile = defaults.dictionary(forKey: LiquidTasksRuntime.lastTargetHitDateKey) as? [String: String] ?? [:]
+
+        todayXPByProfile[profileID] = todayXP
+        recordXPByProfile[profileID] = recordXP
+        xpDateByProfile[profileID] = xpDateKey
+        lastTargetHitDateByProfile[profileID] = lastTargetHitDate
+
+        defaults.set(todayXPByProfile, forKey: LiquidTasksRuntime.todayXPKey)
+        defaults.set(recordXPByProfile, forKey: LiquidTasksRuntime.recordXPKey)
+        defaults.set(xpDateByProfile, forKey: LiquidTasksRuntime.xpDateKey)
+        defaults.set(lastTargetHitDateByProfile, forKey: LiquidTasksRuntime.lastTargetHitDateKey)
+    }
+
+    private func loadProfileXPState() {
+        let profileID = activeProfileID
+        todayXP = LiquidTasksRuntime.todayXP(for: profileID)
+        recordXP = LiquidTasksRuntime.recordXP(for: profileID)
+        xpDateKey = LiquidTasksRuntime.xpDate(for: profileID)
+        lastTargetHitDate = LiquidTasksRuntime.lastTargetHitDate(for: profileID)
     }
 
     private func processPendingLaunchAction() {

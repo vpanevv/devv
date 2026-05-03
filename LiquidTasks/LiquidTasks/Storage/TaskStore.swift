@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 struct TaskStore {
     let context: ModelContext
+    let activeProfileID: String
 
     func addTask(title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -14,6 +15,7 @@ struct TaskStore {
                 title: cleanTitle,
                 notes: cleanedNotes(notes),
                 scheduledAt: scheduledAt,
+                ownerName: activeProfileID,
                 priority: priority
             )
         )
@@ -28,12 +30,18 @@ struct TaskStore {
         task.notes = cleanedNotes(notes)
         task.priority = priority
         task.scheduledAt = scheduledAt
+        if task.ownerName == nil || task.ownerName?.isEmpty == true {
+            task.ownerName = activeProfileID
+        }
         save()
     }
 
     func toggle(_ task: TaskItem) {
         withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
             task.isCompleted.toggle()
+        }
+        if task.ownerName == nil || task.ownerName?.isEmpty == true {
+            task.ownerName = activeProfileID
         }
         save()
     }

@@ -2,7 +2,10 @@ import SwiftUI
 
 struct WelcomeView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage(LiquidTasksRuntime.currentProfileNameKey) private var currentProfileName = ""
     @State private var ctaPulse = false
+    @State private var nameInput = ""
+    @FocusState private var isNameFieldFocused: Bool
 
     let onStart: () -> Void
 
@@ -39,6 +42,8 @@ struct WelcomeView: View {
                             .lineSpacing(3)
                             .padding(.horizontal, 16)
 
+                        nameFieldSection
+
                         startButton
                             .padding(.top, 8)
                     }
@@ -51,11 +56,20 @@ struct WelcomeView: View {
         }
         .onAppear {
             ctaPulse = true
+            if nameInput.isEmpty {
+                nameInput = currentProfileName
+            }
         }
     }
 
     private var startButton: some View {
-        Button(action: onStart) {
+        Button {
+            let resolvedName = normalizedNameInput
+            LiquidTasksRuntime.setCurrentProfileName(resolvedName)
+            currentProfileName = LocalProfile.displayName(from: resolvedName)
+            isNameFieldFocused = false
+            onStart()
+        } label: {
             Text("GET STARTED")
                 .font(.system(.subheadline, design: .rounded, weight: .bold))
                 .foregroundStyle(.white)
@@ -79,6 +93,37 @@ struct WelcomeView: View {
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: ctaPulse)
+    }
+
+    private var nameFieldSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("What should we call you?")
+                .font(.system(.footnote, design: .rounded, weight: .semibold))
+                .foregroundStyle(secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            TextField("Your name", text: $nameInput)
+                .textInputAutocapitalization(.words)
+                .disableAutocorrection(true)
+                .submitLabel(.done)
+                .focused($isNameFieldFocused)
+                .font(.system(.body, design: .rounded, weight: .semibold))
+                .foregroundStyle(primaryText)
+                .padding(.horizontal, 18)
+                .frame(height: 54)
+                .background(nameFieldFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(nameFieldStroke, lineWidth: 1)
+                )
+                .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.08 : 0.04), radius: 14, y: 6)
+                .onSubmit {
+                    let resolvedName = normalizedNameInput
+                    LiquidTasksRuntime.setCurrentProfileName(resolvedName)
+                    currentProfileName = LocalProfile.displayName(from: resolvedName)
+                    isNameFieldFocused = false
+                }
+        }
     }
 
     private var appIcon: some View {
@@ -139,6 +184,18 @@ struct WelcomeView: View {
         colorScheme == .dark
             ? Color(red: 0.49, green: 0.88, blue: 1.00)
             : Color(red: 0.08, green: 0.58, blue: 0.94)
+    }
+
+    private var nameFieldFill: Color {
+        colorScheme == .dark ? .white.opacity(0.10) : .white.opacity(0.68)
+    }
+
+    private var nameFieldStroke: Color {
+        colorScheme == .dark ? .white.opacity(0.18) : .white.opacity(0.72)
+    }
+
+    private var normalizedNameInput: String {
+        nameInput.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var buttonGradient: [Color] {
