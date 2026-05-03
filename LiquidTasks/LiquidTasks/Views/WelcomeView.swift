@@ -14,7 +14,7 @@ struct WelcomeView: View {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
 
-                VStack(spacing: 28) {
+                VStack(spacing: 24) {
                     appIcon
 
                     VStack(spacing: 14) {
@@ -38,45 +38,47 @@ struct WelcomeView: View {
                             .multilineTextAlignment(.center)
                             .lineSpacing(3)
                             .padding(.horizontal, 16)
+
+                        startButton
+                            .padding(.top, 8)
                     }
                 }
                 .frame(maxWidth: 420)
                 .padding(.horizontal, 28)
 
                 Spacer(minLength: 0)
-
-                Button(action: onStart) {
-                    Text("GET STARTED")
-                        .font(.system(.headline, design: .rounded, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 62)
-                        .background(
-                            LinearGradient(
-                                colors: buttonGradient,
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ),
-                            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .stroke(.white.opacity(colorScheme == .dark ? 0.20 : 0.34), lineWidth: 1)
-                        )
-                        .shadow(color: .cyan.opacity(ctaPulse ? 0.18 : 0.10), radius: ctaPulse ? 26 : 18, y: 10)
-                        .shadow(color: .purple.opacity(ctaPulse ? 0.18 : 0.10), radius: ctaPulse ? 22 : 14, y: 8)
-                        .scaleEffect(ctaPulse ? 1.01 : 1.0)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 20)
-                .safeAreaPadding(.bottom, 12)
-                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: ctaPulse)
             }
         }
         .onAppear {
             ctaPulse = true
         }
+    }
+
+    private var startButton: some View {
+        Button(action: onStart) {
+            Text("GET STARTED")
+                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 28)
+                .frame(height: 52)
+                .background(
+                    LinearGradient(
+                        colors: buttonGradient,
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    in: Capsule(style: .continuous)
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(.white.opacity(colorScheme == .dark ? 0.20 : 0.34), lineWidth: 1)
+                )
+                .shadow(color: .cyan.opacity(ctaPulse ? 0.16 : 0.08), radius: ctaPulse ? 22 : 14, y: 8)
+                .shadow(color: .purple.opacity(ctaPulse ? 0.16 : 0.08), radius: ctaPulse ? 18 : 10, y: 6)
+                .scaleEffect(ctaPulse ? 1.01 : 1.0)
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: ctaPulse)
     }
 
     private var appIcon: some View {
