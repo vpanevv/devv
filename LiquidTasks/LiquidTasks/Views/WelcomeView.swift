@@ -97,7 +97,7 @@ struct WelcomeView: View {
 
     private var nameFieldSection: some View {
         VStack(spacing: 12) {
-            Text("Enter your name")
+            Text("ENTER YOUR NAME")
                 .font(.system(.title3, design: .rounded, weight: .bold))
                 .foregroundStyle(primaryText)
                 .multilineTextAlignment(.center)
@@ -108,8 +108,9 @@ struct WelcomeView: View {
                 .disableAutocorrection(true)
                 .submitLabel(.done)
                 .focused($isNameFieldFocused)
-                .font(.system(.body, design: .rounded, weight: .semibold))
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
                 .foregroundStyle(primaryText)
+                .multilineTextAlignment(.center)
                 .padding(.horizontal, 18)
                 .frame(height: 54)
                 .background(nameFieldFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
