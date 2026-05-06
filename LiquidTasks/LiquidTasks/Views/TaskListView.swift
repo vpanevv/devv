@@ -1,4 +1,5 @@
 import AudioToolbox
+import MessageUI
 import SwiftData
 import SwiftUI
 import UIKit
@@ -27,6 +28,12 @@ struct TaskListView: View {
     @State private var achievementPopup: AchievementPopupData?
     @State private var taskPendingDeletion: TaskItem?
     @State private var xpGlowVisible = false
+    @State private var isSettingsPresented = false
+    @State private var isFeedbackMailComposerPresented = false
+    @State private var feedbackStep: FeedbackStep = .intro
+    @State private var feedbackName = ""
+    @State private var feedbackMessage = ""
+    @State private var feedbackFallbackMessage: String?
 
     private var store: TaskStore {
         TaskStore(context: modelContext, activeProfileID: activeProfileID)
@@ -104,6 +111,14 @@ struct TaskListView: View {
         accessibilityReduceMotion
             ? .easeOut(duration: 0.18)
             : .spring(response: 0.46, dampingFraction: 0.84, blendDuration: 0.14)
+    }
+
+    private var trimmedFeedbackName: String {
+        feedbackName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var trimmedFeedbackMessage: String {
+        feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
@@ -223,6 +238,55 @@ struct TaskListView: View {
                 ))
                 .zIndex(5)
             }
+
+            if isSettingsPresented {
+                Color.black.opacity(colorScheme == .dark ? 0.30 : 0.16)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            dismissSettingsFlow()
+                        }
+                    }
+
+                SettingsSheet(
+                    step: $feedbackStep,
+                    feedbackName: $feedbackName,
+                    feedbackMessage: $feedbackMessage,
+                    fallbackMessage: feedbackFallbackMessage,
+                    primaryText: primaryText,
+                    secondaryText: secondaryText,
+                    onClose: {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            dismissSettingsFlow()
+                        }
+                    },
+                    onStartFeedback: {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            feedbackStep = .form
+                        }
+                    },
+                    onBackToIntro: {
+                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                            feedbackStep = .intro
+                            feedbackFallbackMessage = nil
+                        }
+                    },
+                    onSend: {
+                        presentFeedbackMailFlow()
+                    },
+                    onCopyFallbackEmail: {
+                        UIPasteboard.general.string = "vpanev95@gmail.com"
+                        triggerSuccessHaptic()
+                    }
+                )
+                .padding(.horizontal, 20)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.92).combined(with: .opacity),
+                    removal: .scale(scale: 0.98).combined(with: .opacity)
+                ))
+                .zIndex(5)
+            }
         }
         .onAppear {
             LiquidTasksRuntime.migrateLegacyTasksIfNeeded()
@@ -231,6 +295,9 @@ struct TaskListView: View {
             synchronizeXPState()
             synchronizeReminders()
             processPendingLaunchAction()
+            if feedbackName.isEmpty {
+                feedbackName = activeProfileDisplayName
+            }
         }
         .onChange(of: xpSyncSignature) { _, _ in
             resetDailyXPIfNeeded()
@@ -266,6 +333,16 @@ struct TaskListView: View {
                 store.update(task, title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
             }
         }
+        .sheet(isPresented: $isFeedbackMailComposerPresented) {
+            FeedbackMailComposeView(
+                recipient: "vpanev95@gmail.com",
+                subject: "Liquid Tasks Feedback",
+                body: feedbackMailBody,
+                onFinish: { result in
+                    handleFeedbackMailResult(result)
+                }
+            )
+        }
         .confirmationDialog(
             "Delete task?",
             isPresented: Binding(
@@ -294,6 +371,7 @@ struct TaskListView: View {
         }
         .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isXPStatsPresented)
         .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isCompletedTasksPresented)
+        .animation(.spring(response: 0.34, dampingFraction: 0.86), value: isSettingsPresented)
         .animation(listAnimation, value: activeTasks.map(\.id))
         .animation(listAnimation, value: completedTasks.map(\.id))
     }
@@ -322,6 +400,8 @@ struct TaskListView: View {
                 XPStatusPill(points: todayXP, isGlowing: xpGlowVisible) {
                     isXPStatsPresented = true
                 }
+
+                settingsButton
 
                 AppearanceToggle(mode: appearanceBinding)
             }
@@ -781,12 +861,89 @@ struct TaskListView: View {
         }
     }
 
+    private var settingsButton: some View {
+        Button {
+            if feedbackName.isEmpty {
+                feedbackName = activeProfileDisplayName
+            }
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                isSettingsPresented = true
+            }
+        } label: {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(controlText)
+                .frame(width: 48, height: 48)
+                .background(controlFill, in: Circle())
+                .overlay(Circle().stroke(.white.opacity(0.24), lineWidth: 1))
+                .shadow(color: .cyan.opacity(0.12), radius: 14, y: 6)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Settings")
+    }
+
     private func resetDailyXPIfNeeded() {
         let key = currentDayKey
         guard xpDateKey != key else { return }
         xpDateKey = key
         lastTargetHitDate = ""
         persistProfileXPState(todayXP: todayXP, recordXP: recordXP)
+    }
+
+    private var feedbackMailBody: String {
+        let resolvedName = trimmedFeedbackName.isEmpty ? "Anonymous" : trimmedFeedbackName
+        return """
+        Name: \(resolvedName)
+
+        Feedback:
+        \(trimmedFeedbackMessage)
+        """
+    }
+
+    private func presentFeedbackMailFlow() {
+        guard !trimmedFeedbackMessage.isEmpty else { return }
+
+        feedbackFallbackMessage = nil
+
+        guard MFMailComposeViewController.canSendMail() else {
+            feedbackFallbackMessage = "Mail isn’t available on this device right now. You can still send feedback directly to vpanev95@gmail.com."
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                feedbackStep = .fallback
+            }
+            return
+        }
+
+        isFeedbackMailComposerPresented = true
+    }
+
+    private func handleFeedbackMailResult(_ result: MFMailComposeResult) {
+        isFeedbackMailComposerPresented = false
+
+        switch result {
+        case .sent:
+            triggerSuccessHaptic()
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                feedbackStep = .thanks
+            }
+        case .failed:
+            feedbackFallbackMessage = "Something went wrong while preparing your email. You can still send feedback directly to vpanev95@gmail.com."
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                feedbackStep = .fallback
+            }
+        case .cancelled, .saved:
+            break
+        @unknown default:
+            break
+        }
+    }
+
+    private func dismissSettingsFlow() {
+        isSettingsPresented = false
+        feedbackStep = .intro
+        feedbackFallbackMessage = nil
+        feedbackMessage = ""
+        feedbackName = activeProfileDisplayName
     }
 
     private func sectionHeader(_ title: String, count: Int) -> some View {
@@ -1070,6 +1227,368 @@ struct TaskListView: View {
 private struct EmptyStateCopy {
     let title: String
     let subtitle: String
+}
+
+private enum FeedbackStep {
+    case intro
+    case form
+    case thanks
+    case fallback
+}
+
+private struct SettingsSheet: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    @Binding var step: FeedbackStep
+    @Binding var feedbackName: String
+    @Binding var feedbackMessage: String
+
+    let fallbackMessage: String?
+    let primaryText: Color
+    let secondaryText: Color
+    let onClose: () -> Void
+    let onStartFeedback: () -> Void
+    let onBackToIntro: () -> Void
+    let onSend: () -> Void
+    let onCopyFallbackEmail: () -> Void
+
+    private var canSend: Bool {
+        !feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            header
+            content
+        }
+        .padding(20)
+        .frame(maxWidth: 420)
+        .background(
+            ZStack {
+                backgroundGlow
+
+                RoundedRectangle(cornerRadius: 34, style: .continuous)
+                    .fill(.ultraThinMaterial)
+
+                LinearGradient(
+                    colors: sheetColors,
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .opacity(colorScheme == .dark ? 0.94 : 0.86)
+                .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.28 : 0.16), radius: 28, y: 16)
+        .shadow(color: .purple.opacity(colorScheme == .dark ? 0.14 : 0.08), radius: 18, y: 6)
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(headerTitle)
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText)
+
+                Text(headerSubtitle)
+                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                    .foregroundStyle(secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(primaryText)
+                    .frame(width: 44, height: 44)
+                    .background(.white.opacity(colorScheme == .dark ? 0.14 : 0.30), in: Circle())
+                    .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close settings")
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch step {
+        case .intro:
+            VStack(alignment: .leading, spacing: 18) {
+                GlassCard(cornerRadius: 26) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Image(systemName: "bubble.left.and.bubble.right.fill")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundStyle(.cyan)
+
+                        Text("Your feedback helps improve the experience.")
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(primaryText)
+
+                        Text("Have an idea, a rough edge, or something you’d love to see refined? I’d love to hear it.")
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(20)
+                }
+
+                primaryButton(title: "Give a feedback to developer", action: onStartFeedback)
+            }
+
+        case .form:
+            VStack(alignment: .leading, spacing: 14) {
+                formField(title: "Name") {
+                    TextField("Your name", text: $feedbackName)
+                        .textInputAutocapitalization(.words)
+                        .disableAutocorrection(true)
+                        .font(.system(.body, design: .rounded, weight: .medium))
+                        .foregroundStyle(primaryText)
+                        .padding(.horizontal, 16)
+                        .frame(height: 52)
+                        .background(.white.opacity(colorScheme == .dark ? 0.08 : 0.32), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(.white.opacity(0.14), lineWidth: 1)
+                        )
+                }
+
+                formField(title: "Feedback") {
+                    ZStack(alignment: .topLeading) {
+                        if feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("What would make Liquid Tasks better?")
+                                .font(.system(.body, design: .rounded, weight: .medium))
+                                .foregroundStyle(secondaryText.opacity(0.74))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                        }
+
+                        TextEditor(text: $feedbackMessage)
+                            .scrollContentBackground(.hidden)
+                            .font(.system(.body, design: .rounded, weight: .medium))
+                            .foregroundStyle(primaryText)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .frame(minHeight: 148)
+                            .background(.clear)
+                    }
+                    .background(.white.opacity(colorScheme == .dark ? 0.08 : 0.32), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(.white.opacity(0.14), lineWidth: 1)
+                    )
+                }
+
+                HStack(spacing: 12) {
+                    secondaryButton(title: "Back", action: onBackToIntro)
+                    primaryButton(title: "Send", disabled: !canSend, action: onSend)
+                }
+            }
+
+        case .thanks:
+            VStack(alignment: .leading, spacing: 18) {
+                GlassCard(cornerRadius: 26) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 30, weight: .semibold))
+                            .foregroundStyle(.cyan)
+
+                        Text("Feedback sent. I really appreciate it.")
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(primaryText)
+
+                        Text("Thanks for helping improve Liquid Tasks.")
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(secondaryText)
+                    }
+                    .padding(20)
+                }
+
+                primaryButton(title: "Done", action: onClose)
+            }
+
+        case .fallback:
+            VStack(alignment: .leading, spacing: 18) {
+                GlassCard(cornerRadius: 26) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Image(systemName: "envelope.badge")
+                            .font(.system(size: 28, weight: .semibold))
+                            .foregroundStyle(.cyan)
+
+                        Text(fallbackMessage ?? "Mail isn’t available right now.")
+                            .font(.system(.headline, design: .rounded, weight: .semibold))
+                            .foregroundStyle(primaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text("vpanev95@gmail.com")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                            .foregroundStyle(.cyan)
+                    }
+                    .padding(20)
+                }
+
+                HStack(spacing: 12) {
+                    secondaryButton(title: "Back", action: onBackToIntro)
+                    primaryButton(title: "Copy email", action: onCopyFallbackEmail)
+                }
+            }
+        }
+    }
+
+    private func formField<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(.footnote, design: .rounded, weight: .bold))
+                .foregroundStyle(secondaryText)
+
+            content()
+        }
+    }
+
+    private func primaryButton(title: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(.headline, design: .rounded, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.17, green: 0.74, blue: 1.00),
+                            Color(red: 0.55, green: 0.33, blue: 0.98)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                )
+                .opacity(disabled ? 0.45 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+    }
+
+    private func secondaryButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(.headline, design: .rounded, weight: .bold))
+                .foregroundStyle(primaryText)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(.white.opacity(colorScheme == .dark ? 0.10 : 0.28), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(.white.opacity(0.14), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var headerTitle: String {
+        switch step {
+        case .intro:
+            "Help shape Liquid Tasks"
+        case .form:
+            "Share feedback"
+        case .thanks:
+            "Thanks"
+        case .fallback:
+            "Mail unavailable"
+        }
+    }
+
+    private var headerSubtitle: String {
+        switch step {
+        case .intro:
+            "A small note from you can make the experience better for everyone."
+        case .form:
+            "A quick message goes straight to the developer."
+        case .thanks:
+            "Your input helps shape the app."
+        case .fallback:
+            "There’s still an easy way to reach the developer."
+        }
+    }
+
+    private var backgroundGlow: some View {
+        ZStack {
+            Circle()
+                .fill(.cyan.opacity(colorScheme == .dark ? 0.20 : 0.12))
+                .frame(width: 220, height: 220)
+                .blur(radius: 32)
+                .offset(x: -110, y: -140)
+
+            Circle()
+                .fill(.purple.opacity(colorScheme == .dark ? 0.20 : 0.10))
+                .frame(width: 260, height: 260)
+                .blur(radius: 38)
+                .offset(x: 130, y: 170)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+    }
+
+    private var sheetColors: [Color] {
+        if colorScheme == .dark {
+            [
+                Color(red: 0.02, green: 0.05, blue: 0.13),
+                Color(red: 0.05, green: 0.08, blue: 0.22),
+                Color(red: 0.07, green: 0.11, blue: 0.28),
+                Color(red: 0.06, green: 0.18, blue: 0.24)
+            ]
+        } else {
+            [
+                Color(red: 0.84, green: 0.95, blue: 1.00),
+                Color(red: 0.76, green: 0.88, blue: 1.00),
+                Color(red: 0.74, green: 0.86, blue: 0.98),
+                Color(red: 0.78, green: 0.90, blue: 0.96)
+            ]
+        }
+    }
+}
+
+private struct FeedbackMailComposeView: UIViewControllerRepresentable {
+    let recipient: String
+    let subject: String
+    let body: String
+    let onFinish: (MFMailComposeResult) -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onFinish: onFinish)
+    }
+
+    func makeUIViewController(context: Context) -> MFMailComposeViewController {
+        let controller = MFMailComposeViewController()
+        controller.setToRecipients([recipient])
+        controller.setSubject(subject)
+        controller.setMessageBody(body, isHTML: false)
+        controller.mailComposeDelegate = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
+
+    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
+        let onFinish: (MFMailComposeResult) -> Void
+
+        init(onFinish: @escaping (MFMailComposeResult) -> Void) {
+            self.onFinish = onFinish
+        }
+
+        func mailComposeController(
+            _ controller: MFMailComposeViewController,
+            didFinishWith result: MFMailComposeResult,
+            error: Error?
+        ) {
+            controller.dismiss(animated: true)
+            onFinish(result)
+        }
+    }
 }
 
 private struct XPStatusPill: View {
