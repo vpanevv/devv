@@ -5,10 +5,14 @@ struct TaskEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     private let reminderManager = ReminderManager.shared
+    private enum FocusedField {
+        case title
+        case notes
+    }
 
     enum Mode {
         case add
-        case edit(title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?)
+        case edit(title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?, reminderRepeat: TaskReminderRepeat)
 
         var title: String {
             switch self {
@@ -37,7 +41,7 @@ struct TaskEditorSheet: View {
             switch self {
             case .add:
                 ""
-            case .edit(let title, _, _, _):
+            case .edit(let title, _, _, _, _):
                 title
             }
         }
@@ -46,7 +50,7 @@ struct TaskEditorSheet: View {
             switch self {
             case .add:
                 ""
-            case .edit(_, let notes, _, _):
+            case .edit(_, let notes, _, _, _):
                 notes ?? ""
             }
         }
@@ -55,7 +59,7 @@ struct TaskEditorSheet: View {
             switch self {
             case .add:
                 .medium
-            case .edit(_, _, let priority, _):
+            case .edit(_, _, let priority, _, _):
                 priority
             }
         }
@@ -63,9 +67,12 @@ struct TaskEditorSheet: View {
         var initialReminderDate: Date {
             switch self {
             case .add:
-                defaultReminderDate()
-            case .edit(_, _, _, let scheduledAt):
-                defaultReminderDate(from: scheduledAt)
+                return defaultReminderDate()
+            case .edit(_, _, _, let scheduledAt, let reminderRepeat):
+                if reminderRepeat == .none {
+                    return defaultReminderDate(from: scheduledAt)
+                }
+                return scheduledAt ?? defaultReminderDate()
             }
         }
 
@@ -73,8 +80,17 @@ struct TaskEditorSheet: View {
             switch self {
             case .add:
                 false
-            case .edit(_, _, _, let scheduledAt):
+            case .edit(_, _, _, let scheduledAt, _):
                 scheduledAt != nil
+            }
+        }
+
+        var initialReminderRepeat: TaskReminderRepeat {
+            switch self {
+            case .add:
+                .none
+            case .edit(_, _, _, _, let reminderRepeat):
+                reminderRepeat
             }
         }
     }
@@ -84,16 +100,19 @@ struct TaskEditorSheet: View {
     @State private var priority: TaskPriority
     @State private var isReminderEnabled: Bool
     @State private var reminderDate: Date
+    @State private var reminderRepeat: TaskReminderRepeat
     @State private var reminderPermissionState: ReminderPermissionState = .unknown
     @State private var reminderPermissionTask: Task<Void, Never>?
     @State private var isReminderSchedulerPresented = false
     @State private var pendingReminderDate: Date
+    @State private var pendingReminderRepeat: TaskReminderRepeat
     @State private var reminderWasEnabledBeforeScheduling = false
+    @FocusState private var focusedField: FocusedField?
 
     let mode: Mode
-    let onCommit: (String, String?, TaskPriority, Date?) -> Void
+    let onCommit: (String, String?, TaskPriority, Date?, TaskReminderRepeat) -> Void
 
-    init(mode: Mode, onCommit: @escaping (String, String?, TaskPriority, Date?) -> Void) {
+    init(mode: Mode, onCommit: @escaping (String, String?, TaskPriority, Date?, TaskReminderRepeat) -> Void) {
         self.mode = mode
         self.onCommit = onCommit
         _title = State(initialValue: mode.initialText)
@@ -101,7 +120,9 @@ struct TaskEditorSheet: View {
         _priority = State(initialValue: mode.initialPriority)
         _isReminderEnabled = State(initialValue: mode.isReminderInitiallyEnabled)
         _reminderDate = State(initialValue: mode.initialReminderDate)
+        _reminderRepeat = State(initialValue: mode.isReminderInitiallyEnabled ? mode.initialReminderRepeat : .none)
         _pendingReminderDate = State(initialValue: mode.initialReminderDate)
+        _pendingReminderRepeat = State(initialValue: mode.initialReminderRepeat)
     }
 
     var body: some View {
@@ -112,6 +133,10 @@ struct TaskEditorSheet: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                dismissKeyboard()
+            }
 
             VStack(spacing: 22) {
                 Capsule()
@@ -129,6 +154,7 @@ struct TaskEditorSheet: View {
 
                         if mode.showsCloseButton {
                             Button {
+                                dismissKeyboard()
                                 dismiss()
                             } label: {
                                 Image(systemName: "xmark")
@@ -157,6 +183,7 @@ struct TaskEditorSheet: View {
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .stroke(.white.opacity(0.22), lineWidth: 1)
                         )
+                        .focused($focusedField, equals: .title)
 
                     TextField("Add notes, if useful", text: $notes, axis: .vertical)
                         .font(.system(.body, design: .rounded, weight: .medium))
@@ -169,16 +196,19 @@ struct TaskEditorSheet: View {
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .stroke(.white.opacity(0.18), lineWidth: 1)
                         )
+                        .focused($focusedField, equals: .notes)
 
                     priorityPicker
                     reminderSection
 
                     Button {
+                        dismissKeyboard()
                         onCommit(
                             title,
                             notes,
                             priority,
-                            isReminderEnabled ? max(reminderDate, minimumReminderDate) : nil
+                            isReminderEnabled ? reminderDate : nil,
+                            isReminderEnabled ? reminderRepeat : .none
                         )
                         dismiss()
                     } label: {
@@ -195,9 +225,9 @@ struct TaskEditorSheet: View {
                                 ),
                                 in: RoundedRectangle(cornerRadius: 22, style: .continuous)
                             )
-                            .opacity(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
+                            .opacity(isCommitDisabled ? 0.45 : 1)
                     }
-                    .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(isCommitDisabled)
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 22)
@@ -213,16 +243,21 @@ struct TaskEditorSheet: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .onTapGesture {
+                        dismissKeyboard()
                         cancelReminderScheduling()
                     }
 
                 ReminderSchedulerPopup(
                     reminderDate: $pendingReminderDate,
+                    reminderRepeat: $pendingReminderRepeat,
                     onClose: cancelReminderScheduling,
                     onCancel: cancelReminderScheduling,
                     onSave: confirmReminderScheduling
                 )
                 .padding(.horizontal, 20)
+                .padding(.top, 22)
+                .padding(.bottom, 18)
+                .frame(maxHeight: .infinity, alignment: .top)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.92).combined(with: .opacity),
                     removal: .scale(scale: 0.98).combined(with: .opacity)
@@ -255,6 +290,7 @@ struct TaskEditorSheet: View {
             HStack(spacing: 10) {
                 ForEach(TaskPriority.allCases) { option in
                     Button {
+                        dismissKeyboard()
                         withAnimation(.smooth(duration: 0.22)) {
                             priority = option
                         }
@@ -311,6 +347,7 @@ struct TaskEditorSheet: View {
 
                 if isReminderEnabled {
                     Button {
+                        dismissKeyboard()
                         beginReminderScheduling(editingExistingReminder: true)
                     } label: {
                         Text("Change")
@@ -343,6 +380,13 @@ struct TaskEditorSheet: View {
                 reminderSummaryPill
             }
 
+            if let reminderValidationMessage {
+                Label(reminderValidationMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .foregroundStyle(Color(red: 1.00, green: 0.72, blue: 0.48))
+                    .padding(.horizontal, 4)
+            }
+
             if let reminderStatusMessage {
                 Label(reminderStatusMessage.text, systemImage: reminderStatusMessage.icon)
                     .font(.system(.caption, design: .rounded, weight: .medium))
@@ -358,10 +402,17 @@ struct TaskEditorSheet: View {
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(.cyan)
 
-            Text(reminderDate.formatted(date: .abbreviated, time: .shortened))
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(primaryText)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(reminderPrimarySummary)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(primaryText)
+                    .lineLimit(2)
+
+                Text(reminderSecondarySummary)
+                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .foregroundStyle(secondaryText)
+                    .lineLimit(2)
+            }
 
             Spacer(minLength: 0)
         }
@@ -378,18 +429,20 @@ struct TaskEditorSheet: View {
         Binding(
             get: { isReminderEnabled },
             set: { newValue in
+                dismissKeyboard()
                 if newValue {
                     beginReminderScheduling(editingExistingReminder: false)
                 } else {
                     reminderPermissionTask?.cancel()
                     isReminderEnabled = false
+                    reminderRepeat = .none
                 }
             }
         )
     }
 
     private var reminderSummaryText: String {
-        isReminderEnabled ? "Reminder scheduled" : "Schedule a date and time."
+        isReminderEnabled ? reminderRepeat.detailDescription(for: reminderDate) : "Schedule a date and time."
     }
 
     private var reminderStatusMessage: (text: String, icon: String, color: Color)? {
@@ -413,6 +466,34 @@ struct TaskEditorSheet: View {
 
     private var minimumReminderDate: Date {
         currentReminderDate()
+    }
+
+    private var reminderValidationMessage: String? {
+        validateReminder(date: reminderDate, recurrence: reminderRepeat)
+    }
+
+    private var isCommitDisabled: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (isReminderEnabled && reminderValidationMessage != nil)
+    }
+
+    private var reminderPrimarySummary: String {
+        if reminderRepeat == .none {
+            return reminderDate.formatted(date: .abbreviated, time: .shortened)
+        }
+
+        return reminderRepeat.detailDescription(for: reminderDate)
+    }
+
+    private var reminderSecondarySummary: String {
+        if reminderRepeat == .none {
+            return reminderRepeat.detailDescription(for: reminderDate)
+        }
+
+        guard let nextOccurrence = reminderRepeat.nextOccurrence(from: reminderDate) else {
+            return reminderRepeat.shortDescription
+        }
+
+        return "Next: \(nextOccurrence.formatted(date: .abbreviated, time: .shortened))"
     }
 
     private var primaryText: Color {
@@ -448,22 +529,29 @@ struct TaskEditorSheet: View {
     }
 
     private func beginReminderScheduling(editingExistingReminder: Bool) {
+        dismissKeyboard()
         reminderWasEnabledBeforeScheduling = editingExistingReminder || isReminderEnabled
         pendingReminderDate = isReminderEnabled ? reminderDate : defaultReminderDate()
+        pendingReminderRepeat = isReminderEnabled ? reminderRepeat : .none
         isReminderSchedulerPresented = true
         requestReminderPermission()
     }
 
     private func confirmReminderScheduling() {
-        reminderDate = max(pendingReminderDate, minimumReminderDate)
+        dismissKeyboard()
+        reminderDate = pendingReminderDate
+        reminderRepeat = pendingReminderRepeat
         isReminderEnabled = true
         isReminderSchedulerPresented = false
     }
 
     private func cancelReminderScheduling() {
+        dismissKeyboard()
         pendingReminderDate = reminderDate
+        pendingReminderRepeat = reminderRepeat
         if !reminderWasEnabledBeforeScheduling {
             isReminderEnabled = false
+            reminderRepeat = .none
         }
         isReminderSchedulerPresented = false
     }
@@ -487,108 +575,54 @@ struct TaskEditorSheet: View {
             Color(red: 1.00, green: 0.32, blue: 0.38)
         }
     }
+
+    private func validateReminder(date: Date, recurrence: TaskReminderRepeat) -> String? {
+        guard recurrence == .none else { return nil }
+        guard date > minimumReminderDate else {
+            return "Choose a future date and time for a one-time reminder."
+        }
+        return nil
+    }
+
+    private func dismissKeyboard() {
+        focusedField = nil
+    }
 }
 
 private struct ReminderSchedulerPopup: View {
     @Environment(\.colorScheme) private var colorScheme
     @Binding var reminderDate: Date
+    @Binding var reminderRepeat: TaskReminderRepeat
 
     let onClose: () -> Void
     let onCancel: () -> Void
     let onSave: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(.white.opacity(0.14))
-                        .frame(width: 56, height: 56)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                reminderPreview
+                quickScheduleRow
+                dateRow
+                timeRow
+                repeatRow
 
-                    Circle()
-                        .fill(.cyan.opacity(0.20))
-                        .frame(width: 74, height: 74)
-                        .blur(radius: 18)
-
-                    Image(systemName: "bell.badge.fill")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(.white)
+                if let validationMessage {
+                    Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(.caption, design: .rounded, weight: .medium))
+                        .foregroundStyle(Color(red: 1.00, green: 0.72, blue: 0.48))
+                        .padding(.horizontal, 4)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Schedule Reminder")
-                        .font(.system(.title2, design: .rounded, weight: .bold))
-                        .foregroundStyle(primaryText)
-
-                    Text("Choose a date and time for this task.")
-                        .font(.system(.subheadline, design: .rounded, weight: .medium))
-                        .foregroundStyle(secondaryText)
-                }
-
-                Spacer(minLength: 0)
-
-                Button {
-                    onClose()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(primaryText)
-                        .frame(width: 40, height: 40)
-                        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: Circle())
-                        .overlay(
-                            Circle()
-                                .stroke(.white.opacity(0.18), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Close reminder scheduling")
+                actionRow
             }
-
-            reminderPreview
-            quickScheduleRow
-            dateRow
-            timeRow
-
-            HStack(spacing: 12) {
-                Button {
-                    onCancel()
-                } label: {
-                    Text("Cancel")
-                        .font(.system(.headline, design: .rounded, weight: .bold))
-                        .foregroundStyle(primaryText)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(.white.opacity(0.18), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    onSave()
-                } label: {
-                    Text("Save")
-                        .font(.system(.headline, design: .rounded, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            LinearGradient(
-                                colors: [.cyan, .blue, .indigo],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        )
-                }
-                .buttonStyle(.plain)
-            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 20)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 20)
+        .scrollIndicators(.hidden)
         .frame(maxWidth: 430)
+        .frame(maxHeight: 650)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 32, style: .continuous)
@@ -609,6 +643,97 @@ private struct ReminderSchedulerPopup: View {
         )
         .shadow(color: .black.opacity(colorScheme == .dark ? 0.32 : 0.18), radius: 26, y: 16)
         .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.12 : 0.08), radius: 18, y: 0)
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.14))
+                    .frame(width: 56, height: 56)
+
+                Circle()
+                    .fill(.cyan.opacity(0.20))
+                    .frame(width: 74, height: 74)
+                    .blur(radius: 18)
+
+                Image(systemName: "bell.badge.fill")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Schedule Reminder")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.86)
+
+                Text("Choose a date, time, and repeat style for this task.")
+                    .font(.system(.subheadline, design: .rounded, weight: .medium))
+                    .foregroundStyle(secondaryText)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(primaryText)
+                    .frame(width: 40, height: 40)
+                    .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(.white.opacity(0.18), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close reminder scheduling")
+        }
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: 12) {
+            Button {
+                onCancel()
+            } label: {
+                Text("Cancel")
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(primaryText)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(.white.opacity(colorScheme == .dark ? 0.12 : 0.26), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(.white.opacity(0.18), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                onSave()
+            } label: {
+                Text("Save")
+                    .font(.system(.headline, design: .rounded, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(
+                        LinearGradient(
+                            colors: [.cyan, .blue, .indigo],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    )
+                    .opacity(validationMessage == nil ? 1 : 0.45)
+            }
+            .disabled(validationMessage != nil)
+            .buttonStyle(.plain)
+        }
     }
 
     private var quickScheduleRow: some View {
@@ -638,7 +763,6 @@ private struct ReminderSchedulerPopup: View {
             DatePicker(
                 "",
                 selection: $reminderDate,
-                in: currentReminderDate()...,
                 displayedComponents: .date
             )
             .labelsHidden()
@@ -665,7 +789,6 @@ private struct ReminderSchedulerPopup: View {
             DatePicker(
                 "",
                 selection: $reminderDate,
-                in: currentReminderDate()...,
                 displayedComponents: .hourAndMinute
             )
             .labelsHidden()
@@ -684,20 +807,69 @@ private struct ReminderSchedulerPopup: View {
     private var reminderPreview: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Selected time")
+                Text("Selected schedule")
                     .font(.system(.caption, design: .rounded, weight: .bold))
                     .foregroundStyle(secondaryText)
                     .textCase(.uppercase)
 
-                Text(reminderDate.formatted(date: .complete, time: .shortened))
+                Text(reminderRepeat.detailDescription(for: reminderDate))
                     .font(.system(.headline, design: .rounded, weight: .semibold))
                     .foregroundStyle(primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(nextOccurrenceSummary)
+                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .foregroundStyle(secondaryText)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
         }
         .padding(16)
+        .background(panelFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+    }
+
+    private var repeatRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Repeat")
+                .font(.system(.caption, design: .rounded, weight: .bold))
+                .foregroundStyle(secondaryText)
+                .textCase(.uppercase)
+
+            HStack(spacing: 10) {
+                ForEach(TaskReminderRepeat.allCases) { option in
+                    Button {
+                        withAnimation(.smooth(duration: 0.22)) {
+                            reminderRepeat = option
+                        }
+                    } label: {
+                        Text(option.title)
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .foregroundStyle(reminderRepeat == option ? selectedText : primaryText)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 40)
+                            .background(
+                                reminderRepeat == option
+                                    ? Color.cyan.opacity(colorScheme == .dark ? 0.22 : 0.18)
+                                    : .white.opacity(colorScheme == .dark ? 0.10 : 0.24),
+                                in: Capsule()
+                            )
+                            .overlay(
+                                Capsule()
+                                    .stroke(reminderRepeat == option ? Color.cyan.opacity(0.72) : .white.opacity(0.16), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(option.title)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .background(panelFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -750,6 +922,10 @@ private struct ReminderSchedulerPopup: View {
         colorScheme == .dark ? .white.opacity(0.70) : Color(red: 0.08, green: 0.15, blue: 0.30).opacity(0.82)
     }
 
+    private var selectedText: Color {
+        colorScheme == .dark ? .white : Color(red: 0.03, green: 0.09, blue: 0.18)
+    }
+
     private var panelFill: Color {
         colorScheme == .dark ? .white.opacity(0.10) : .white.opacity(0.28)
     }
@@ -769,10 +945,31 @@ private struct ReminderSchedulerPopup: View {
             ]
         }
     }
+
+    private var validationMessage: String? {
+        guard reminderRepeat == .none else { return nil }
+        guard reminderDate > currentReminderDate() else {
+            return "Choose a future date and time for a one-time reminder."
+        }
+        return nil
+    }
+
+    private var nextOccurrenceSummary: String {
+        switch reminderRepeat {
+        case .none:
+            return "One-time reminder"
+        case .daily, .weekly, .monthly:
+            guard let nextOccurrence = reminderRepeat.nextOccurrence(from: reminderDate) else {
+                return reminderRepeat.shortDescription
+            }
+            return "Next reminder: \(nextOccurrence.formatted(date: .abbreviated, time: .shortened))"
+        }
+    }
+
 }
 
 #Preview {
-    TaskEditorSheet(mode: .add) { _, _, _, _ in }
+    TaskEditorSheet(mode: .add) { _, _, _, _, _ in }
 }
 
 private func defaultReminderDate(from date: Date? = nil) -> Date {

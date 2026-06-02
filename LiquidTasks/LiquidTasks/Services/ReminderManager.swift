@@ -8,6 +8,8 @@ struct ReminderTaskSnapshot: Sendable {
     let notes: String?
     let isCompleted: Bool
     let scheduledAt: Date?
+    let reminderRepeat: TaskReminderRepeat
+    let reminderSnoozedUntil: Date?
 
     init(task: TaskItem) {
         id = task.id
@@ -15,6 +17,8 @@ struct ReminderTaskSnapshot: Sendable {
         notes = task.notes
         isCompleted = task.isCompleted
         scheduledAt = task.scheduledAt
+        reminderRepeat = task.reminderRepeat
+        reminderSnoozedUntil = task.reminderSnoozedUntil
     }
 }
 
@@ -90,6 +94,8 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     private let snooze60Identifier = "liquidtasks.snooze.60"
     private let completeIdentifier = "liquidtasks.complete"
     private let managedPrefix = "liquidtasks.task."
+    private let recurringRequestSuffix = ".base"
+    private let snoozeRequestSuffix = ".snooze"
     private let taskIDKey = "taskID"
     private let taskTitleKey = "taskTitle"
     private let taskNotesKey = "taskNotes"
@@ -135,9 +141,7 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
 
     func synchronize(tasks: [ReminderTaskSnapshot]) async {
         let state = await authorizationState()
-        let desiredIdentifiers = Set(tasks.compactMap { snapshot in
-            shouldKeepReminder(snapshot) ? identifier(for: snapshot.id) : nil
-        })
+        let desiredIdentifiers = Set(tasks.flatMap(desiredIdentifiers(for:)))
 
         let pendingIdentifiers = await pendingNotificationIdentifiers()
         let deliveredIdentifiers = await deliveredNotificationIdentifiers()
@@ -155,15 +159,202 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
             return
         }
 
-        for snapshot in tasks where shouldSchedule(snapshot) {
-            guard let request = makeRequest(for: snapshot) else { continue }
-            do {
-                try await add(request)
-                logger.debug("Scheduled reminder \(request.identifier, privacy: .public) for \(snapshot.scheduledAt?.formatted(date: .abbreviated, time: .shortened) ?? "unknown", privacy: .public)")
-            } catch {
-                logger.error("Failed to schedule reminder \(request.identifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        for snapshot in tasks {
+            let requests = makeRequests(for: snapshot)
+            for request in requests {
+                do {
+                    try await add(request)
+                    logger.debug("Scheduled reminder \(request.identifier, privacy: .public)")
+                } catch {
+                    logger.error("Failed to schedule reminder \(request.identifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                }
             }
         }
+    }
+
+    private func shouldScheduleBaseReminder(_ snapshot: ReminderTaskSnapshot) -> Bool {
+        guard !snapshot.isCompleted, let scheduledAt = snapshot.scheduledAt else { return false }
+        switch snapshot.reminderRepeat {
+        case .none:
+            return scheduledAt > Date()
+        case .daily, .weekly, .monthly:
+            return true
+        }
+    }
+
+    private func shouldKeepBaseReminder(_ snapshot: ReminderTaskSnapshot) -> Bool {
+        shouldScheduleBaseReminder(snapshot)
+    }
+
+    private func shouldScheduleSnoozeReminder(_ snapshot: ReminderTaskSnapshot) -> Bool {
+        guard !snapshot.isCompleted, let reminderSnoozedUntil = snapshot.reminderSnoozedUntil else { return false }
+        return reminderSnoozedUntil > Date()
+    }
+
+    private func shouldKeepSnoozeReminder(_ snapshot: ReminderTaskSnapshot) -> Bool {
+        shouldScheduleSnoozeReminder(snapshot)
+    }
+
+    private func desiredIdentifiers(for snapshot: ReminderTaskSnapshot) -> [String] {
+        var identifiers = [String]()
+        if shouldKeepBaseReminder(snapshot) {
+            identifiers.append(baseIdentifier(for: snapshot.id))
+        }
+        if shouldKeepSnoozeReminder(snapshot) {
+            identifiers.append(snoozeIdentifier(for: snapshot.id))
+        }
+        return identifiers
+    }
+
+    private func makeRequests(for snapshot: ReminderTaskSnapshot) -> [UNNotificationRequest] {
+        var requests = [UNNotificationRequest]()
+        if shouldScheduleBaseReminder(snapshot), let request = makeBaseRequest(for: snapshot) {
+            requests.append(request)
+        }
+        if shouldScheduleSnoozeReminder(snapshot), let request = makeSnoozeRequest(for: snapshot) {
+            requests.append(request)
+        }
+        return requests
+    }
+
+    private func userInfo(for snapshot: ReminderTaskSnapshot, snoozeInterval: TimeInterval? = nil) -> [String: Any] {
+        var userInfo: [String: Any] = [
+            taskIDKey: snapshot.id.uuidString,
+            taskTitleKey: snapshot.title,
+            taskNotesKey: snapshot.notes ?? "",
+            "liquidtasks.reminderRepeat": snapshot.reminderRepeat.rawValue
+        ]
+
+        if let snoozeInterval {
+            userInfo["liquidtasks.snoozedAt"] = Date().timeIntervalSince1970
+            userInfo["liquidtasks.snoozeInterval"] = snoozeInterval
+        }
+
+        return userInfo
+    }
+
+    private func baseIdentifier(for taskID: UUID) -> String {
+        managedPrefix + taskID.uuidString + recurringRequestSuffix
+    }
+
+    private func snoozeIdentifier(for taskID: UUID) -> String {
+        managedPrefix + taskID.uuidString + snoozeRequestSuffix
+    }
+
+    private func scheduleSnooze(for context: ReminderResponseContext, interval: TimeInterval) async {
+        let snoozedDate = Date().addingTimeInterval(interval)
+        guard let taskID = context.taskID else {
+            logger.warning("Skipping snooze for malformed reminder payload \(context.requestIdentifier, privacy: .public)")
+            center.removeDeliveredNotifications(withIdentifiers: [context.requestIdentifier])
+            return
+        }
+
+        center.removeDeliveredNotifications(withIdentifiers: [context.requestIdentifier])
+
+        guard let snapshot = await LiquidTasksRuntime.snoozeTask(
+            id: taskID,
+            until: snoozedDate,
+            source: "notification-snooze"
+        ) else {
+            logger.warning("Skipping snooze because task is stale or missing for \(context.requestIdentifier, privacy: .public)")
+            return
+        }
+
+        guard let snoozedRequest = makeSnoozeRequest(for: snapshot, snoozeInterval: interval) else {
+            logger.warning("Unable to rebuild snoozed reminder request for \(context.requestIdentifier, privacy: .public)")
+            return
+        }
+
+        do {
+            try await add(snoozedRequest)
+            logger.notice("Snoozed reminder \(context.requestIdentifier, privacy: .public) for \(interval, privacy: .public) seconds")
+        } catch {
+            logger.error("Unable to schedule snoozed reminder \(context.requestIdentifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private func completeTask(for context: ReminderResponseContext) async {
+        guard let taskID = context.taskID else {
+            logger.warning("Skipping complete action for malformed reminder payload \(context.requestIdentifier, privacy: .public)")
+            removeNotifications(forTaskID: nil, identifier: context.requestIdentifier)
+            return
+        }
+
+        removeNotifications(forTaskID: taskID, identifier: context.requestIdentifier)
+        let didComplete = await LiquidTasksRuntime.completeTask(id: taskID, source: "notification-complete")
+        logger.notice("Complete reminder action finished for \(context.requestIdentifier, privacy: .public). Completed: \(didComplete, privacy: .public)")
+    }
+
+    private func removeNotifications(forTaskID taskID: UUID?, identifier: String) {
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+
+        guard let taskID else { return }
+        let extraIdentifiers = [baseIdentifier(for: taskID), snoozeIdentifier(for: taskID)]
+        center.removeDeliveredNotifications(withIdentifiers: extraIdentifiers)
+        center.removePendingNotificationRequests(withIdentifiers: extraIdentifiers)
+    }
+
+    private func makeBaseRequest(for snapshot: ReminderTaskSnapshot) -> UNNotificationRequest? {
+        guard let scheduledAt = snapshot.scheduledAt else { return nil }
+
+        let content = UNMutableNotificationContent()
+        content.title = snapshot.title
+        if let notes = snapshot.notes, !notes.isEmpty {
+            content.body = notes
+        }
+        content.sound = .default
+        content.categoryIdentifier = categoryIdentifier
+        content.userInfo = userInfo(for: snapshot)
+
+        let trigger: UNCalendarNotificationTrigger
+        switch snapshot.reminderRepeat {
+        case .none:
+            let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: scheduledAt)
+            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        case .daily:
+            let components = Calendar.current.dateComponents([.hour, .minute], from: scheduledAt)
+            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        case .weekly:
+            let components = Calendar.current.dateComponents([.weekday, .hour, .minute], from: scheduledAt)
+            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        case .monthly:
+            let components = Calendar.current.dateComponents([.day, .hour, .minute], from: scheduledAt)
+            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        }
+
+        return UNNotificationRequest(
+            identifier: baseIdentifier(for: snapshot.id),
+            content: content,
+            trigger: trigger
+        )
+    }
+
+    private func makeSnoozeRequest(
+        for snapshot: ReminderTaskSnapshot,
+        snoozeInterval: TimeInterval? = nil
+    ) -> UNNotificationRequest? {
+        guard let reminderSnoozedUntil = snapshot.reminderSnoozedUntil else { return nil }
+
+        let content = UNMutableNotificationContent()
+        content.title = snapshot.title
+        if let notes = snapshot.notes, !notes.isEmpty {
+            content.body = notes
+        }
+        content.sound = .default
+        content.categoryIdentifier = categoryIdentifier
+        content.userInfo = userInfo(for: snapshot, snoozeInterval: snoozeInterval)
+
+        let triggerDate = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: reminderSnoozedUntil
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        return UNNotificationRequest(
+            identifier: snoozeIdentifier(for: snapshot.id),
+            content: content,
+            trigger: trigger
+        )
     }
 
     func userNotificationCenter(
@@ -213,15 +404,6 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         )
     }
 
-    private func shouldSchedule(_ snapshot: ReminderTaskSnapshot) -> Bool {
-        guard !snapshot.isCompleted, let scheduledAt = snapshot.scheduledAt else { return false }
-        return scheduledAt > Date()
-    }
-
-    private func shouldKeepReminder(_ snapshot: ReminderTaskSnapshot) -> Bool {
-        !snapshot.isCompleted && snapshot.scheduledAt != nil
-    }
-
     private func handleNotificationResponse(_ context: ReminderResponseContext) async {
         let key = actionKey(for: context)
         let shouldProcess = await actionTracker.beginProcessing(key: key)
@@ -255,60 +437,6 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
         default:
             logger.warning("Unhandled reminder action \(action, privacy: .public) for \(context.requestIdentifier, privacy: .public)")
         }
-    }
-
-    private func identifier(for taskID: UUID) -> String {
-        managedPrefix + taskID.uuidString
-    }
-
-    private func scheduleSnooze(for context: ReminderResponseContext, interval: TimeInterval) async {
-        let snoozedDate = Date().addingTimeInterval(interval)
-        guard let taskID = context.taskID else {
-            logger.warning("Skipping snooze for malformed reminder payload \(context.requestIdentifier, privacy: .public)")
-            removeNotifications(for: context.requestIdentifier)
-            return
-        }
-
-        removeNotifications(for: context.requestIdentifier)
-
-        guard let snapshot = await LiquidTasksRuntime.snoozeTask(
-            id: taskID,
-            until: snoozedDate,
-            source: "notification-snooze"
-        ) else {
-            logger.warning("Skipping snooze because task is stale or missing for \(context.requestIdentifier, privacy: .public)")
-            return
-        }
-
-        guard let snoozedRequest = makeRequest(for: snapshot, requestIdentifierOverride: context.requestIdentifier, snoozeInterval: interval) else {
-            logger.warning("Unable to rebuild snoozed reminder request for \(context.requestIdentifier, privacy: .public)")
-            return
-        }
-
-        do {
-            try await add(snoozedRequest)
-            logger.notice("Snoozed reminder \(context.requestIdentifier, privacy: .public) for \(interval, privacy: .public) seconds")
-        } catch {
-            logger.error("Unable to schedule snoozed reminder \(context.requestIdentifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    private func completeTask(for context: ReminderResponseContext) async {
-        guard let taskID = context.taskID else {
-            logger.warning("Skipping complete action for malformed reminder payload \(context.requestIdentifier, privacy: .public)")
-            removeNotifications(for: context.requestIdentifier)
-            return
-        }
-
-        removeNotifications(for: context.requestIdentifier)
-        let didComplete = await LiquidTasksRuntime.completeTask(id: taskID, source: "notification-complete")
-        logger.notice("Complete reminder action finished for \(context.requestIdentifier, privacy: .public). Completed: \(didComplete, privacy: .public)")
-    }
-
-    private func removeNotifications(for identifier: String) {
-        guard identifier.hasPrefix(managedPrefix) else { return }
-        center.removeDeliveredNotifications(withIdentifiers: [identifier])
-        center.removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
     private func requestAuthorization(options: UNAuthorizationOptions) async -> Bool {
@@ -357,46 +485,6 @@ final class ReminderManager: NSObject, UNUserNotificationCenterDelegate, @unchec
     private func actionKey(for context: ReminderResponseContext) -> String {
         let taskID = context.taskID?.uuidString ?? "unknown"
         return "\(context.requestIdentifier)|\(context.actionIdentifier)|\(taskID)|\(context.deliveryTime)"
-    }
-
-    private func makeRequest(
-        for snapshot: ReminderTaskSnapshot,
-        requestIdentifierOverride: String? = nil,
-        snoozeInterval: TimeInterval? = nil
-    ) -> UNNotificationRequest? {
-        guard let scheduledAt = snapshot.scheduledAt else { return nil }
-
-        let content = UNMutableNotificationContent()
-        content.title = snapshot.title
-        if let notes = snapshot.notes, !notes.isEmpty {
-            content.body = notes
-        }
-        content.sound = .default
-        content.categoryIdentifier = categoryIdentifier
-
-        var userInfo: [String: Any] = [
-            taskIDKey: snapshot.id.uuidString,
-            taskTitleKey: snapshot.title,
-            taskNotesKey: snapshot.notes ?? ""
-        ]
-
-        if let snoozeInterval {
-            userInfo["liquidtasks.snoozedAt"] = Date().timeIntervalSince1970
-            userInfo["liquidtasks.snoozeInterval"] = snoozeInterval
-        }
-
-        content.userInfo = userInfo
-
-        let triggerDate = Calendar.current.dateComponents(
-            [.year, .month, .day, .hour, .minute, .second],
-            from: scheduledAt
-        )
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-        return UNNotificationRequest(
-            identifier: requestIdentifierOverride ?? identifier(for: snapshot.id),
-            content: content,
-            trigger: trigger
-        )
     }
 
     private func authorizationDescription(for state: ReminderPermissionState) -> String {
