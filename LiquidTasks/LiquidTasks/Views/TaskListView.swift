@@ -1,5 +1,4 @@
 import AudioToolbox
-import MessageUI
 import SwiftData
 import SwiftUI
 import UIKit
@@ -9,6 +8,7 @@ struct TaskListView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
+    @Environment(\.openURL) private var openURL
     private let reminderManager = ReminderManager.shared
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = true
@@ -29,10 +29,7 @@ struct TaskListView: View {
     @State private var taskPendingDeletion: TaskItem?
     @State private var xpGlowVisible = false
     @State private var isSettingsPresented = false
-    @State private var isFeedbackMailComposerPresented = false
     @State private var feedbackStep: FeedbackStep = .intro
-    @State private var feedbackName = ""
-    @State private var feedbackMessage = ""
     @State private var feedbackFallbackMessage: String?
 
     private var store: TaskStore {
@@ -78,7 +75,7 @@ struct TaskListView: View {
     private var xpSyncSignature: [String] {
         profileTasks
             .map {
-                "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue):\($0.scheduledAt?.timeIntervalSince1970 ?? 0):\($0.title):\($0.notes ?? ""):\(profileID(for: $0))"
+                "\($0.id.uuidString):\($0.isCompleted):\($0.priority.rawValue):\($0.scheduledAt?.timeIntervalSince1970 ?? 0):\($0.reminderRepeat.rawValue):\($0.reminderSnoozedUntil?.timeIntervalSince1970 ?? 0):\($0.title):\($0.notes ?? ""):\(profileID(for: $0))"
             }
             .sorted()
     }
@@ -102,7 +99,7 @@ struct TaskListView: View {
     private var remindersLaterTodayCount: Int {
         let calendar = Calendar.current
         return activeTasks.filter { task in
-            guard let scheduledAt = task.scheduledAt else { return false }
+            guard let scheduledAt = effectiveReminderDate(for: task) else { return false }
             return calendar.isDateInToday(scheduledAt) && scheduledAt > .now
         }.count
     }
@@ -111,14 +108,6 @@ struct TaskListView: View {
         accessibilityReduceMotion
             ? .easeOut(duration: 0.18)
             : .spring(response: 0.46, dampingFraction: 0.84, blendDuration: 0.14)
-    }
-
-    private var trimmedFeedbackName: String {
-        feedbackName.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var trimmedFeedbackMessage: String {
-        feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
@@ -251,8 +240,6 @@ struct TaskListView: View {
 
                 SettingsSheet(
                     step: $feedbackStep,
-                    feedbackName: $feedbackName,
-                    feedbackMessage: $feedbackMessage,
                     fallbackMessage: feedbackFallbackMessage,
                     primaryText: primaryText,
                     secondaryText: secondaryText,
@@ -262,9 +249,7 @@ struct TaskListView: View {
                         }
                     },
                     onStartFeedback: {
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                            feedbackStep = .form
-                        }
+                        presentFeedbackMailFlow()
                     },
                     onBackToIntro: {
                         withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
@@ -295,9 +280,6 @@ struct TaskListView: View {
             synchronizeXPState()
             synchronizeReminders()
             processPendingLaunchAction()
-            if feedbackName.isEmpty {
-                feedbackName = activeProfileDisplayName
-            }
         }
         .onChange(of: xpSyncSignature) { _, _ in
             resetDailyXPIfNeeded()
@@ -317,8 +299,8 @@ struct TaskListView: View {
             synchronizeXPState()
         }
         .sheet(isPresented: $isAddingTask) {
-            TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt in
-                store.addTask(title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
+            TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt, reminderRepeat in
+                store.addTask(title: title, notes: notes, priority: priority, scheduledAt: scheduledAt, reminderRepeat: reminderRepeat)
             }
         }
         .sheet(item: $taskToEdit) { task in
@@ -327,21 +309,12 @@ struct TaskListView: View {
                     title: task.title,
                     notes: task.notes,
                     priority: task.priority,
-                    scheduledAt: task.scheduledAt
+                    scheduledAt: task.scheduledAt,
+                    reminderRepeat: task.reminderRepeat
                 )
-            ) { title, notes, priority, scheduledAt in
-                store.update(task, title: title, notes: notes, priority: priority, scheduledAt: scheduledAt)
+            ) { title, notes, priority, scheduledAt, reminderRepeat in
+                store.update(task, title: title, notes: notes, priority: priority, scheduledAt: scheduledAt, reminderRepeat: reminderRepeat)
             }
-        }
-        .sheet(isPresented: $isFeedbackMailComposerPresented) {
-            FeedbackMailComposeView(
-                recipient: "vpanev95@gmail.com",
-                subject: "Liquid Tasks Feedback",
-                body: feedbackMailBody,
-                onFinish: { result in
-                    handleFeedbackMailResult(result)
-                }
-            )
         }
         .confirmationDialog(
             "Delete task?",
@@ -656,12 +629,16 @@ struct TaskListView: View {
 
                         if let scheduledAt = task.scheduledAt {
                             Label(
-                                scheduledAt.formatted(date: .abbreviated, time: .shortened),
+                                reminderTimestampText(for: task, scheduledAt: scheduledAt),
                                 systemImage: "bell.fill"
                             )
                             .labelStyle(.titleAndIcon)
                             .lineLimit(1)
                             .minimumScaleFactor(0.88)
+
+                            Text(task.reminderRepeat.detailDescription(for: scheduledAt))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.88)
                         }
 
                         HStack(spacing: 5) {
@@ -863,9 +840,6 @@ struct TaskListView: View {
 
     private var settingsButton: some View {
         Button {
-            if feedbackName.isEmpty {
-                feedbackName = activeProfileDisplayName
-            }
             withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
                 isSettingsPresented = true
             }
@@ -891,50 +865,32 @@ struct TaskListView: View {
         persistProfileXPState(todayXP: todayXP, recordXP: recordXP)
     }
 
-    private var feedbackMailBody: String {
-        let resolvedName = trimmedFeedbackName.isEmpty ? "Anonymous" : trimmedFeedbackName
-        return """
-        Name: \(resolvedName)
-
-        Feedback:
-        \(trimmedFeedbackMessage)
-        """
-    }
-
     private func presentFeedbackMailFlow() {
-        guard !trimmedFeedbackMessage.isEmpty else { return }
-
         feedbackFallbackMessage = nil
+        let subject = "Liquid Tasks Feedback"
+        let body = "Hi Vlad,\n\nI’d like to share some feedback about Liquid Tasks:\n\n"
 
-        guard MFMailComposeViewController.canSendMail() else {
-            feedbackFallbackMessage = "Mail isn’t available on this device right now. You can still send feedback directly to vpanev95@gmail.com."
+        guard
+            let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+            let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+            let mailURL = URL(string: "mailto:vpanev95@gmail.com?subject=\(encodedSubject)&body=\(encodedBody)")
+        else {
+            feedbackFallbackMessage = "I couldn’t prepare the email link right now. You can still send feedback directly to vpanev95@gmail.com."
             withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
                 feedbackStep = .fallback
             }
             return
         }
 
-        isFeedbackMailComposerPresented = true
-    }
-
-    private func handleFeedbackMailResult(_ result: MFMailComposeResult) {
-        isFeedbackMailComposerPresented = false
-
-        switch result {
-        case .sent:
-            triggerSuccessHaptic()
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                feedbackStep = .thanks
+        openURL(mailURL) { accepted in
+            if accepted {
+                dismissSettingsFlow()
+            } else {
+                feedbackFallbackMessage = "Mail isn’t available on this device right now. You can still send feedback directly to vpanev95@gmail.com."
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+                    feedbackStep = .fallback
+                }
             }
-        case .failed:
-            feedbackFallbackMessage = "Something went wrong while preparing your email. You can still send feedback directly to vpanev95@gmail.com."
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                feedbackStep = .fallback
-            }
-        case .cancelled, .saved:
-            break
-        @unknown default:
-            break
         }
     }
 
@@ -942,8 +898,6 @@ struct TaskListView: View {
         isSettingsPresented = false
         feedbackStep = .intro
         feedbackFallbackMessage = nil
-        feedbackMessage = ""
-        feedbackName = activeProfileDisplayName
     }
 
     private func sectionHeader(_ title: String, count: Int) -> some View {
@@ -1193,6 +1147,24 @@ struct TaskListView: View {
         colorScheme == .dark ? .black.opacity(0.22) : .white.opacity(0.28)
     }
 
+    private func reminderTimestampText(for task: TaskItem, scheduledAt: Date) -> String {
+        let resolvedDate = effectiveReminderDate(for: task) ?? scheduledAt
+        return resolvedDate.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func effectiveReminderDate(for task: TaskItem) -> Date? {
+        if let reminderSnoozedUntil = task.reminderSnoozedUntil, reminderSnoozedUntil > .now {
+            return reminderSnoozedUntil
+        }
+
+        guard let scheduledAt = task.scheduledAt else { return nil }
+        if task.reminderRepeat == .none {
+            return scheduledAt
+        }
+
+        return task.reminderRepeat.nextOccurrence(from: scheduledAt) ?? scheduledAt
+    }
+
     private func priorityColor(for priority: TaskPriority) -> Color {
         switch priority {
         case .low:
@@ -1231,8 +1203,6 @@ private struct EmptyStateCopy {
 
 private enum FeedbackStep {
     case intro
-    case form
-    case thanks
     case fallback
 }
 
@@ -1240,8 +1210,6 @@ private struct SettingsSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
     @Binding var step: FeedbackStep
-    @Binding var feedbackName: String
-    @Binding var feedbackMessage: String
 
     let fallbackMessage: String?
     let primaryText: Color
@@ -1251,10 +1219,6 @@ private struct SettingsSheet: View {
     let onBackToIntro: () -> Void
     let onSend: () -> Void
     let onCopyFallbackEmail: () -> Void
-
-    private var canSend: Bool {
-        !feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -1341,77 +1305,6 @@ private struct SettingsSheet: View {
                 primaryButton(title: "Give a feedback to developer", action: onStartFeedback)
             }
 
-        case .form:
-            VStack(alignment: .leading, spacing: 14) {
-                formField(title: "Name") {
-                    TextField("Your name", text: $feedbackName)
-                        .textInputAutocapitalization(.words)
-                        .disableAutocorrection(true)
-                        .font(.system(.body, design: .rounded, weight: .medium))
-                        .foregroundStyle(primaryText)
-                        .padding(.horizontal, 16)
-                        .frame(height: 52)
-                        .background(.white.opacity(colorScheme == .dark ? 0.08 : 0.32), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(.white.opacity(0.14), lineWidth: 1)
-                        )
-                }
-
-                formField(title: "Feedback") {
-                    ZStack(alignment: .topLeading) {
-                        if feedbackMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Text("What would make Liquid Tasks better?")
-                                .font(.system(.body, design: .rounded, weight: .medium))
-                                .foregroundStyle(secondaryText.opacity(0.74))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                        }
-
-                        TextEditor(text: $feedbackMessage)
-                            .scrollContentBackground(.hidden)
-                            .font(.system(.body, design: .rounded, weight: .medium))
-                            .foregroundStyle(primaryText)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .frame(minHeight: 148)
-                            .background(.clear)
-                    }
-                    .background(.white.opacity(colorScheme == .dark ? 0.08 : 0.32), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(.white.opacity(0.14), lineWidth: 1)
-                    )
-                }
-
-                HStack(spacing: 12) {
-                    secondaryButton(title: "Back", action: onBackToIntro)
-                    primaryButton(title: "Send", disabled: !canSend, action: onSend)
-                }
-            }
-
-        case .thanks:
-            VStack(alignment: .leading, spacing: 18) {
-                GlassCard(cornerRadius: 26) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 30, weight: .semibold))
-                            .foregroundStyle(.cyan)
-
-                        Text("Feedback sent. I really appreciate it.")
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(primaryText)
-
-                        Text("Thanks for helping improve Liquid Tasks.")
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
-                            .foregroundStyle(secondaryText)
-                    }
-                    .padding(20)
-                }
-
-                primaryButton(title: "Done", action: onClose)
-            }
-
         case .fallback:
             VStack(alignment: .leading, spacing: 18) {
                 GlassCard(cornerRadius: 26) {
@@ -1437,16 +1330,6 @@ private struct SettingsSheet: View {
                     primaryButton(title: "Copy email", action: onCopyFallbackEmail)
                 }
             }
-        }
-    }
-
-    private func formField<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(.footnote, design: .rounded, weight: .bold))
-                .foregroundStyle(secondaryText)
-
-            content()
         }
     }
 
@@ -1494,10 +1377,6 @@ private struct SettingsSheet: View {
         switch step {
         case .intro:
             "Help shape Liquid Tasks"
-        case .form:
-            "Share feedback"
-        case .thanks:
-            "Thanks"
         case .fallback:
             "Mail unavailable"
         }
@@ -1507,10 +1386,6 @@ private struct SettingsSheet: View {
         switch step {
         case .intro:
             "A small note from you can make the experience better for everyone."
-        case .form:
-            "A quick message goes straight to the developer."
-        case .thanks:
-            "Your input helps shape the app."
         case .fallback:
             "There’s still an easy way to reach the developer."
         }
@@ -1548,45 +1423,6 @@ private struct SettingsSheet: View {
                 Color(red: 0.74, green: 0.86, blue: 0.98),
                 Color(red: 0.78, green: 0.90, blue: 0.96)
             ]
-        }
-    }
-}
-
-private struct FeedbackMailComposeView: UIViewControllerRepresentable {
-    let recipient: String
-    let subject: String
-    let body: String
-    let onFinish: (MFMailComposeResult) -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onFinish: onFinish)
-    }
-
-    func makeUIViewController(context: Context) -> MFMailComposeViewController {
-        let controller = MFMailComposeViewController()
-        controller.setToRecipients([recipient])
-        controller.setSubject(subject)
-        controller.setMessageBody(body, isHTML: false)
-        controller.mailComposeDelegate = context.coordinator
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
-
-    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
-        let onFinish: (MFMailComposeResult) -> Void
-
-        init(onFinish: @escaping (MFMailComposeResult) -> Void) {
-            self.onFinish = onFinish
-        }
-
-        func mailComposeController(
-            _ controller: MFMailComposeViewController,
-            didFinishWith result: MFMailComposeResult,
-            error: Error?
-        ) {
-            controller.dismiss(animated: true)
-            onFinish(result)
         }
     }
 }
@@ -2245,12 +2081,16 @@ private struct CompletedTasksSheet: View {
 
                         if let scheduledAt = task.scheduledAt {
                             Label(
-                                scheduledAt.formatted(date: .abbreviated, time: .shortened),
+                                completedReminderTimestampText(for: task, scheduledAt: scheduledAt),
                                 systemImage: "bell.fill"
                             )
                             .labelStyle(.titleAndIcon)
                             .lineLimit(1)
                             .minimumScaleFactor(0.88)
+
+                            Text(task.reminderRepeat.detailDescription(for: scheduledAt))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.88)
                         }
 
                         HStack(spacing: 5) {
@@ -2288,6 +2128,19 @@ private struct CompletedTasksSheet: View {
             }
         }
         .opacity(0.88)
+    }
+
+    private func completedReminderTimestampText(for task: TaskItem, scheduledAt: Date) -> String {
+        if let reminderSnoozedUntil = task.reminderSnoozedUntil, reminderSnoozedUntil > .now {
+            return reminderSnoozedUntil.formatted(date: .abbreviated, time: .shortened)
+        }
+
+        if task.reminderRepeat == .none {
+            return scheduledAt.formatted(date: .abbreviated, time: .shortened)
+        }
+
+        let nextOccurrence = task.reminderRepeat.nextOccurrence(from: scheduledAt) ?? scheduledAt
+        return nextOccurrence.formatted(date: .abbreviated, time: .shortened)
     }
 
     private var backgroundGlow: some View {

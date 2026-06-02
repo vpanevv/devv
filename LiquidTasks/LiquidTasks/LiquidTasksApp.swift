@@ -79,6 +79,8 @@ enum LiquidTasksRuntime {
 
         task.isCompleted = true
         task.scheduledAt = nil
+        task.reminderRepeat = .none
+        task.reminderSnoozedUntil = nil
 
         do {
             try context.save()
@@ -107,7 +109,7 @@ enum LiquidTasksRuntime {
             return nil
         }
 
-        task.scheduledAt = scheduledAt
+        task.reminderSnoozedUntil = scheduledAt
 
         do {
             try context.save()

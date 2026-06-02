@@ -6,7 +6,13 @@ struct TaskStore {
     let context: ModelContext
     let activeProfileID: String
 
-    func addTask(title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?) {
+    func addTask(
+        title: String,
+        notes: String?,
+        priority: TaskPriority,
+        scheduledAt: Date?,
+        reminderRepeat: TaskReminderRepeat
+    ) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
 
@@ -15,6 +21,7 @@ struct TaskStore {
                 title: cleanTitle,
                 notes: cleanedNotes(notes),
                 scheduledAt: scheduledAt,
+                reminderRepeat: scheduledAt == nil ? .none : reminderRepeat,
                 ownerName: activeProfileID,
                 priority: priority
             )
@@ -22,7 +29,14 @@ struct TaskStore {
         save()
     }
 
-    func update(_ task: TaskItem, title: String, notes: String?, priority: TaskPriority, scheduledAt: Date?) {
+    func update(
+        _ task: TaskItem,
+        title: String,
+        notes: String?,
+        priority: TaskPriority,
+        scheduledAt: Date?,
+        reminderRepeat: TaskReminderRepeat
+    ) {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { return }
 
@@ -30,6 +44,8 @@ struct TaskStore {
         task.notes = cleanedNotes(notes)
         task.priority = priority
         task.scheduledAt = scheduledAt
+        task.reminderRepeat = scheduledAt == nil ? .none : reminderRepeat
+        task.reminderSnoozedUntil = nil
         if task.ownerName == nil || task.ownerName?.isEmpty == true {
             task.ownerName = activeProfileID
         }
