@@ -622,11 +622,6 @@ struct TaskListView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                            .labelStyle(.titleAndIcon)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.88)
-
                         if let scheduledAt = task.scheduledAt {
                             Label(
                                 reminderTimestampText(for: task, scheduledAt: scheduledAt),
@@ -666,10 +661,10 @@ struct TaskListView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Edit task")
             }
-            .padding(.vertical, 13)
+            .padding(.vertical, 11)
             .padding(.leading, 12)
             .padding(.trailing, 12)
-            .frame(minHeight: task.notes?.isEmpty == false ? 102 : 78)
+            .frame(minHeight: compactTaskRowMinHeight(for: task))
             .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
             .onTapGesture {
                 toggle(task)
@@ -1150,6 +1145,14 @@ struct TaskListView: View {
     private func reminderTimestampText(for task: TaskItem, scheduledAt: Date) -> String {
         let resolvedDate = effectiveReminderDate(for: task) ?? scheduledAt
         return resolvedDate.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private func compactTaskRowMinHeight(for task: TaskItem) -> CGFloat {
+        if task.notes?.isEmpty == false || task.scheduledAt != nil {
+            return 88
+        }
+
+        return 68
     }
 
     private func effectiveReminderDate(for task: TaskItem) -> Date? {
@@ -2074,11 +2077,6 @@ private struct CompletedTasksSheet: View {
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Label(task.createdAt.formatted(date: .abbreviated, time: .shortened), systemImage: "clock")
-                            .labelStyle(.titleAndIcon)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.88)
-
                         if let scheduledAt = task.scheduledAt {
                             Label(
                                 completedReminderTimestampText(for: task, scheduledAt: scheduledAt),
@@ -2118,16 +2116,24 @@ private struct CompletedTasksSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Edit completed task")
             }
-            .padding(.vertical, 13)
+            .padding(.vertical, 11)
             .padding(.leading, 12)
             .padding(.trailing, 12)
-            .frame(minHeight: task.notes?.isEmpty == false ? 102 : 78)
+            .frame(minHeight: compactCompletedTaskRowMinHeight(for: task))
             .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             .onTapGesture {
                 onSelectTask(task)
             }
         }
         .opacity(0.88)
+    }
+
+    private func compactCompletedTaskRowMinHeight(for task: TaskItem) -> CGFloat {
+        if task.notes?.isEmpty == false || task.scheduledAt != nil {
+            return 88
+        }
+
+        return 68
     }
 
     private func completedReminderTimestampText(for task: TaskItem, scheduledAt: Date) -> String {

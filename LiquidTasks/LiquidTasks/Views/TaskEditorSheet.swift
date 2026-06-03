@@ -382,9 +382,16 @@ struct TaskEditorSheet: View {
 
             if let reminderValidationMessage {
                 Label(reminderValidationMessage, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(.caption, design: .rounded, weight: .medium))
-                    .foregroundStyle(Color(red: 1.00, green: 0.72, blue: 0.48))
-                    .padding(.horizontal, 4)
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(warningText)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(warningFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(warningText.opacity(colorScheme == .dark ? 0.26 : 0.34), lineWidth: 1)
+                    )
             }
 
             if let reminderStatusMessage {
@@ -512,6 +519,14 @@ struct TaskEditorSheet: View {
         colorScheme == .dark ? .white.opacity(0.12) : .white.opacity(0.28)
     }
 
+    private var warningText: Color {
+        colorScheme == .dark ? Color(red: 1.00, green: 0.72, blue: 0.48) : Color(red: 0.65, green: 0.29, blue: 0.00)
+    }
+
+    private var warningFill: Color {
+        colorScheme == .dark ? Color(red: 1.00, green: 0.54, blue: 0.18).opacity(0.14) : Color(red: 1.00, green: 0.82, blue: 0.45).opacity(0.58)
+    }
+
     private var sheetColors: [Color] {
         if colorScheme == .dark {
             [
@@ -610,9 +625,16 @@ private struct ReminderSchedulerPopup: View {
 
                 if let validationMessage {
                     Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(.caption, design: .rounded, weight: .medium))
-                        .foregroundStyle(Color(red: 1.00, green: 0.72, blue: 0.48))
-                        .padding(.horizontal, 4)
+                        .font(.system(.caption, design: .rounded, weight: .bold))
+                        .foregroundStyle(warningText)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(warningFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(warningText.opacity(colorScheme == .dark ? 0.26 : 0.34), lineWidth: 1)
+                        )
                 }
 
                 actionRow
@@ -928,6 +950,14 @@ private struct ReminderSchedulerPopup: View {
 
     private var panelFill: Color {
         colorScheme == .dark ? .white.opacity(0.10) : .white.opacity(0.28)
+    }
+
+    private var warningText: Color {
+        colorScheme == .dark ? Color(red: 1.00, green: 0.72, blue: 0.48) : Color(red: 0.65, green: 0.29, blue: 0.00)
+    }
+
+    private var warningFill: Color {
+        colorScheme == .dark ? Color(red: 1.00, green: 0.54, blue: 0.18).opacity(0.14) : Color(red: 1.00, green: 0.82, blue: 0.45).opacity(0.58)
     }
 
     private var sheetColors: [Color] {
