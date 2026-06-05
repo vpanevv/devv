@@ -20,6 +20,7 @@
 		7A4B10322BD80C1B00A0F001 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7A4B10312BD80C1B00A0F001 /* PrivacyInfo.xcprivacy */; };
 		7A4B10342BD80C1B00A0F001 /* ReminderManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10332BD80C1B00A0F001 /* ReminderManager.swift */; };
 		7A4B10382BD80C1B00A0F001 /* LocalProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10372BD80C1B00A0F001 /* LocalProfile.swift */; };
+		7A4B103A2BD80C1B00A0F001 /* LiquidTasksAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A4B10392BD80C1B00A0F001 /* LiquidTasksAppearance.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		7A4B10312BD80C1B00A0F001 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7A4B10332BD80C1B00A0F001 /* ReminderManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderManager.swift; sourceTree = "<group>"; };
 		7A4B10372BD80C1B00A0F001 /* LocalProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalProfile.swift; sourceTree = "<group>"; };
+		7A4B10392BD80C1B00A0F001 /* LiquidTasksAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidTasksAppearance.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +132,7 @@
 			isa = PBXGroup;
 			children = (
 				7A4B10372BD80C1B00A0F001 /* LocalProfile.swift */,
+				7A4B10392BD80C1B00A0F001 /* LiquidTasksAppearance.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -216,6 +219,7 @@
 				7A4B101A2BD80C1B00A0F001 /* GlassCard.swift in Sources */,
 				7A4B10342BD80C1B00A0F001 /* ReminderManager.swift in Sources */,
 				7A4B10382BD80C1B00A0F001 /* LocalProfile.swift in Sources */,
+				7A4B103A2BD80C1B00A0F001 /* LiquidTasksAppearance.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,7 +353,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = DP5G9GAZQJ;
 				ENABLE_PREVIEWS = YES;
@@ -382,7 +386,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = DP5G9GAZQJ;
 				ENABLE_PREVIEWS = YES;

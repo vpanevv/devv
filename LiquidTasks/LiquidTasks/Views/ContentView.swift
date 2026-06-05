@@ -75,9 +75,14 @@ struct ContentView: View {
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = false
     @AppStorage("liquidTasksAppearance") private var appearanceRawValue = AppearanceMode.dark.rawValue
     @AppStorage(LiquidTasksRuntime.launchActionKey) private var pendingLaunchAction = LiquidTasksLaunchAction.none.rawValue
+    @AppStorage(LiquidTasksRuntime.appFontKey) private var appFontRawValue = LiquidTasksAppFont.systemDefault.rawValue
 
     private var appearance: AppearanceMode {
         AppearanceMode(rawValue: appearanceRawValue) ?? .dark
+    }
+
+    private var appFont: LiquidTasksAppFont {
+        LiquidTasksAppFont(rawValue: appFontRawValue) ?? .systemDefault
     }
 
     var body: some View {
@@ -95,6 +100,8 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(appearance.colorScheme)
+        .fontDesign(appFont.design)
+        .fontWidth(appFont.width)
         .onAppear {
             Task { @MainActor in
                 LiquidTasksRuntime.migrateLegacyTasksIfNeeded()
