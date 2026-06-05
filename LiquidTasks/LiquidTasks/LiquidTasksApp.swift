@@ -19,6 +19,8 @@ enum LiquidTasksRuntime {
     static let recordXPKey = "liquidTasksRecordXPByProfile"
     static let dailyTargetXPKey = "liquidTasksDailyTargetXP"
     static let lastTargetHitDateKey = "liquidTasksLastTargetHitDateByProfile"
+    static let profileDisplayNamesKey = "liquidTasksProfileDisplayNames"
+    static let appFontKey = "liquidTasksAppFont"
 
     static let modelContainer: ModelContainer = {
         do {

@@ -8,7 +8,6 @@ struct TaskListView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
-    @Environment(\.openURL) private var openURL
     private let reminderManager = ReminderManager.shared
     @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
     @AppStorage("hasStartedLiquidTasks") private var hasStarted = true
@@ -16,6 +15,8 @@ struct TaskListView: View {
     @AppStorage(LiquidTasksRuntime.launchActionKey) private var pendingLaunchAction = LiquidTasksLaunchAction.none.rawValue
     @AppStorage(LiquidTasksRuntime.currentProfileNameKey) private var currentProfileName = ""
     @AppStorage("liquidTasksDailyTargetXP") private var dailyTargetXP = 50
+    @AppStorage(LiquidTasksRuntime.profileDisplayNamesKey) private var profileDisplayNamesRaw = "{}"
+    @AppStorage(LiquidTasksRuntime.appFontKey) private var appFontRawValue = LiquidTasksAppFont.systemDefault.rawValue
     @State private var todayXP = 0
     @State private var recordXP = 0
     @State private var xpDateKey = ""
@@ -29,8 +30,7 @@ struct TaskListView: View {
     @State private var taskPendingDeletion: TaskItem?
     @State private var xpGlowVisible = false
     @State private var isSettingsPresented = false
-    @State private var feedbackStep: FeedbackStep = .intro
-    @State private var feedbackFallbackMessage: String?
+    @State private var settingsDisplayNameDraft = ""
 
     private var store: TaskStore {
         TaskStore(context: modelContext, activeProfileID: activeProfileID)
@@ -54,6 +54,13 @@ struct TaskListView: View {
         Binding(
             get: { AppearanceMode(rawValue: appearanceRawValue) ?? .dark },
             set: { appearanceRawValue = $0.rawValue }
+        )
+    }
+
+    private var appFontBinding: Binding<LiquidTasksAppFont> {
+        Binding(
+            get: { LiquidTasksAppFont(rawValue: appFontRawValue) ?? .systemDefault },
+            set: { appFontRawValue = $0.rawValue }
         )
     }
 
@@ -89,7 +96,16 @@ struct TaskListView: View {
     }
 
     private var activeProfileDisplayName: String {
-        LocalProfile.displayName(from: currentProfileName)
+        profileDisplayNameOverrides[activeProfileID] ?? LocalProfile.displayName(from: currentProfileName)
+    }
+
+    private var profileDisplayNameOverrides: [String: String] {
+        guard let data = profileDisplayNamesRaw.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: String].self, from: data) else {
+            return [:]
+        }
+
+        return decoded
     }
 
     private var highPriorityActiveCount: Int {
@@ -239,8 +255,10 @@ struct TaskListView: View {
                     }
 
                 SettingsSheet(
-                    step: $feedbackStep,
-                    fallbackMessage: feedbackFallbackMessage,
+                    displayName: $settingsDisplayNameDraft,
+                    selectedFont: appFontBinding,
+                    currentDisplayName: activeProfileDisplayName,
+                    currentFont: appFontBinding.wrappedValue,
                     primaryText: primaryText,
                     secondaryText: secondaryText,
                     onClose: {
@@ -248,21 +266,8 @@ struct TaskListView: View {
                             dismissSettingsFlow()
                         }
                     },
-                    onStartFeedback: {
-                        presentFeedbackMailFlow()
-                    },
-                    onBackToIntro: {
-                        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                            feedbackStep = .intro
-                            feedbackFallbackMessage = nil
-                        }
-                    },
-                    onSend: {
-                        presentFeedbackMailFlow()
-                    },
-                    onCopyFallbackEmail: {
-                        UIPasteboard.general.string = "vpanev95@gmail.com"
-                        triggerSuccessHaptic()
+                    onSaveDisplayName: {
+                        saveActiveProfileDisplayName()
                     }
                 )
                 .padding(.horizontal, 20)
@@ -297,6 +302,7 @@ struct TaskListView: View {
             loadProfileXPState()
             resetDailyXPIfNeeded()
             synchronizeXPState()
+            settingsDisplayNameDraft = activeProfileDisplayName
         }
         .sheet(isPresented: $isAddingTask) {
             TaskEditorSheet(mode: .add) { title, notes, priority, scheduledAt, reminderRepeat in
@@ -835,6 +841,7 @@ struct TaskListView: View {
 
     private var settingsButton: some View {
         Button {
+            settingsDisplayNameDraft = activeProfileDisplayName
             withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
                 isSettingsPresented = true
             }
@@ -860,39 +867,24 @@ struct TaskListView: View {
         persistProfileXPState(todayXP: todayXP, recordXP: recordXP)
     }
 
-    private func presentFeedbackMailFlow() {
-        feedbackFallbackMessage = nil
-        let subject = "Liquid Tasks Feedback"
-        let body = "Hi Vlad,\n\nI’d like to share some feedback about Liquid Tasks:\n\n"
-
-        guard
-            let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-            let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-            let mailURL = URL(string: "mailto:vpanev95@gmail.com?subject=\(encodedSubject)&body=\(encodedBody)")
-        else {
-            feedbackFallbackMessage = "I couldn’t prepare the email link right now. You can still send feedback directly to vpanev95@gmail.com."
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                feedbackStep = .fallback
-            }
-            return
-        }
-
-        openURL(mailURL) { accepted in
-            if accepted {
-                dismissSettingsFlow()
-            } else {
-                feedbackFallbackMessage = "Mail isn’t available on this device right now. You can still send feedback directly to vpanev95@gmail.com."
-                withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-                    feedbackStep = .fallback
-                }
-            }
-        }
-    }
-
     private func dismissSettingsFlow() {
         isSettingsPresented = false
-        feedbackStep = .intro
-        feedbackFallbackMessage = nil
+        settingsDisplayNameDraft = activeProfileDisplayName
+    }
+
+    private func saveActiveProfileDisplayName() {
+        let trimmedName = LocalProfile.trimmedDisplayName(from: settingsDisplayNameDraft)
+        guard !trimmedName.isEmpty else { return }
+
+        var overrides = profileDisplayNameOverrides
+        overrides[activeProfileID] = trimmedName
+
+        if let data = try? JSONEncoder().encode(overrides),
+           let rawValue = String(data: data, encoding: .utf8) {
+            profileDisplayNamesRaw = rawValue
+            settingsDisplayNameDraft = trimmedName
+            triggerSuccessHaptic()
+        }
     }
 
     private func sectionHeader(_ title: String, count: Int) -> some View {
@@ -1204,32 +1196,30 @@ private struct EmptyStateCopy {
     let subtitle: String
 }
 
-private enum FeedbackStep {
-    case intro
-    case fallback
-}
-
 private struct SettingsSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
-    @Binding var step: FeedbackStep
+    @Binding var displayName: String
+    @Binding var selectedFont: LiquidTasksAppFont
 
-    let fallbackMessage: String?
+    let currentDisplayName: String
+    let currentFont: LiquidTasksAppFont
     let primaryText: Color
     let secondaryText: Color
     let onClose: () -> Void
-    let onStartFeedback: () -> Void
-    let onBackToIntro: () -> Void
-    let onSend: () -> Void
-    let onCopyFallbackEmail: () -> Void
+    let onSaveDisplayName: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            header
-            content
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                content
+            }
+            .padding(20)
         }
-        .padding(20)
+        .scrollIndicators(.hidden)
         .frame(maxWidth: 420)
+        .frame(maxHeight: 690)
         .background(
             ZStack {
                 backgroundGlow
@@ -1284,114 +1274,170 @@ private struct SettingsSheet: View {
 
     @ViewBuilder
     private var content: some View {
-        switch step {
-        case .intro:
-            VStack(alignment: .leading, spacing: 18) {
-                GlassCard(cornerRadius: 26) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Image(systemName: "bubble.left.and.bubble.right.fill")
-                            .font(.system(size: 26, weight: .semibold))
-                            .foregroundStyle(.cyan)
+        VStack(alignment: .leading, spacing: 18) {
+            profileSection
+            fontSection
+        }
+    }
 
-                        Text("Your feedback helps improve the experience.")
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(primaryText)
+    private var profileSection: some View {
+        settingsSection(title: "Profile", icon: "person.crop.circle.fill") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Edit your name. Your tasks and reminders stay like before.")
+                    .font(.system(.caption, design: .rounded, weight: .medium))
+                    .foregroundStyle(secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                        Text("Have an idea, a rough edge, or something you’d love to see refined? I’d love to hear it.")
-                            .font(.system(.subheadline, design: .rounded, weight: .medium))
-                            .foregroundStyle(secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
+                TextField("Display name", text: $displayName)
+                    .textInputAutocapitalization(.words)
+                    .disableAutocorrection(true)
+                    .submitLabel(.done)
+                    .font(.system(.headline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(primaryText)
+                    .padding(.horizontal, 14)
+                    .frame(height: 48)
+                    .background(.white.opacity(colorScheme == .dark ? 0.08 : 0.32), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(.white.opacity(0.16), lineWidth: 1)
+                    )
+
+                HStack(spacing: 10) {
+                    Text("Current: \(currentDisplayName.isEmpty ? "Guest" : currentDisplayName)")
+                        .font(.system(.caption, design: .rounded, weight: .bold))
+                        .foregroundStyle(secondaryText)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 0)
+
+                    Button(action: onSaveDisplayName) {
+                        Text("Save")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .frame(height: 34)
+                            .background(
+                                LinearGradient(
+                                    colors: [.cyan, .blue, .purple],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ),
+                                in: Capsule()
+                            )
+                            .opacity(canSaveDisplayName ? 1 : 0.45)
                     }
-                    .padding(20)
-                }
-
-                primaryButton(title: "Give a feedback to developer", action: onStartFeedback)
-            }
-
-        case .fallback:
-            VStack(alignment: .leading, spacing: 18) {
-                GlassCard(cornerRadius: 26) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Image(systemName: "envelope.badge")
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(.cyan)
-
-                        Text(fallbackMessage ?? "Mail isn’t available right now.")
-                            .font(.system(.headline, design: .rounded, weight: .semibold))
-                            .foregroundStyle(primaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text("vpanev95@gmail.com")
-                            .font(.system(.subheadline, design: .rounded, weight: .bold))
-                            .foregroundStyle(.cyan)
-                    }
-                    .padding(20)
-                }
-
-                HStack(spacing: 12) {
-                    secondaryButton(title: "Back", action: onBackToIntro)
-                    primaryButton(title: "Copy email", action: onCopyFallbackEmail)
+                    .buttonStyle(.plain)
+                    .disabled(!canSaveDisplayName)
                 }
             }
         }
     }
 
-    private func primaryButton(title: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(.headline, design: .rounded, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.17, green: 0.74, blue: 1.00),
-                            Color(red: 0.55, green: 0.33, blue: 0.98)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    in: RoundedRectangle(cornerRadius: 20, style: .continuous)
-                )
-                .opacity(disabled ? 0.45 : 1)
+    private var fontSection: some View {
+        settingsSection(title: "App Font", icon: "textformat.size") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Current font: \(currentFont.title)")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(secondaryText)
+
+                fontDropdown
+            }
         }
-        .buttonStyle(.plain)
-        .disabled(disabled)
     }
 
-    private func secondaryButton(title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(.headline, design: .rounded, weight: .bold))
-                .foregroundStyle(primaryText)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(.white.opacity(colorScheme == .dark ? 0.10 : 0.28), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(.white.opacity(0.14), lineWidth: 1)
-                )
+    private func settingsSection<Content: View>(title: String, icon: String, @ViewBuilder content: () -> Content) -> some View {
+        GlassCard(cornerRadius: 26) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 10) {
+                    Image(systemName: icon)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.cyan)
+                        .frame(width: 28, height: 28)
+
+                    Text(title)
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(primaryText)
+                }
+
+                content()
+            }
+            .padding(18)
         }
+    }
+
+    private var fontDropdown: some View {
+        Menu {
+            ForEach(LiquidTasksAppFont.allCases) { option in
+                Button {
+                    withAnimation(.smooth(duration: 0.22)) {
+                        selectedFont = option
+                    }
+                } label: {
+                    Label(option.title, systemImage: selectedFont == option ? "checkmark.circle.fill" : "circle")
+                }
+            }
+        } label: {
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(selectedFont.title)
+                        .font(.system(.headline, design: selectedFont.design ?? .default, weight: .bold))
+                        .fontWidth(selectedFont.width)
+                        .foregroundStyle(primaryText)
+
+                    Text(selectedFont.subtitle)
+                        .font(.system(.caption, design: selectedFont.design ?? .default, weight: .medium))
+                        .fontWidth(selectedFont.width)
+                        .foregroundStyle(secondaryText)
+                }
+
+                Spacer(minLength: 0)
+
+                Text("\(LiquidTasksAppFont.allCases.count) fonts")
+                    .font(.system(.caption, design: .rounded, weight: .bold))
+                    .foregroundStyle(secondaryText)
+
+                Image(systemName: "chevron.down.circle.fill")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.cyan)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 13)
+            .background(
+                LinearGradient(
+                    colors: [
+                        .white.opacity(colorScheme == .dark ? 0.10 : 0.36),
+                        .cyan.opacity(colorScheme == .dark ? 0.10 : 0.16),
+                        .purple.opacity(colorScheme == .dark ? 0.09 : 0.12)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.cyan.opacity(0.34), lineWidth: 1)
+            )
+            .shadow(color: .cyan.opacity(colorScheme == .dark ? 0.08 : 0.05), radius: 12, y: 6)
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .menuStyle(.button)
         .buttonStyle(.plain)
+        .accessibilityLabel("Choose app font")
+        .accessibilityValue(selectedFont.title)
+    }
+
+    private var canSaveDisplayName: Bool {
+        let trimmedName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedName.isEmpty && trimmedName != currentDisplayName
     }
 
     private var headerTitle: String {
-        switch step {
-        case .intro:
-            "Help shape Liquid Tasks"
-        case .fallback:
-            "Mail unavailable"
-        }
+        "Settings"
     }
 
     private var headerSubtitle: String {
-        switch step {
-        case .intro:
-            "A small note from you can make the experience better for everyone."
-        case .fallback:
-            "There’s still an easy way to reach the developer."
-        }
+        "Personalize your name and app typography."
     }
 
     private var backgroundGlow: some View {
