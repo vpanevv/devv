@@ -1,0 +1,199 @@
+{
+  "meta": {
+    "title": "Eagle Trade — Property Management in Bansko, Razlog & Banya",
+    "description": "We maximize property returns in the Bansko, Razlog & Banya area. Management, cleaning, repairs and transfers for apartment and house owners."
+  },
+  "header": {
+    "cta": "Free estimate"
+  },
+  "hero": {
+    "eyebrow": "Property management · Bansko · Razlog · Banya",
+    "brandLead": "Eagle",
+    "brandHighlight": "Trade",
+    "titleLead": "We maximize the",
+    "titleHighlight": "returns",
+    "titleTail": "of your property",
+    "subtitle": "Full-service care for apartments and houses across Bansko, Razlog & Banya — you collect the income, we handle everything else.",
+    "cta": "Get a Free Income Estimate",
+    "ctaSecondary": "How it works",
+    "scroll": "Explore"
+  },
+  "trust": {
+    "occupancy": {
+      "value": "87",
+      "suffix": "%",
+      "label": "average occupancy"
+    },
+    "properties": {
+      "value": "120",
+      "suffix": "+",
+      "label": "properties managed"
+    },
+    "payout": {
+      "value": "9400",
+      "prefix": "€",
+      "suffix": "",
+      "label": "avg. annual owner payout"
+    },
+    "rating": {
+      "value": "4.9",
+      "suffix": "★",
+      "label": "guest rating"
+    }
+  },
+  "services": {
+    "title": "Everything your property needs, in one place",
+    "subtitle": "Four services, one partner — completely hands-off for you.",
+    "items": {
+      "management": {
+        "title": "Management",
+        "description": "Listings, pricing, bookings and guest communication — end to end."
+      },
+      "cleaning": {
+        "title": "Cleaning",
+        "description": "Hotel-standard turnovers after every stay, with ongoing quality control."
+      },
+      "repairs": {
+        "title": "Repairs",
+        "description": "Maintenance and urgent fixes by trusted local craftsmen."
+      },
+      "transfers": {
+        "title": "Transfers",
+        "description": "Guest welcome, airport pick-ups and rides to the slopes."
+      }
+    },
+    "imageAlt": "Furnished Bansko apartment with a view of the ski slopes"
+  },
+  "how": {
+    "title": "How it works",
+    "subtitle": "From first call to first payout — typically in under 30 days.",
+    "steps": {
+      "one": {
+        "title": "Visit & estimate",
+        "description": "We assess your property and give you a realistic annual income forecast."
+      },
+      "two": {
+        "title": "Prepare & list",
+        "description": "Professional photos, smart pricing and listings on all major platforms."
+      },
+      "three": {
+        "title": "You collect the income",
+        "description": "Monthly statements and payouts — no chores, no surprises."
+      }
+    }
+  },
+  "why": {
+    "title": "A local team. Real results.",
+    "p1": "We live and work at the foot of the Pirin mountains. We know the seasons, the guests and every street in Bansko, Razlog and Banya — so we respond in minutes, not days.",
+    "p2": "Most of our owners live abroad. They see their property through a monthly report — and through growing income.",
+    "bullets": {
+      "one": "Transparent monthly statements, no hidden fees",
+      "two": "On-site response within 60 minutes",
+      "three": "In-house cleaning and maintenance team"
+    },
+    "imageAlt1": "Mountain house in the Bansko area",
+    "imageAlt2": "Cozy interior of a managed apartment"
+  },
+  "testimonials": {
+    "title": "What owners say",
+    "items": {
+      "one": {
+        "quote": "From London I can't chase cleaners and keys. Eagle Trade took over everything — my income doubled in one season.",
+        "name": "James W.",
+        "meta": "Apartment in Bansko · owner since 2022"
+      },
+      "two": {
+        "quote": "The reports arrive every month, accurate to the cent. For the first time this apartment gives me peace of mind.",
+        "name": "Maria K.",
+        "meta": "Apartment in Razlog · owner since 2023"
+      },
+      "three": {
+        "quote": "Our house in Banya sat empty for years. Now it's booked almost constantly and I just watch the transfers arrive.",
+        "name": "Stefan D.",
+        "meta": "House in Banya village · owner since 2021"
+      }
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "subtitle": "Everything owners usually want to know before we start.",
+    "items": {
+      "one": {
+        "q": "How much does the management service cost?",
+        "a": "We work on a commission basis — a percentage of the rental income we actually generate for you. No upfront fees and no flat monthly charges: if you don't earn, neither do we."
+      },
+      "two": {
+        "q": "How and when do I receive my income?",
+        "a": "Once a month, straight to your bank account, together with a clear statement of bookings, income and expenses. You can track everything without ever visiting Bansko."
+      },
+      "three": {
+        "q": "Can I still use the property myself?",
+        "a": "Of course — it stays your home. Block dates in the calendar for yourself, family or friends whenever you like, and we plan bookings around them."
+      },
+      "four": {
+        "q": "What happens if a guest damages something?",
+        "a": "We collect security deposits, document the condition after every stay and handle the whole process — from claiming the deposit to arranging repairs with our own team."
+      },
+      "five": {
+        "q": "Which properties and areas do you work with?",
+        "a": "Apartments, studios and houses across Bansko, Razlog and Banya village. After a short viewing we'll tell you honestly what income your property can realistically achieve."
+      },
+      "six": {
+        "q": "How quickly can we start?",
+        "a": "Typically under 30 days from the first call: viewing and income estimate, professional photos, pricing and listings on all major platforms — then the first guests."
+      }
+    }
+  },
+  "contact": {
+    "title": "Find out what your property could earn",
+    "subtitle": "Leave your details and get a free income estimate within 24 hours.",
+    "name": "Your name",
+    "phone": "Phone",
+    "location": "Property location",
+    "locations": {
+      "bansko": "Bansko",
+      "razlog": "Razlog",
+      "banya": "Banya village",
+      "other": "Other"
+    },
+    "type": "Property type",
+    "types": {
+      "apartment": "Apartment",
+      "house": "House",
+      "studio": "Studio"
+    },
+    "submit": "Send request",
+    "sending": "Sending…",
+    "successTitle": "Thank you!",
+    "successBody": "We received your request. We'll get back to you within 24 hours with a free estimate.",
+    "continueWhatsapp": "Continue on WhatsApp",
+    "error": "Something went wrong. Please try again or message us on WhatsApp.",
+    "privacy": "By submitting, you agree to be contacted about your property."
+  },
+  "floating": {
+    "whatsapp": "Message us on WhatsApp",
+    "viber": "Message us on Viber",
+    "prefill": "Hello! I'm interested in property management in the Bansko area."
+  },
+  "footer": {
+    "tagline": "Property management with an eye for detail — in the heart of Pirin.",
+    "ctaTitle": "Let's talk about your property.",
+    "ctaButton": "Get in touch",
+    "explore": "Explore",
+    "nav": {
+      "services": "Services",
+      "how": "How it works",
+      "why": "Why us",
+      "testimonials": "Reviews",
+      "contact": "Contact"
+    },
+    "areasTitle": "Service area",
+    "contactTitle": "Contact",
+    "backToTop": "Back to top",
+    "rights": "All rights reserved."
+  },
+  "a11y": {
+    "langSwitch": "Switch language",
+    "scrollDown": "Scroll down"
+  }
+}
