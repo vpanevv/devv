@@ -10,6 +10,7 @@ import {
 } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { HERO_VIDEO, PAGE_BACKGROUND } from "@/lib/site";
+import { Typewriter } from "./Typewriter";
 
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
@@ -248,13 +249,16 @@ export function Hero() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: EASE_OUT_EXPO, delay: 0.05 }}
-          className="liquid-glass mb-7 inline-flex w-fit items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-semibold tracking-[0.14em] text-sand uppercase sm:text-xs"
+          className="font-inscribed mb-6 inline-flex w-fit items-center gap-2.5 text-base tracking-[0.2em] text-sand uppercase sm:gap-3 sm:text-xl lg:text-2xl"
         >
-          <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+          <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
             <span className="animate-pulse-ring absolute inset-0 rounded-full bg-teal" />
-            <span className="relative h-1.5 w-1.5 rounded-full bg-teal" />
+            <span className="relative h-2 w-2 rounded-full bg-teal" />
           </span>
-          {t("eyebrow")}
+          <Typewriter
+            prefix={t("eyebrowPrefix")}
+            texts={t.raw("eyebrowWords") as string[]}
+          />
         </motion.p>
 
         <ProximityBrandTitle lead={t("brandLead")} highlight={t("brandHighlight")} />

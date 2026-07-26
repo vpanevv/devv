@@ -10,6 +10,12 @@
 
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-display: var(--font-playfair), Georgia, serif;
+  /* Cinzel covers latin only, so Cyrillic must fall through to Playfair.
+     The "Cinzel" family is referenced directly rather than via --font-cinzel:
+     that variable also carries next/font's "Cinzel Fallback" face, which
+     declares U+0-10FFFF and would swallow Cyrillic into a metric-stretched
+     system serif before Playfair ever got a chance. */
+  --font-inscribed: "Cinzel", var(--font-playfair), Georgia, serif;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 

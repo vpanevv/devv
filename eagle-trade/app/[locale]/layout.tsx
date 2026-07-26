@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Cinzel, Inter, Playfair_Display } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -20,6 +20,19 @@ const inter = Inter({
 const playfair = Playfair_Display({
   subsets: ["latin", "cyrillic"],
   variable: "--font-playfair",
+  display: "swap",
+});
+
+// Cinzel ships latin + latin-ext only — no Cyrillic. Its @font-face carries a
+// unicode-range, so Bulgarian text automatically falls through to Playfair
+// (next in the stack) instead of hitting a system fallback.
+// Cinzel ships latin + latin-ext only, so Bulgarian has to fall through to
+// Playfair. See --font-inscribed in globals.css: it references the "Cinzel"
+// family directly rather than this variable, because the variable also carries
+// next/font's full-range fallback face.
+const cinzel = Cinzel({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-cinzel",
   display: "swap",
 });
 
@@ -90,7 +103,10 @@ export default async function LocaleLayout({
   };
 
   return (
-    <html lang={locale} className={`${inter.variable} ${playfair.variable}`}>
+    <html
+      lang={locale}
+      className={`${inter.variable} ${playfair.variable} ${cinzel.variable}`}
+    >
       <body>
         <script
           type="application/ld+json"

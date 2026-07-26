@@ -7,7 +7,12 @@
     "cta": "Free estimate"
   },
   "hero": {
-    "eyebrow": "Property management · Bansko · Razlog · Banya",
+    "eyebrowPrefix": "Property management · ",
+    "eyebrowWords": [
+      "Bansko",
+      "Razlog",
+      "Banya village"
+    ],
     "brandLead": "Eagle",
     "brandHighlight": "Trade",
     "titleLead": "We maximize the",
