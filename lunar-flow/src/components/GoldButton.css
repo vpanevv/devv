@@ -1,0 +1,125 @@
+/*
+ * Gold button — adapted from Uiverse.io by vinodjangid07.
+ * The blue fill / pale-blue ring become a gold gradient with a translucent
+ * gold halo, and the label sits in dark cosmos for contrast against the gold.
+ */
+.gold-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 30px;
+  gap: 8px;
+  border-radius: 50px;
+  cursor: pointer;
+  text-decoration: none;
+  background-image: linear-gradient(
+    135deg,
+    oklch(92% 0.08 88) 0%,
+    oklch(84% 0.11 82) 45%,
+    oklch(76% 0.12 74) 100%
+  );
+  /* Keeps the gradient inside the padding box so the ring reads as a halo. */
+  background-clip: padding-box;
+  border: 8px solid oklch(86% 0.09 84 / 0.22);
+  color: oklch(16% 0.04 285);
+  box-shadow: 0 0 45px -12px oklch(82% 0.1 80 / 0.55);
+  transition: all 0.3s;
+}
+
+.gold-button .text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.gold-button .svg {
+  padding-top: 4px;
+  height: 100%;
+  width: fit-content;
+  line-height: 0;
+}
+
+.gold-button .svg svg {
+  width: 42px;
+  height: 24px;
+}
+
+.gold-button .svg.is-flipped {
+  transform: scaleX(-1);
+}
+
+/* Compact variant — used by the About expander. */
+.gold-button.is-sm {
+  padding: 9px 22px;
+  border-width: 5px;
+  gap: 6px;
+}
+.gold-button.is-sm .text {
+  font-size: 0.92rem;
+}
+.gold-button.is-sm .svg svg {
+  width: 32px;
+  height: 18px;
+}
+.gold-button.is-sm:active {
+  border-width: 3px;
+}
+
+.gold-button:hover {
+  border-color: oklch(90% 0.09 86 / 0.38);
+  background-image: linear-gradient(
+    135deg,
+    oklch(95% 0.07 90) 0%,
+    oklch(88% 0.1 84) 45%,
+    oklch(80% 0.12 76) 100%
+  );
+  box-shadow: 0 0 60px -8px oklch(82% 0.1 80 / 0.7);
+}
+
+.gold-button:active {
+  border-width: 5px;
+  border-color: oklch(86% 0.09 84 / 0.3);
+}
+
+.gold-button:focus-visible {
+  outline: 2px solid oklch(90% 0.09 86);
+  outline-offset: 4px;
+}
+
+.gold-button:hover .svg svg {
+  animation: gold-jello-vertical 0.9s both;
+  transform-origin: left;
+}
+
+@keyframes gold-jello-vertical {
+  0% {
+    transform: scale3d(1, 1, 1);
+  }
+  30% {
+    transform: scale3d(0.75, 1.25, 1);
+  }
+  40% {
+    transform: scale3d(1.25, 0.75, 1);
+  }
+  50% {
+    transform: scale3d(0.85, 1.15, 1);
+  }
+  65% {
+    transform: scale3d(1.05, 0.95, 1);
+  }
+  75% {
+    transform: scale3d(0.95, 1.05, 1);
+  }
+  100% {
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gold-button,
+  .gold-button:hover .svg svg {
+    animation: none;
+    transition: none;
+  }
+}

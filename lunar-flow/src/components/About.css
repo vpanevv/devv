@@ -1,0 +1,185 @@
+/* ------------------------------------------------------------------
+   Liquid glass card — layered translucency, a saturating backdrop blur,
+   an inner rim light and a slow specular sweep across the surface.
+------------------------------------------------------------------- */
+.glass-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: 28px;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      135deg,
+      oklch(100% 0 0 / 0.09) 0%,
+      oklch(100% 0 0 / 0.03) 38%,
+      oklch(82% 0.1 80 / 0.04) 100%
+    ),
+    oklch(20% 0.06 292 / 0.42);
+  backdrop-filter: blur(28px) saturate(165%);
+  -webkit-backdrop-filter: blur(28px) saturate(165%);
+  border: 1px solid oklch(100% 0 0 / 0.12);
+  box-shadow:
+    /* rim light along the top edge */
+    inset 0 1px 0 oklch(100% 0 0 / 0.22),
+    /* soft interior shading */ inset 0 -30px 60px -40px oklch(82% 0.1 80 / 0.35),
+    /* lift off the page */ 0 30px 70px -30px oklch(4% 0.02 285 / 0.9),
+    0 0 90px -50px oklch(82% 0.1 80 / 0.5);
+}
+
+/* Specular highlight that drifts across the glass. */
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    45% 30% at 20% 12%,
+    oklch(100% 0 0 / 0.14) 0%,
+    transparent 70%
+  );
+  animation: glass-drift 18s ease-in-out infinite alternate;
+}
+
+@keyframes glass-drift {
+  from {
+    transform: translate3d(-4%, -2%, 0);
+  }
+  to {
+    transform: translate3d(8%, 4%, 0);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Portrait frame — gradient ring plus an outer bloom.
+------------------------------------------------------------------- */
+.portrait-frame {
+  position: relative;
+  border-radius: 22px;
+  padding: 2px;
+  background: linear-gradient(
+    150deg,
+    oklch(92% 0.08 88) 0%,
+    oklch(78% 0.12 75) 26%,
+    oklch(52% 0.14 305) 58%,
+    oklch(86% 0.09 84) 100%
+  );
+  box-shadow:
+    0 0 34px -10px oklch(82% 0.1 80 / 0.55),
+    0 0 70px -28px oklch(60% 0.16 305 / 0.7);
+  transition: box-shadow 0.5s ease;
+}
+
+/* Blurred copy of the ring, sitting behind as the bloom. */
+.portrait-frame::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+  filter: blur(16px);
+  opacity: 0.55;
+  transition: opacity 0.5s ease;
+}
+
+.portrait-frame:hover {
+  box-shadow:
+    0 0 44px -8px oklch(82% 0.1 80 / 0.7),
+    0 0 90px -22px oklch(60% 0.16 305 / 0.8);
+}
+.portrait-frame:hover::before {
+  opacity: 0.8;
+}
+
+.portrait-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
+}
+
+/*
+ * The portrait column grows when the copy is expanded. Only max-width is
+ * animated — the image keeps its natural 2:3 ratio, so it scales whole rather
+ * than being cropped, and the grid's `auto` track follows it.
+ */
+/*
+ * Both left-column items (portrait and contact note) share this width so the
+ * grid's `auto` track has one consistent size to follow. An explicit width, not
+ * a percentage — a percentage against an indefinite track would be circular.
+ * max-width keeps it responsive once the layout collapses to a single column.
+ */
+.side-col {
+  width: 300px;
+  max-width: 100%;
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.side-col.is-expanded {
+  width: 430px;
+}
+
+/* The note mounts only when expanded, so it eases in on its own — delayed
+   slightly so the portrait has started growing first. */
+.side-note {
+  animation: side-note-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.22s both;
+}
+
+@keyframes side-note-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Read-more reveal — grid-rows 0fr → 1fr animates to the content's
+   natural height without hardcoding a max-height.
+------------------------------------------------------------------- */
+.reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.is-open {
+  grid-template-rows: 1fr;
+}
+.reveal > div {
+  overflow: hidden;
+}
+
+/* Inline tail of the "Още от ранна детска възраст" sentence. Hidden outright
+   while collapsed so screen readers skip it, then faded in on expand. */
+.inline-more {
+  display: none;
+}
+
+.inline-more.is-open {
+  display: inline;
+  animation: inline-more-in 0.55s ease both;
+}
+
+@keyframes inline-more-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-card::before,
+  .reveal,
+  .side-col,
+  .side-note,
+  .inline-more.is-open {
+    animation: none;
+    transition: none;
+  }
+}

@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CalendarRange,
   Gem,
   GraduationCap,
@@ -7,6 +6,7 @@ import {
   Orbit,
   Sparkles,
 } from "lucide-react";
+import GoldButton from "./GoldButton";
 import Starfield from "./Starfield";
 import ZodiacOrbit from "./ZodiacOrbit";
 
@@ -107,30 +107,16 @@ export default function Hero() {
 
         {/* CTAs — both gold */}
         <div
-          className="rise mt-9 flex flex-col items-center justify-center gap-3.5 sm:flex-row"
+          className="rise mt-6 flex flex-col items-center justify-center gap-5 sm:mt-8 sm:flex-row sm:gap-10"
           style={{ ["--rise-delay" as string]: "0.82s" }}
         >
-          <a
-            href="#services"
-            className="border-gold/45 text-gold hover:border-gold hover:bg-gold/10 hover:shadow-gold/20 inline-flex w-full items-center justify-center gap-2 rounded-full border bg-white/[0.03] px-8 py-3.5 text-sm font-semibold tracking-wide backdrop-blur transition-all duration-300 hover:shadow-[0_0_40px_-8px] sm:w-auto"
-          >
-            Какво предлагам
-          </a>
-          <a
-            href="#contact"
-            className="text-cosmos group inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,oklch(88%_0.09_85)_0%,oklch(78%_0.12_75)_100%)] px-8 py-3.5 text-sm font-bold tracking-wide shadow-[0_0_60px_-10px_oklch(0.82_0.10_80/0.55)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_0_70px_-6px_oklch(0.82_0.10_80/0.7)] sm:w-auto"
-          >
-            Запиши консултация
-            <ArrowRight
-              aria-hidden
-              className="size-4 transition-transform duration-300 group-hover:translate-x-1"
-            />
-          </a>
+          <GoldButton href="#services" label="Какво предлагам" />
+          <GoldButton href="#contact" label="Запиши консултация" />
         </div>
 
         {/* Stats */}
         <dl
-          className="rise border-gold/12 mx-auto mt-6 grid max-w-2xl grid-cols-3 border-t pt-5"
+          className="rise border-gold/12 mx-auto mt-5 grid max-w-2xl grid-cols-3 border-t pt-5"
           style={{ ["--rise-delay" as string]: "0.95s" }}
         >
           {STATS.map((s, i) => (
