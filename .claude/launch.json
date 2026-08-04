@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "volleyball-tournament",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8734", "--directory", "volleyball-tournament"],
+      "port": 8734
+    },
+    {
+      "name": "toy-store",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8735", "--directory", "toy-store"],
+      "port": 8735
+    },
+    {
+      "name": "eagle-trade",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "../eagle-trade"],
+      "port": 3000
+    },
+    {
+      "name": "lithos",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "lithos"],
+      "port": 5173
+    },
+    {
+      "name": "lunar-flow",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "lunar-flow"],
+      "port": 5180
+    }
+  ]
+}
