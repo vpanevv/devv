@@ -28,7 +28,7 @@
     {
       "name": "lunar-flow",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "lunar-flow"],
+      "runtimeArgs": ["run", "dev", "--prefix", "../lunar-flow"],
       "port": 5180
     }
   ]
