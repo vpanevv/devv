@@ -32,6 +32,8 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Clears the fixed header, otherwise every #anchor lands underneath it. */
+    scroll-padding-top: 6rem;
   }
 
   body {
@@ -43,6 +45,15 @@
 
   ::selection {
     background: oklch(82% 0.1 80 / 0.3);
+  }
+
+  /* Site-wide keyboard focus ring. Without this nothing shows a focus state,
+     leaving keyboard users with no idea where they are. :focus-visible keeps it
+     off for mouse clicks. */
+  :focus-visible {
+    outline: 2px solid oklch(90% 0.09 86);
+    outline-offset: 3px;
+    border-radius: 6px;
   }
 }
 
@@ -202,6 +213,96 @@
   opacity: 0;
   animation: rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--rise-delay, 0s);
+}
+
+/* ------------------------------------------------------------------
+   Section backdrop.
+
+   The page-wide gradient is fixed, so its violet only ever shows behind the
+   hero — everything below fell back to near-black. Each section past the hero
+   gets its own soft violet wash: a glow at the top edge fading down, so the
+   sections read as distinct bands instead of one flat dark sheet. The hero is
+   left alone, keeping the deep cosmos behind the name.
+------------------------------------------------------------------- */
+main > section:not(:first-child),
+footer {
+  position: relative;
+  /* Contains the bleed layer below so it can't fall behind the page backdrop. */
+  isolation: isolate;
+  /*
+   * The 1px gold rule was half of the straight line. The wash separates the
+   * sections now, so the border goes — divided by light, not by lines.
+   */
+  border-top-color: transparent;
+}
+
+/*
+ * The colour lives on a pseudo-element that overhangs the section box by 180px
+ * top and bottom. Because a background-image can only paint inside its own
+ * element, keeping the wash on the section itself always ends in a dead-straight
+ * cut at the boundary. Overhanging layers from adjacent sections instead overlap
+ * and blend through each other, so the transition happens across ~360px of
+ * irregular, off-centre blobs rather than on one pixel row.
+ */
+main > section:not(:first-child)::before,
+footer::before {
+  content: "";
+  position: absolute;
+  inset: -180px 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      54% 38% at 22% 24%,
+      oklch(33% 0.1 302 / 0.55) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      48% 32% at 78% 42%,
+      oklch(30% 0.09 296 / 0.45) 0%,
+      transparent 74%
+    ),
+    radial-gradient(
+      62% 42% at 44% 76%,
+      oklch(26% 0.08 294 / 0.42) 0%,
+      transparent 76%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      oklch(19% 0.06 295 / 0.34) 30%,
+      oklch(17% 0.055 293 / 0.3) 70%,
+      transparent 100%
+    );
+}
+
+/* The page should settle at the end, not flare — no bright blob on the footer. */
+footer::before {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    oklch(19% 0.06 295 / 0.34) 35%,
+    oklch(12% 0.04 288 / 0.2) 100%
+  );
+}
+
+/* ------------------------------------------------------------------
+   Off-screen animation gate.
+
+   The page runs ~176 infinitely animating elements (starfield, card scan
+   lines, gradient shimmer). Left unchecked they all composite continuously
+   even when scrolled far out of view, which burns frames and battery on
+   phones. App.tsx flags each section with data-inview; everything decorative
+   inside a section that is off-screen parks until it scrolls back.
+------------------------------------------------------------------- */
+[data-inview="false"] .star,
+[data-inview="false"] .svc-lines span,
+[data-inview="false"] .svc-scan,
+[data-inview="false"] .text-gold-gradient,
+[data-inview="false"] .stat-emoji,
+[data-inview="false"] .float-slow,
+[data-inview="false"] .glass-card::before {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {

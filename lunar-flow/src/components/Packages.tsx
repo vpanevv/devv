@@ -74,7 +74,7 @@ function PriceBlock({ amount, cta }: { amount: string; cta: string }) {
 
 export default function Packages() {
   return (
-    <div className="mt-20 sm:mt-24">
+    <div id="packages" className="scroll-mt-24 mt-20 sm:mt-24">
       <header className="mb-11 text-center">
         <p className="text-gold/85 text-[11px] tracking-[0.28em] uppercase sm:tracking-[0.34em]">
           Пакети

@@ -17,6 +17,7 @@ export default function ZodiacOrbit({ size = 780 }: { size?: number }) {
   const radius = size * 0.425;
   const ringSize = size * 0.92;
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const tiltRef = useRef<HTMLDivElement>(null);
   const spinRef = useRef<HTMLDivElement>(null);
 
@@ -43,10 +44,17 @@ export default function ZodiacOrbit({ size = 780 }: { size?: number }) {
   );
 
   useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (reduced) return;
 
+    const root = rootRef.current;
+    if (!root) return;
+
     let frame = 0;
+    let running = false;
+
     const loop = (t: number) => {
       const seconds = t / 1000;
       if (spinRef.current) {
@@ -57,12 +65,40 @@ export default function ZodiacOrbit({ size = 780 }: { size?: number }) {
       }
       frame = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
+
+    const start = () => {
+      if (running) return;
+      running = true;
+      frame = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      if (!running) return;
+      running = false;
+      cancelAnimationFrame(frame);
+    };
+
+    /* Only spin while the hero is actually on screen — otherwise this runs for
+       the whole 10,000px page and keeps the main thread busy for nothing. */
+    const observer = new IntersectionObserver(
+      ([entry]) => (entry.isIntersecting ? start() : stop()),
+      { rootMargin: "100px" },
+    );
+    observer.observe(root);
+
+    const onVisibility = () =>
+      document.hidden ? stop() : root.checkVisibility?.() !== false && start();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
+    };
   }, []);
 
   return (
     <div
+      ref={rootRef}
       aria-hidden
       className="pointer-events-none relative"
       style={{ width: size, height: size, perspective: size * 2.2 }}

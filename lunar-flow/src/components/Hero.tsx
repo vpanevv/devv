@@ -110,7 +110,7 @@ export default function Hero() {
           className="rise mt-6 flex flex-col items-center justify-center gap-5 sm:mt-8 sm:flex-row sm:gap-10"
           style={{ ["--rise-delay" as string]: "0.82s" }}
         >
-          <GoldButton href="#services" label="Какво предлагам" />
+          <GoldButton href="#contact" label="Какво предлагам" />
           <GoldButton href="#contact" label="Запиши консултация" />
         </div>
 

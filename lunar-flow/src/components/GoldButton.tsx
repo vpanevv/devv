@@ -2,9 +2,10 @@ import "./GoldButton.css";
 
 type Props = {
   label: string;
-  /** Renders an anchor. Omit and pass `onClick` to render a real button. */
+  /** Renders an anchor. Omit to render a real button. */
   href?: string;
   onClick?: () => void;
+  type?: "button" | "submit";
   size?: "md" | "sm";
   /** Rotates the arrow — used by the About expander when it's open. */
   flipArrow?: boolean;
@@ -42,6 +43,7 @@ export default function GoldButton({
   label,
   href,
   onClick,
+  type = "button",
   size = "md",
   flipArrow,
   ariaExpanded,
@@ -66,7 +68,7 @@ export default function GoldButton({
 
   return (
     <button
-      type="button"
+      type={type}
       onClick={onClick}
       aria-expanded={ariaExpanded}
       aria-controls={ariaControls}
