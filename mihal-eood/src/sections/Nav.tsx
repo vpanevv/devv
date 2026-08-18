@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const LINKS = [
-  { label: 'Продукти', href: '/#products', route: false },
+  { label: 'Продукти', href: '/produkti', route: true },
   { label: 'Доставка', href: '/#delivery', route: false },
   { label: 'За нас', href: '/za-nas', route: true },
   { label: 'Контакти', href: '/#contact', route: false },
