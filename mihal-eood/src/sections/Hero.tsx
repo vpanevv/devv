@@ -60,25 +60,13 @@ export default function Hero() {
           ))}
         </h1>
 
-        {/* CTA — dark fill wipes up from the base and the label inverts to cream */}
+        {/* CTA */}
         <a
           href="#products"
-          className="fade-up group relative mt-10 inline-flex items-center justify-center gap-3 overflow-hidden bg-timber-cream px-7 py-4 font-sans text-[0.7rem] font-medium uppercase tracking-[0.14em] text-timber-bark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-timber-cream md:mt-12 md:px-11 md:py-5 md:text-[0.85rem] md:tracking-[0.18em]"
+          className="cta-button fade-up mt-10 font-sans uppercase tracking-[0.14em] md:mt-12 md:tracking-[0.18em]"
           style={{ animationDelay: '1.5s' }}
         >
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 origin-bottom scale-y-0 bg-timber-bark transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-y-100 group-focus-visible:scale-y-100"
-          />
-          <span className="relative z-10 transition-colors duration-300 group-hover:text-timber-cream group-focus-visible:text-timber-cream">
-            Разгледай нашите продукти
-          </span>
-          <span
-            aria-hidden="true"
-            className="relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-timber-cream group-focus-visible:text-timber-cream"
-          >
-            →
-          </span>
+          <span>Разгледай нашите продукти</span>
         </a>
       </div>
 

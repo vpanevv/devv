@@ -37,14 +37,14 @@ export default function Nav() {
   return (
     <>
       <header
-        className={`fade-down fixed inset-x-0 top-0 z-50 transition-colors duration-500 ${
-          scrolled && !menuOpen
-            ? 'border-b border-white/10 bg-timber-bark/75 backdrop-blur-md'
-            : 'border-b border-transparent'
-        }`}
+        className="fade-down fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 md:pt-6"
         style={{ animationDelay: '0.25s' }}
       >
-        <div className="mx-auto flex h-20 max-w-[1600px] items-center justify-between px-6 md:h-24 md:px-10">
+        <div
+          className={`liquid-glass mx-auto flex h-16 max-w-[1500px] items-center justify-between rounded-full px-6 md:h-20 md:px-10 ${
+            scrolled && !menuOpen ? 'is-scrolled' : ''
+          }`}
+        >
           <a
             href="#top"
             className="font-display text-sm font-medium uppercase tracking-[0.32em] text-white transition-opacity hover:opacity-70 md:text-base"
@@ -62,7 +62,7 @@ export default function Nav() {
                   >
                     {label}
                     {/* Underline wipes in from the left, out to the right */}
-                    <span className="absolute -bottom-2 left-0 h-px w-full origin-right scale-x-0 bg-timber-sap transition-transform duration-500 ease-out group-hover:origin-left group-hover:scale-x-100 group-focus-visible:origin-left group-focus-visible:scale-x-100" />
+                    <span className="absolute -bottom-1 left-0 h-px w-full origin-right scale-x-0 bg-timber-sap transition-transform duration-500 ease-out group-hover:origin-left group-hover:scale-x-100 group-focus-visible:origin-left group-focus-visible:scale-x-100" />
                   </a>
                 </li>
               ))}
@@ -95,7 +95,7 @@ export default function Nav() {
       <div
         id="mobile-menu"
         hidden={!menuOpen}
-        className="fixed inset-0 z-40 bg-timber-bark/95 backdrop-blur-lg md:hidden"
+        className="liquid-glass-panel fixed inset-0 z-40 md:hidden"
       >
         <nav aria-label="Мобилна навигация" className="flex h-full items-center px-8">
           <ul className="w-full space-y-2">
