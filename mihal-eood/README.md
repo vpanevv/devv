@@ -9,23 +9,37 @@ npm install
 npm run dev
 ```
 
-## Hero background photo
+## Routes
 
-The hero expects the lumber-yard photograph at:
+| Path      | Page                          |
+| --------- | ----------------------------- |
+| `/`       | Landing page (hero)           |
+| `/za-nas` | За нас                        |
 
-```
-public/images/hero.png
-```
+Client-side routing via react-router. **Deploying to static hosting needs a
+rewrite rule sending all paths to `index.html`**, otherwise a direct hit on
+`/za-nas` returns 404. Netlify: `/* /index.html 200` in `_redirects`.
+Vercel/Cloudflare Pages handle SPAs automatically.
 
-If that file is missing the hero falls back to a warm gradient (`.hero-fallback` in
-`src/index.css`), so the page never renders broken.
+## Background photos
 
-Guidance for the file: landscape, at least 2400px wide, warm/golden light. The tint
+`public/images/` holds both the originals (`.png`) and the compressed exports
+the pages actually load (`.jpg`, q82 — roughly a sixth of the size). The
+originals are unused at runtime; they are kept only as masters.
+
+If the hero photo is missing the page falls back to a warm gradient
+(`.hero-fallback` in `src/index.css`), so it never renders broken.
+
+Guidance for new photos: landscape, at least 2400px wide, warm/golden light. The tint
 layers in `src/sections/Hero.tsx` assume a mid-to-dark image; a very bright photo may
 need the overlay opacities nudged up.
 
 ## Structure
 
-- `src/sections/Hero.tsx` — hero section: photo, tint stack, animated headline
-- `src/index.css` — keyframes, film grain, vignette, gradient fallback
-- `tailwind.config.js` — `timber` palette, `font-display` (Oswald) / `font-sans` (Inter)
+- `src/sections/Hero.tsx` — hero: photo, tint stack, animated headline, CTA
+- `src/sections/Nav.tsx` — liquid glass nav bar and mobile overlay menu
+- `src/pages/About.tsx` — За нас
+- `src/components/TintedBackdrop.tsx` — shared photo + tint stack
+- `src/index.css` — keyframes, liquid glass, CTA button, grain, vignette
+- `tailwind.config.js` — `timber` palette; `font-display` (Oswald),
+  `font-serif` (Playfair Display), `font-sans` (Inter)
