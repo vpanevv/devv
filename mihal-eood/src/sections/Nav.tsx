@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const LINKS = [
-  { label: 'Продукти', href: '#products' },
-  { label: 'Доставка', href: '#delivery' },
-  { label: 'За нас', href: '#about' },
-  { label: 'Контакти', href: '#contact' },
+  { label: 'Продукти', href: '/#products', route: false },
+  { label: 'Доставка', href: '/#delivery', route: false },
+  { label: 'За нас', href: '/za-nas', route: true },
+  { label: 'Контакти', href: '/#contact', route: false },
 ]
 
 export default function Nav() {
@@ -45,27 +46,38 @@ export default function Nav() {
             scrolled && !menuOpen ? 'is-scrolled' : ''
           }`}
         >
-          <a
-            href="#top"
+          <Link
+            to="/"
             className="font-display text-sm font-medium uppercase tracking-[0.32em] text-white transition-opacity hover:opacity-70 md:text-base"
           >
             Михал<span className="ml-2 text-timber-sap">ЕООД</span>
-          </a>
+          </Link>
 
           <nav aria-label="Основна навигация" className="hidden md:block">
             <ul className="flex items-center gap-11">
-              {LINKS.map(({ label, href }) => (
-                <li key={href}>
-                  <a
-                    href={href}
-                    className="group relative block font-serif text-xl tracking-[0.02em] text-white/80 transition-colors hover:text-white focus-visible:text-white"
-                  >
-                    {label}
-                    {/* Underline wipes in from the left, out to the right */}
-                    <span className="absolute -bottom-1 left-0 h-px w-full origin-right scale-x-0 bg-timber-sap transition-transform duration-500 ease-out group-hover:origin-left group-hover:scale-x-100 group-focus-visible:origin-left group-focus-visible:scale-x-100" />
-                  </a>
-                </li>
-              ))}
+              {LINKS.map(({ label, href, route }) => {
+                const className =
+                  'group relative block font-serif text-xl tracking-[0.02em] text-white/80 transition-colors hover:text-white focus-visible:text-white'
+                // Underline wipes in from the left, out to the right
+                const underline = (
+                  <span className="absolute -bottom-1 left-0 h-px w-full origin-right scale-x-0 bg-timber-sap transition-transform duration-500 ease-out group-hover:origin-left group-hover:scale-x-100 group-focus-visible:origin-left group-focus-visible:scale-x-100" />
+                )
+                return (
+                  <li key={href}>
+                    {route ? (
+                      <Link to={href} className={className}>
+                        {label}
+                        {underline}
+                      </Link>
+                    ) : (
+                      <a href={href} className={className}>
+                        {label}
+                        {underline}
+                      </a>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </nav>
 
@@ -99,15 +111,25 @@ export default function Nav() {
       >
         <nav aria-label="Мобилна навигация" className="flex h-full items-center px-8">
           <ul className="w-full space-y-2">
-            {LINKS.map(({ label, href }, i) => (
+            {LINKS.map(({ label, href, route }, i) => (
               <li key={href} className={menuOpen ? 'fade-up' : ''} style={{ animationDelay: `${0.08 + i * 0.07}s` }}>
-                <a
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
-                  className="block py-3 font-serif text-4xl text-white"
-                >
-                  {label}
-                </a>
+                {route ? (
+                  <Link
+                    to={href}
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-3 font-serif text-4xl text-white"
+                  >
+                    {label}
+                  </Link>
+                ) : (
+                  <a
+                    href={href}
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-3 font-serif text-4xl text-white"
+                  >
+                    {label}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

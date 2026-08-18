@@ -130,6 +130,13 @@
     scale: 1;
   }
 
+  /* Compact variant for secondary actions such as the back link. */
+  .cta-button.cta-button--sm {
+    padding: 10px 24px;
+    font-size: 11.5px;
+    border-width: 1.5px;
+  }
+
   /* The Bulgarian label is long; step it down so it clears a 320px viewport. */
   @media (max-width: 380px) {
     .cta-button {
@@ -143,6 +150,21 @@
       padding: 17px 44px;
       font-size: 17px;
     }
+
+    .cta-button.cta-button--sm {
+      padding: 12px 30px;
+      font-size: 13px;
+    }
+  }
+
+  /* The carousel scrolls horizontally; its scrollbar would sit across the cards. */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   /* Film grain — keeps the flat photo from looking like stock. */
