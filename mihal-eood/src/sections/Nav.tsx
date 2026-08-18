@@ -6,7 +6,7 @@ const LINKS = [
   { label: 'Доставка', href: '/#delivery', route: false },
   { label: 'Галерия', href: '/galeriya', route: true },
   { label: 'За нас', href: '/za-nas', route: true },
-  { label: 'Контакти', href: '/#contact', route: false },
+  { label: 'Контакти', href: '/kontakti', route: true },
 ]
 
 /** Scroll distance over which the bar ramps from clear to fully opaque. */

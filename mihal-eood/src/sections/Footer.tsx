@@ -58,7 +58,7 @@ export default function Footer() {
           </h2>
           <address className="mt-4 space-y-1 font-sans text-[0.95rem] font-light not-italic leading-[1.75] text-timber-cream/85">
             <p>гр. Разлог</p>
-            <p>ул. Христо Ботев 50</p>
+            <p>ул. Христо Ботев 71</p>
           </address>
         </section>
 
