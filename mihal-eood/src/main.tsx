@@ -15,10 +15,10 @@ createRoot(document.getElementById('root')!).render(
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/za-nas" element={<About />} />
-        <Route path="/produkti" element={<Products />} />
-        <Route path="/galeriya" element={<Gallery />} />
-        <Route path="/kontakti" element={<Contact />} />
+        <Route path="/about-us" element={<About />} />
+        <Route path="/products" element={<Products />} />
+        <Route path="/gallery" element={<Gallery />} />
+        <Route path="/contacts" element={<Contact />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

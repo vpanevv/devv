@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const HEADLINE = 'МИХАЛ ЕООД'
 
@@ -61,13 +62,13 @@ export default function Hero() {
         </h1>
 
         {/* CTA */}
-        <a
-          href="#products"
+        <Link
+          to="/products"
           className="cta-button fade-up mt-10 font-sans uppercase tracking-[0.14em] md:mt-12 md:tracking-[0.18em]"
           style={{ animationDelay: '1.5s' }}
         >
           <span>Разгледай нашите продукти</span>
-        </a>
+        </Link>
       </div>
 
       {/* Hairline rule that hands the eye off to whatever section comes next */}

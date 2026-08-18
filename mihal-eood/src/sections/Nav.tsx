@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const LINKS = [
-  { label: 'Продукти', href: '/produkti', route: true },
+  { label: 'Продукти', href: '/products', route: true },
   { label: 'Доставка', href: '/#delivery', route: false },
-  { label: 'Галерия', href: '/galeriya', route: true },
-  { label: 'За нас', href: '/za-nas', route: true },
-  { label: 'Контакти', href: '/kontakti', route: true },
+  { label: 'Галерия', href: '/gallery', route: true },
+  { label: 'За нас', href: '/about-us', route: true },
+  { label: 'Контакти', href: '/contacts', route: true },
 ]
 
 /** Scroll distance over which the bar ramps from clear to fully opaque. */
