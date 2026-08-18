@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Nav from './sections/Nav'
 import Hero from './sections/Hero'
+import Footer from './sections/Footer'
 
 const LANDING_TITLE = 'МИХАЛ ЕООД — Качествен сух дървен материал'
 
@@ -16,6 +17,7 @@ export default function App() {
       <main id="top" className="bg-timber-bark">
         <Hero />
       </main>
+      <Footer />
     </>
   )
 }
