@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Nav from '../sections/Nav'
+import Footer from '../sections/Footer'
 import TintedBackdrop from '../components/TintedBackdrop'
 import CardCarousel, { type Card } from '../components/CardCarousel'
 
@@ -58,6 +59,8 @@ export default function About() {
           </div>
         </div>
       </main>
+
+      <Footer />
     </>
   )
 }

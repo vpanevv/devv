@@ -4,20 +4,35 @@ import { Link } from 'react-router-dom'
 const LINKS = [
   { label: 'Продукти', href: '/produkti', route: true },
   { label: 'Доставка', href: '/#delivery', route: false },
+  { label: 'Галерия', href: '/galeriya', route: true },
   { label: 'За нас', href: '/za-nas', route: true },
   { label: 'Контакти', href: '/#contact', route: false },
 ]
 
+/** Scroll distance over which the bar ramps from clear to fully opaque. */
+const DARKEN_OVER = 140
+
 export default function Nav() {
-  const [scrolled, setScrolled] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Swap from transparent-over-photo to a blurred bar once the hero starts leaving.
+  // The bar darkens continuously with scroll rather than snapping at a
+  // threshold — a white tint alone lightens against bright photography, so
+  // content behind it bled through and the links became hard to read.
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24)
+    let frame = 0
+    const onScroll = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() =>
+        setProgress(Math.min(window.scrollY / DARKEN_OVER, 1)),
+      )
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+    }
   }, [])
 
   // Lock the page behind the mobile overlay, and let Escape dismiss it.
@@ -41,11 +56,16 @@ export default function Nav() {
         className="fade-down fixed inset-x-0 top-0 z-50 px-4 pt-4 md:px-8 md:pt-6"
         style={{ animationDelay: '0.25s' }}
       >
-        <div
-          className={`liquid-glass mx-auto flex h-16 max-w-[1500px] items-center justify-between rounded-full px-6 md:h-20 md:px-10 ${
-            scrolled && !menuOpen ? 'is-scrolled' : ''
-          }`}
-        >
+        <div className="liquid-glass relative mx-auto h-16 max-w-[1500px] overflow-hidden rounded-full md:h-20">
+          {/* Opacity ramps with scroll position, so the bar gains weight
+              exactly as much as it needs to stay legible. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-timber-bark"
+            style={{ opacity: 0.06 + 0.82 * (menuOpen ? 1 : progress) }}
+          />
+
+          <div className="relative flex h-full items-center justify-between px-6 md:px-10">
           <Link
             to="/"
             className="font-display text-sm font-medium uppercase tracking-[0.32em] text-white transition-opacity hover:opacity-70 md:text-base"
@@ -100,6 +120,7 @@ export default function Nav() {
               }`}
             />
           </button>
+          </div>
         </div>
       </header>
 
